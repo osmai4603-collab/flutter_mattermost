@@ -95,10 +95,7 @@ class UpdateUnreadCountsEvent extends ChannelEvent {}
 class ToggleMuteEvent extends ChannelEvent {
   final String channelId;
   final String userId;
-  const ToggleMuteEvent({
-    required this.channelId,
-    required this.userId,
-  });
+  const ToggleMuteEvent({required this.channelId, required this.userId});
   @override
   List<Object?> get props => [channelId, userId];
 }
@@ -302,10 +299,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
             : [...current.channels, event.channel],
         categories: current.categories,
         unreadCounts: current.unreadCounts,
-        selectedChannel:
-            current.selectedChannel?.id == event.channel.id
-                ? event.channel
-                : current.selectedChannel,
+        selectedChannel: current.selectedChannel?.id == event.channel.id
+            ? event.channel
+            : current.selectedChannel,
         userId: current.userId,
         members: current.members,
       ),
@@ -415,10 +411,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   }
 
   // تحديث القناة محلياً بعد نجاح التعديل (الاسم/الغرض/الرأس/الخصوصية).
-  void _onUpdateChannel(
-    UpdateChannelEvent event,
-    Emitter<ChannelState> emit,
-  ) {
+  void _onUpdateChannel(UpdateChannelEvent event, Emitter<ChannelState> emit) {
     final current = state;
     if (current is! ChannelsLoadedState) return;
     emit(
@@ -429,10 +422,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
             .toList(),
         categories: current.categories,
         unreadCounts: current.unreadCounts,
-        selectedChannel:
-            current.selectedChannel?.id == event.channel.id
-                ? event.channel
-                : current.selectedChannel,
+        selectedChannel: current.selectedChannel?.id == event.channel.id
+            ? event.channel
+            : current.selectedChannel,
         userId: current.userId,
         members: current.members,
       ),
@@ -462,10 +454,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
             )
             .toList(),
         unreadCounts: current.unreadCounts,
-        selectedChannel:
-            current.selectedChannel?.id == event.channel.id
-                ? null
-                : current.selectedChannel,
+        selectedChannel: current.selectedChannel?.id == event.channel.id
+            ? null
+            : current.selectedChannel,
         userId: current.userId,
         members: current.members,
       ),
@@ -509,9 +500,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     final member = current.members[event.channelId];
     final muted = member?.notifyProps['mark_unread'] == 'mention';
     try {
-      await _channelRepository.updateChannel(event.channelId, {
-        'notify_props': {'mark_unread': muted ? 'all' : 'mention'},
-      });
+      await _channelRepository.updateChannel(
+        event.channelId,
+        notifyProps: {'mark_unread': muted ? 'all' : 'mention'},
+      );
       final updatedMembers = Map<String, ChannelMemberEntity>.of(
         current.members,
       );

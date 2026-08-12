@@ -61,12 +61,13 @@ class _ChannelSettingsModalState extends State<ChannelSettingsModal> {
     });
     try {
       final channelBloc = context.read<ChannelBloc>();
-      await getIt<ChannelRepository>().updateChannel(channel.id, {
-        'name': _nameController.text.trim(),
-        'display_name': _nameController.text.trim(),
-        'purpose': _purposeController.text.trim(),
-        'header': _headerController.text.trim(),
-      });
+      await getIt<ChannelRepository>().updateChannel(
+        channel.id,
+        name: _nameController.text.trim(),
+        displayName: _nameController.text.trim(),
+        purpose: _purposeController.text.trim(),
+        header: _headerController.text.trim(),
+      );
       final updated = channel.copyWith(
         name: _nameController.text.trim(),
         displayName: _nameController.text.trim(),

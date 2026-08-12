@@ -18,8 +18,7 @@ class ChannelNotificationsModal extends StatefulWidget {
       _ChannelNotificationsModalState();
 }
 
-class _ChannelNotificationsModalState
-    extends State<ChannelNotificationsModal> {
+class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
   int _selected = 0;
   bool _saving = false;
   String? _error;
@@ -54,7 +53,7 @@ class _ChannelNotificationsModalState
     try {
       await getIt<ChannelRepository>().updateChannel(
         channel.id,
-        {'notify_props': {'desktop': level}},
+        notifyProps: {'desktop': level},
       );
       if (mounted) {
         setState(() => _saving = false);
@@ -148,8 +147,11 @@ class _ChannelNotificationsModalState
                     const SizedBox(height: 16),
                     Row(
                       children: [
-                        Icon(Icons.error_outline,
-                            size: 16, color: Colors.redAccent),
+                        Icon(
+                          Icons.error_outline,
+                          size: 16,
+                          color: Colors.redAccent,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           _error!,
@@ -175,13 +177,13 @@ class _ChannelNotificationsModalState
                           ? const SizedBox(
                               width: 18,
                               height: 18,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : Text(
                               l10n.channelNotificationsSave,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                     ),
                   ),
@@ -218,9 +220,7 @@ class _ChannelNotificationsModalState
         child: Row(
           children: [
             Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
               size: 20,
               color: selected
                   ? theme.buttonBg

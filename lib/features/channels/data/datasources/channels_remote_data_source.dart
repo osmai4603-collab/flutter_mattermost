@@ -28,8 +28,8 @@ abstract class ChannelRemoteDataSource {
     required String displayName,
     required String name,
     required String type,
-    String purpose = '',
-    String header = '',
+    String? purpose,
+    String? header,
   });
   Future<ChannelModel> patchChannel(
     String channelId, {
@@ -82,7 +82,10 @@ abstract class ChannelRemoteDataSource {
   Future<List<String>> getGroupMessageMembersCommonTeams(String channelId);
 
   // Reading / viewing
-  Future<List<ChannelModel>> getPublicChannels({int page = 0, int perPage = 60});
+  Future<List<ChannelModel>> getPublicChannels({
+    int page = 0,
+    int perPage = 60,
+  });
   Future<List<ChannelModel>> searchChannels(Map<String, dynamic> searchParams);
   Future<void> viewMyChannel(
     String channelId, {
@@ -138,13 +141,8 @@ abstract class ChannelRemoteDataSource {
     int page = 0,
     int perPage = 60,
   });
-  Future<Map<String, int>> getChannelsMemberCount(
-    List<String> channelIds,
-  );
-  Future<ChannelModel> moveChannel(
-    String channelId,
-    Map<String, dynamic> data,
-  );
+  Future<Map<String, int>> getChannelsMemberCount(List<String> channelIds);
+  Future<ChannelModel> moveChannel(String channelId, Map<String, dynamic> data);
   Future<ChannelModel> createBoard({
     required String boardType,
     required String boardName,
@@ -153,46 +151,98 @@ abstract class ChannelRemoteDataSource {
 
   // Missing operations from docs
   Future<ChannelMemberModel> addChannelMember(String channelId, String userId);
-  Future<List<ChannelMemberModel>> getChannelMembers(String channelId,
-      {int page = 0, int perPage = 60});
+  Future<List<ChannelMemberModel>> getChannelMembers(
+    String channelId, {
+    int page = 0,
+    int perPage = 60,
+  });
   Future<List<ChannelMemberModel>> getChannelMembersByIds(
-      String channelId, List<String> userIds);
+    String channelId,
+    List<String> userIds,
+  );
   Future<void> removeUserFromChannel(String channelId, String userId);
   Future<void> restoreChannel(String channelId);
-  Future<List<ChannelModel>> searchAllChannels(Map<String, dynamic> searchParams);
+  Future<List<ChannelModel>> searchAllChannels(
+    Map<String, dynamic> searchParams,
+  );
   Future<List<ChannelMemberModel>> setChannelMembers(
-      String channelId, List<String> userIds);
+    String channelId,
+    List<String> userIds,
+  );
   Future<void> updateChannelMemberAutotranslation(
-      String channelId, String userId, bool enable);
+    String channelId,
+    String userId,
+    bool enable,
+  );
   Future<void> updateChannelNotifyProps(
-      String channelId, String userId, Map<String, dynamic> props);
+    String channelId,
+    String userId,
+    Map<String, dynamic> props,
+  );
   Future<ChannelMemberModel> updateChannelRoles(
-      String channelId, String userId, List<String> roles);
+    String channelId,
+    String userId,
+    List<String> roles,
+  );
   Future<void> viewChannel(String userId, Map<String, dynamic> viewData);
-  Future<List<ChannelModel>> getDeletedChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60});
-  Future<List<ChannelModel>> getPrivateChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60});
+  Future<List<ChannelModel>> getDeletedChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  });
+  Future<List<ChannelModel>> getPrivateChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  });
   Future<List<ChannelModel>> getPublicChannelsByIdsForTeam(
-      String teamId, List<String> channelIds);
-  Future<List<ChannelModel>> getPublicChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60});
+    String teamId,
+    List<String> channelIds,
+  );
+  Future<List<ChannelModel>> getPublicChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  });
   Future<List<SidebarCategoryModel>> getSidebarCategoriesForTeamForUser(
-      String userId, String teamId);
+    String userId,
+    String teamId,
+  );
   Future<SidebarCategoryModel> getSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId);
+    String userId,
+    String teamId,
+    String categoryId,
+  );
   Future<List<String>> getSidebarCategoryOrderForTeamForUser(
-      String userId, String teamId);
+    String userId,
+    String teamId,
+  );
   Future<void> removeSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId);
+    String userId,
+    String teamId,
+    String categoryId,
+  );
   Future<SidebarCategoryModel> updateSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId, Map<String, dynamic> category);
+    String userId,
+    String teamId,
+    String categoryId,
+    Map<String, dynamic> category,
+  );
   Future<void> updateSidebarCategoryOrderForTeamForUser(
-      String userId, String teamId, List<String> categoryIds);
+    String userId,
+    String teamId,
+    List<String> categoryIds,
+  );
   Future<List<SidebarCategoryModel>> updateSidebarCategoriesForTeamForUser(
-      String userId, String teamId, List<Map<String, dynamic>> categories);
+    String userId,
+    String teamId,
+    List<Map<String, dynamic>> categories,
+  );
   Future<SidebarCategoryModel> createSidebarCategoryForTeamForUser(
-      String userId, String teamId, Map<String, dynamic> category);
+    String userId,
+    String teamId,
+    Map<String, dynamic> category,
+  );
 }
 
 @LazySingleton(as: ChannelRemoteDataSource)
@@ -245,8 +295,8 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
     required String displayName,
     required String name,
     required String type,
-    String purpose = '',
-    String header = '',
+    String? purpose,
+    String? header,
   }) async {
     final result = await _apiClient.put<ChannelModel>(
       ChannelsEndPoint.byChannelId(id),
@@ -256,8 +306,8 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
         'display_name': displayName,
         'name': name,
         'type': type,
-        'purpose': purpose,
-        'header': header,
+        if (purpose != null) 'purpose': purpose,
+        if (header != null) 'header': header,
       },
       fromJson: (json) => ChannelModel.fromMap(json as Map<String, dynamic>),
     );
@@ -346,7 +396,8 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   Future<ChannelStatsModel> getChannelStats(String channelId) async {
     final result = await _apiClient.get<ChannelStatsModel>(
       ChannelsEndPoint.stats(channelId),
-      fromJson: (json) => ChannelStatsModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ChannelStatsModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<ChannelStatsModel>) {
       return result.data;
@@ -641,7 +692,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelModel>> getRecommendedChannelsForUser(String teamId) async {
+  Future<List<ChannelModel>> getRecommendedChannelsForUser(
+    String teamId,
+  ) async {
     final result = await _apiClient.get<List<ChannelModel>>(
       TeamsEndPoint.channelsRecommended(teamId),
       fromJson: (json) => (json as List<dynamic>)
@@ -744,7 +797,8 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
     final result = await _apiClient.post<ChannelUnreadModel>(
       ChannelsEndPoint.views(channelId),
       data: viewData,
-      fromJson: (json) => ChannelUnreadModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ChannelUnreadModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<ChannelUnreadModel>) {
       return result.data;
@@ -853,11 +907,15 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<ChannelMemberModel> addChannelMember(String channelId, String userId) async {
+  Future<ChannelMemberModel> addChannelMember(
+    String channelId,
+    String userId,
+  ) async {
     final result = await _apiClient.post<ChannelMemberModel>(
       ChannelsEndPoint.members(channelId),
       data: {'user_id': userId},
-      fromJson: (json) => ChannelMemberModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ChannelMemberModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<ChannelMemberModel>) {
       return result.data;
@@ -866,8 +924,11 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelMemberModel>> getChannelMembers(String channelId,
-      {int page = 0, int perPage = 60}) async {
+  Future<List<ChannelMemberModel>> getChannelMembers(
+    String channelId, {
+    int page = 0,
+    int perPage = 60,
+  }) async {
     final result = await _apiClient.get<List<ChannelMemberModel>>(
       ChannelsEndPoint.members(channelId),
       queryParameters: {'page': page, 'per_page': perPage},
@@ -883,7 +944,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<ChannelMemberModel>> getChannelMembersByIds(
-      String channelId, List<String> userIds) async {
+    String channelId,
+    List<String> userIds,
+  ) async {
     final result = await _apiClient.post<List<ChannelMemberModel>>(
       ChannelsEndPoint.membersIds(channelId),
       data: userIds,
@@ -911,7 +974,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelModel>> searchAllChannels(Map<String, dynamic> searchParams) async {
+  Future<List<ChannelModel>> searchAllChannels(
+    Map<String, dynamic> searchParams,
+  ) async {
     final result = await _apiClient.post<List<ChannelModel>>(
       ChannelsEndPoint.search,
       data: searchParams,
@@ -927,7 +992,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<ChannelMemberModel>> setChannelMembers(
-      String channelId, List<String> userIds) async {
+    String channelId,
+    List<String> userIds,
+  ) async {
     final result = await _apiClient.post<List<ChannelMemberModel>>(
       ChannelsEndPoint.members(channelId),
       data: userIds.map((id) => {'user_id': id}).toList(),
@@ -943,7 +1010,10 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<void> updateChannelMemberAutotranslation(
-      String channelId, String userId, bool enable) async {
+    String channelId,
+    String userId,
+    bool enable,
+  ) async {
     await _apiClient.put<void>(
       ChannelsEndPoint.membersSchemeRoles(channelId, userId),
       data: {'enable': enable},
@@ -953,7 +1023,10 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<void> updateChannelNotifyProps(
-      String channelId, String userId, Map<String, dynamic> props) async {
+    String channelId,
+    String userId,
+    Map<String, dynamic> props,
+  ) async {
     await _apiClient.put<void>(
       ChannelsEndPoint.membersNotifyProps(channelId, userId),
       data: props,
@@ -963,11 +1036,15 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<ChannelMemberModel> updateChannelRoles(
-      String channelId, String userId, List<String> roles) async {
+    String channelId,
+    String userId,
+    List<String> roles,
+  ) async {
     final result = await _apiClient.put<ChannelMemberModel>(
       ChannelsEndPoint.membersRoles(channelId, userId),
       data: {'roles': roles.join(' ')},
-      fromJson: (json) => ChannelMemberModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ChannelMemberModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<ChannelMemberModel>) {
       return result.data;
@@ -985,8 +1062,11 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelModel>> getDeletedChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60}) async {
+  Future<List<ChannelModel>> getDeletedChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  }) async {
     final result = await _apiClient.get<List<ChannelModel>>(
       TeamsEndPoint.channelsDeleted(teamId),
       queryParameters: {'page': page, 'per_page': perPage},
@@ -1001,8 +1081,11 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelModel>> getPrivateChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60}) async {
+  Future<List<ChannelModel>> getPrivateChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  }) async {
     final result = await _apiClient.get<List<ChannelModel>>(
       TeamsEndPoint.channelsPrivate(teamId),
       queryParameters: {'page': page, 'per_page': perPage},
@@ -1018,7 +1101,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<ChannelModel>> getPublicChannelsByIdsForTeam(
-      String teamId, List<String> channelIds) async {
+    String teamId,
+    List<String> channelIds,
+  ) async {
     final result = await _apiClient.post<List<ChannelModel>>(
       TeamsEndPoint.channelsIds(teamId),
       data: channelIds,
@@ -1033,8 +1118,11 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   }
 
   @override
-  Future<List<ChannelModel>> getPublicChannelsForTeam(String teamId,
-      {int page = 0, int perPage = 60}) async {
+  Future<List<ChannelModel>> getPublicChannelsForTeam(
+    String teamId, {
+    int page = 0,
+    int perPage = 60,
+  }) async {
     final result = await _apiClient.get<List<ChannelModel>>(
       TeamsEndPoint.channels(teamId),
       queryParameters: {'page': page, 'per_page': perPage},
@@ -1050,7 +1138,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<SidebarCategoryModel>> getSidebarCategoriesForTeamForUser(
-      String userId, String teamId) async {
+    String userId,
+    String teamId,
+  ) async {
     final result = await _apiClient.get<List<SidebarCategoryModel>>(
       UsersEndPoint.teamsChannelsCategories(userId, teamId),
       fromJson: (json) {
@@ -1068,10 +1158,14 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<SidebarCategoryModel> getSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId) async {
+    String userId,
+    String teamId,
+    String categoryId,
+  ) async {
     final result = await _apiClient.get<SidebarCategoryModel>(
       UsersEndPoint.teamsChannelsCategories2(userId, teamId, categoryId),
-      fromJson: (json) => SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<SidebarCategoryModel>) {
       return result.data;
@@ -1081,7 +1175,9 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<String>> getSidebarCategoryOrderForTeamForUser(
-      String userId, String teamId) async {
+    String userId,
+    String teamId,
+  ) async {
     final result = await _apiClient.get<List<String>>(
       UsersEndPoint.teamsChannelsCategoriesOrder(userId, teamId),
       fromJson: (json) => (json as List<dynamic>).cast<String>(),
@@ -1094,7 +1190,10 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<void> removeSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId) async {
+    String userId,
+    String teamId,
+    String categoryId,
+  ) async {
     await _apiClient.delete(
       UsersEndPoint.teamsChannelsCategories2(userId, teamId, categoryId),
     );
@@ -1102,11 +1201,16 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<SidebarCategoryModel> updateSidebarCategoryForTeamForUser(
-      String userId, String teamId, String categoryId, Map<String, dynamic> category) async {
+    String userId,
+    String teamId,
+    String categoryId,
+    Map<String, dynamic> category,
+  ) async {
     final result = await _apiClient.put<SidebarCategoryModel>(
       UsersEndPoint.teamsChannelsCategories2(userId, teamId, categoryId),
       data: category,
-      fromJson: (json) => SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<SidebarCategoryModel>) {
       return result.data;
@@ -1116,7 +1220,10 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<void> updateSidebarCategoryOrderForTeamForUser(
-      String userId, String teamId, List<String> categoryIds) async {
+    String userId,
+    String teamId,
+    List<String> categoryIds,
+  ) async {
     await _apiClient.put<void>(
       UsersEndPoint.teamsChannelsCategoriesOrder(userId, teamId),
       data: categoryIds,
@@ -1126,7 +1233,10 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<List<SidebarCategoryModel>> updateSidebarCategoriesForTeamForUser(
-      String userId, String teamId, List<Map<String, dynamic>> categories) async {
+    String userId,
+    String teamId,
+    List<Map<String, dynamic>> categories,
+  ) async {
     final result = await _apiClient.put<List<SidebarCategoryModel>>(
       UsersEndPoint.teamsChannelsCategories(userId, teamId),
       data: categories,
@@ -1142,11 +1252,15 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<SidebarCategoryModel> createSidebarCategoryForTeamForUser(
-      String userId, String teamId, Map<String, dynamic> category) async {
+    String userId,
+    String teamId,
+    Map<String, dynamic> category,
+  ) async {
     final result = await _apiClient.post<SidebarCategoryModel>(
       UsersEndPoint.teamsChannelsCategories(userId, teamId),
       data: category,
-      fromJson: (json) => SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          SidebarCategoryModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<SidebarCategoryModel>) {
       return result.data;

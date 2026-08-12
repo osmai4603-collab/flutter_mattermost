@@ -72,16 +72,20 @@ class ChannelRepositoryImpl implements ChannelRepository {
 
   @override
   Future<void> updateChannel(
-    String channelId,
-    Map<String, dynamic> patch,
-  ) async {
+    String channelId, {
+    String? name,
+    String? displayName,
+    String? purpose,
+    String? header,
+    Map<String, dynamic>? notifyProps,
+  }) async {
     await _remoteDataSource.patchChannel(
       channelId,
-      name: patch['name'] as String?,
-      displayName: patch['display_name'] as String?,
-      purpose: patch['purpose'] as String?,
-      header: patch['header'] as String?,
-      notifyProps: patch['notify_props'] as Map<String, dynamic>?,
+      name: name,
+      displayName: displayName,
+      purpose: purpose,
+      header: header,
+      notifyProps: notifyProps,
     );
   }
 
@@ -221,7 +225,6 @@ class ChannelRepositoryImpl implements ChannelRepository {
     final model = await _remoteDataSource.getChannelStats(channelId);
     return model.toEntity();
   }
-
 
   @override
   Future<List<ChannelCategoryEntity>> getChannelCategories(

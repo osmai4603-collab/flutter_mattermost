@@ -59,13 +59,17 @@ abstract class ChannelRepository {
   );
 
   /// تحديث جزئي للقناة (مثل notify_props) — يطابق PATCH /channels/{id}.
-  Future<void> updateChannel(String channelId, Map<String, dynamic> patch);
+  Future<void> updateChannel(
+    String channelId, {
+    String? name,
+    String? displayName,
+    String? purpose,
+    String? header,
+    Map<String, dynamic>? notifyProps,
+  });
 
   /// تحديث خصوصية القناة (خاص/عام) — يطابق PUT /channels/{id}/privacy.
-  Future<ChannelEntity> updateChannelPrivacy(
-    String channelId,
-    String privacy,
-  );
+  Future<ChannelEntity> updateChannelPrivacy(String channelId, String privacy);
 
   /// أرشفة القناة — يطابق DELETE /channels/{id}.
   Future<void> deleteChannel(String channelId);
