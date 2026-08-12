@@ -1,0 +1,650 @@
+# Mattermost API Operations
+
+Generated from official OpenAPI spec: https://developers.mattermost.com/mattermost-openapi-v4.yaml
+
+## Operation list
+
+- [AcceptRemoteClusterInvite](AcceptRemoteClusterInvite.md) — `POST` `/api/v4/remotecluster/accept_invite` — Accept a remote cluster invite code.
+- [AcknowledgeNotification](AcknowledgeNotification.md) — `POST` `/api/v4/notifications/ack` — Acknowledge receiving of a notification
+- [AddAuditLogCertificate](AddAuditLogCertificate.md) — `POST` `/api/v4/audit_logs/certificate` — Upload audit log certificate
+- [AddChannelMember](AddChannelMember.md) — `POST` `/api/v4/channels/{channel_id}/members` — Add user(s) to channel
+- [AddChannelsToRetentionPolicy](AddChannelsToRetentionPolicy.md) — `POST` `/api/v4/data_retention/policies/{policy_id}/channels` — Add channels to a granular data retention policy
+- [addChecklistItem](addChecklistItem.md) — `POST` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/add` — Add an item to a playbook run's checklist
+- [AddGroupMembers](AddGroupMembers.md) — `POST` `/api/v4/groups/{group_id}/members` — Adds members to a custom group
+- [AddTeamMember](AddTeamMember.md) — `POST` `/api/v4/teams/{team_id}/members` — Add user to team
+- [AddTeamMemberFromInvite](AddTeamMemberFromInvite.md) — `POST` `/api/v4/teams/members/invite` — Add user to team from invite
+- [AddTeamMembers](AddTeamMembers.md) — `POST` `/api/v4/teams/{team_id}/members/batch` — Add multiple users to team
+- [AddTeamsToRetentionPolicy](AddTeamsToRetentionPolicy.md) — `POST` `/api/v4/data_retention/policies/{policy_id}/teams` — Add teams to a granular data retention policy
+- [AddUserToGroupSyncables](AddUserToGroupSyncables.md) — `POST` `/api/v4/ldap/users/{user_id}/group_sync_memberships` — Create memberships for LDAP configured channels and teams for this user
+- [ApplyIPFilters](ApplyIPFilters.md) — `POST` `/api/v4/ip_filtering` — Get all IP filters
+- [AssignAccessControlPolicyToChannels](AssignAccessControlPolicyToChannels.md) — `POST` `/api/v4/access_control_policies/{policy_id}/assign` — Assign an access control policy to channels or teams
+- [AssignBot](AssignBot.md) — `POST` `/api/v4/bots/{bot_user_id}/assign/{user_id}` — Assign a bot to a user
+- [AttachDeviceExtraProps](AttachDeviceExtraProps.md) — `PUT` `/api/v4/users/sessions/device` — Attach mobile device and extra props to the session object
+- [AutocompleteChannelsForTeam](AutocompleteChannelsForTeam.md) — `GET` `/api/v4/teams/{team_id}/channels/autocomplete` — Autocomplete channels
+- [AutocompleteChannelsForTeamForSearch](AutocompleteChannelsForTeamForSearch.md) — `GET` `/api/v4/teams/{team_id}/channels/search_autocomplete` — Autocomplete channels for search
+- [AutocompleteEmoji](AutocompleteEmoji.md) — `GET` `/api/v4/emoji/autocomplete` — Autocomplete custom emoji
+- [AutocompleteUsers](AutocompleteUsers.md) — `GET` `/api/v4/users/autocomplete` — Autocomplete users
+- [BurnPost](BurnPost.md) — `DELETE` `/api/v4/posts/{post_id}/burn` — Burn a burn-on-read post
+- [CancelJob](CancelJob.md) — `POST` `/api/v4/jobs/{job_id}/cancel` — Cancel a job.
+- [CanUserDirectMessage](CanUserDirectMessage.md) — `GET` `/api/v4/sharedchannels/users/{user_id}/can_dm/{other_user_id}` — Check if user can DM another user in shared channels context
+- [changeOwner](changeOwner.md) — `POST` `/plugins/playbooks/api/v0/runs/{id}/owner` — Update playbook run owner
+- [ChannelMembersMinusGroupMembers](ChannelMembersMinusGroupMembers.md) — `GET` `/api/v4/channels/{channel_id}/members_minus_group_members` — Channel members minus group members.
+- [CheckAccessControlPolicyExpression](CheckAccessControlPolicyExpression.md) — `POST` `/api/v4/access_control_policies/cel/check` — Check an access control policy expression
+- [CheckCWSConnection](CheckCWSConnection.md) — `GET` `/api/v4/cloud/check-cws-connection` — Check CWS connection
+- [CheckIntegrity](CheckIntegrity.md) — `POST` `/api/v4/integrity` — Perform a database integrity check
+- [ClearServerBusy](ClearServerBusy.md) — `DELETE` `/api/v4/server_busy` — Clears the server busy (high load) flag
+- [CompleteOnboarding](CompleteOnboarding.md) — `POST` `/api/v4/system/onboarding/complete` — Complete first admin onboarding
+- [ConnectWebSocket](ConnectWebSocket.md) — `GET` `/api/v4/websocket` — Open a WebSocket connection
+- [ConvertBotToUser](ConvertBotToUser.md) — `POST` `/api/v4/bots/{bot_user_id}/convert_to_user` — Convert a bot into a user
+- [ConvertGroupMessageToChannel](ConvertGroupMessageToChannel.md) — `POST` `/api/v4/channels/{channel_id}/convert_to_channel` — Convert group message to private channel
+- [ConvertUserToBot](ConvertUserToBot.md) — `POST` `/api/v4/users/{user_id}/convert_to_bot` — Convert a user into a bot
+- [CreateAccessControlPolicy](CreateAccessControlPolicy.md) — `PUT` `/api/v4/access_control_policies` — Create an access control policy
+- [CreateBoard](CreateBoard.md) — `POST` `/api/v4/boards` — Create a board channel
+- [CreateBot](CreateBot.md) — `POST` `/api/v4/bots` — Create a bot
+- [CreateChannel](CreateChannel.md) — `POST` `/api/v4/channels` — Create a channel
+- [CreateChannelBookmark](CreateChannelBookmark.md) — `POST` `/api/v4/channels/{channel_id}/bookmarks` — Create channel bookmark
+- [CreateChannelView](CreateChannelView.md) — `POST` `/api/v4/channels/{channel_id}/views` — Create channel view
+- [CreateCommand](CreateCommand.md) — `POST` `/api/v4/commands` — Create a command
+- [CreateComplianceReport](CreateComplianceReport.md) — `POST` `/api/v4/compliance/reports` — Create report
+- [CreateCPAField](CreateCPAField.md) — `POST` `/api/v4/custom_profile_attributes/fields` — Create a Custom Profile Attribute field
+- [CreateDataRetentionPolicy](CreateDataRetentionPolicy.md) — `POST` `/api/v4/data_retention/policies` — Create a new granular data retention policy
+- [CreateDirectChannel](CreateDirectChannel.md) — `POST` `/api/v4/channels/direct` — Create a direct message channel
+- [CreateEmoji](CreateEmoji.md) — `POST` `/api/v4/emoji` — Create a custom emoji
+- [CreateGroup](CreateGroup.md) — `POST` `/api/v4/groups` — Create a custom group
+- [CreateGroupChannel](CreateGroupChannel.md) — `POST` `/api/v4/channels/group` — Create a group message channel
+- [CreateIncomingWebhook](CreateIncomingWebhook.md) — `POST` `/api/v4/hooks/incoming` — Create an incoming webhook
+- [CreateJob](CreateJob.md) — `POST` `/api/v4/jobs` — Create a new job.
+- [CreateOAuthApp](CreateOAuthApp.md) — `POST` `/api/v4/oauth/apps` — Register OAuth app
+- [CreateOutgoingOAuthConnection](CreateOutgoingOAuthConnection.md) — `POST` `/api/v4/oauth/outgoing_connections` — Create a connection
+- [CreateOutgoingWebhook](CreateOutgoingWebhook.md) — `POST` `/api/v4/hooks/outgoing` — Create an outgoing webhook
+- [createPlaybook](createPlaybook.md) — `POST` `/plugins/playbooks/api/v0/playbooks` — Create a playbook
+- [createPlaybookCondition](createPlaybookCondition.md) — `POST` `/plugins/playbooks/api/v0/playbooks/{id}/conditions` — Create a playbook condition
+- [createPlaybookPropertyField](createPlaybookPropertyField.md) — `POST` `/plugins/playbooks/api/v0/playbooks/{id}/property_fields` — Create a property field for a playbook
+- [createPlaybookRunFromDialog](createPlaybookRunFromDialog.md) — `POST` `/plugins/playbooks/api/v0/runs/dialog` — Create a new playbook run from dialog
+- [createPlaybookRunFromPost](createPlaybookRunFromPost.md) — `POST` `/plugins/playbooks/api/v0/runs` — Create a new playbook run
+- [CreatePost](CreatePost.md) — `POST` `/api/v4/posts` — Create a post
+- [CreatePostEphemeral](CreatePostEphemeral.md) — `POST` `/api/v4/posts/ephemeral` — Create a ephemeral post
+- [CreatePropertyField](CreatePropertyField.md) — `POST` `/api/v4/properties/groups/{group_name}/{object_type}/fields` — Create a property field
+- [CreateRecap](CreateRecap.md) — `POST` `/api/v4/recaps` — Create a channel recap
+- [CreateRemoteCluster](CreateRemoteCluster.md) — `POST` `/api/v4/remotecluster` — Create a new remote cluster.
+- [CreateScheduledPost](CreateScheduledPost.md) — `POST` `/api/v4/posts/schedule` — Creates a scheduled post
+- [CreateScheduledRecap](CreateScheduledRecap.md) — `POST` `/api/v4/scheduled_recaps` — Create a scheduled recap
+- [CreateScheme](CreateScheme.md) — `POST` `/api/v4/schemes` — Create a scheme
+- [CreateSidebarCategoryForTeamForUser](CreateSidebarCategoryForTeamForUser.md) — `POST` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories` — Create user's sidebar category
+- [CreateTeam](CreateTeam.md) — `POST` `/api/v4/teams` — Create a team
+- [CreateTermsOfService](CreateTermsOfService.md) — `POST` `/api/v4/terms_of_service` — Creates a new terms of service
+- [CreateUpload](CreateUpload.md) — `POST` `/api/v4/uploads` — Create an upload
+- [CreateUser](CreateUser.md) — `POST` `/api/v4/users` — Create a user
+- [CreateUserAccessToken](CreateUserAccessToken.md) — `POST` `/api/v4/users/{user_id}/tokens` — Create a user access token
+- [DatabaseRecycle](DatabaseRecycle.md) — `POST` `/api/v4/database/recycle` — Recycle database connections
+- [DeleteAccessControlPolicy](DeleteAccessControlPolicy.md) — `DELETE` `/api/v4/access_control_policies/{policy_id}` — Delete an access control policy
+- [DeleteAcknowledgementForPost](DeleteAcknowledgementForPost.md) — `DELETE` `/api/v4/users/{user_id}/posts/{post_id}/ack` — Delete a post acknowledgement
+- [DeleteAIBridgeTestHelper](DeleteAIBridgeTestHelper.md) — `DELETE` `/api/v4/system/e2e/ai_bridge` — Reset AI bridge E2E test helper
+- [DeleteBrandImage](DeleteBrandImage.md) — `DELETE` `/api/v4/brand/image` — Delete current brand image
+- [DeleteChannel](DeleteChannel.md) — `DELETE` `/api/v4/channels/{channel_id}` — Delete a channel
+- [DeleteChannelBookmark](DeleteChannelBookmark.md) — `DELETE` `/api/v4/channels/{channel_id}/bookmarks/{bookmark_id}` — Delete channel bookmark
+- [DeleteChannelView](DeleteChannelView.md) — `DELETE` `/api/v4/channels/{channel_id}/views/{view_id}` — Delete a channel view
+- [DeleteCommand](DeleteCommand.md) — `DELETE` `/api/v4/commands/{command_id}` — Delete a command
+- [DeleteCPAField](DeleteCPAField.md) — `DELETE` `/api/v4/custom_profile_attributes/fields/{field_id}` — Delete a Custom Profile Attribute field
+- [DeleteDataRetentionPolicy](DeleteDataRetentionPolicy.md) — `DELETE` `/api/v4/data_retention/policies/{policy_id}` — Delete a granular data retention policy
+- [DeleteDraft](DeleteDraft.md) — `DELETE` `/api/v4/users/{user_id}/channels/{channel_id}/drafts` — Delete synced draft
+- [DeleteDraftForThread](DeleteDraftForThread.md) — `DELETE` `/api/v4/users/{user_id}/channels/{channel_id}/drafts/{thread_id}` — Delete synced thread draft
+- [DeleteEmoji](DeleteEmoji.md) — `DELETE` `/api/v4/emoji/{emoji_id}` — Delete a custom emoji
+- [DeleteExport](DeleteExport.md) — `DELETE` `/api/v4/exports/{export_name}` — Delete an export file
+- [DeleteGroup](DeleteGroup.md) — `DELETE` `/api/v4/groups/{group_id}` — Deletes a custom group
+- [DeleteGroupMembers](DeleteGroupMembers.md) — `DELETE` `/api/v4/groups/{group_id}/members` — Removes members from a custom group
+- [DeleteImport](DeleteImport.md) — `DELETE` `/api/v4/imports/{import_name}` — Delete an import file
+- [DeleteIncomingWebhook](DeleteIncomingWebhook.md) — `DELETE` `/api/v4/hooks/incoming/{hook_id}` — Delete an incoming webhook
+- [DeleteLdapPrivateCertificate](DeleteLdapPrivateCertificate.md) — `DELETE` `/api/v4/ldap/certificate/private` — Remove private key
+- [DeleteLdapPublicCertificate](DeleteLdapPublicCertificate.md) — `DELETE` `/api/v4/ldap/certificate/public` — Remove public certificate
+- [DeleteOAuthApp](DeleteOAuthApp.md) — `DELETE` `/api/v4/oauth/apps/{app_id}` — Delete an OAuth app
+- [DeleteOutgoingOAuthConnection](DeleteOutgoingOAuthConnection.md) — `DELETE` `/api/v4/oauth/outgoing_connections/{outgoing_oauth_connection_id}` — Delete a connection
+- [DeleteOutgoingWebhook](DeleteOutgoingWebhook.md) — `DELETE` `/api/v4/hooks/outgoing/{hook_id}` — Delete an outgoing webhook
+- [deletePlaybook](deletePlaybook.md) — `DELETE` `/plugins/playbooks/api/v0/playbooks/{id}` — Delete a playbook
+- [deletePlaybookCondition](deletePlaybookCondition.md) — `DELETE` `/plugins/playbooks/api/v0/playbooks/{id}/conditions/{conditionID}` — Delete a playbook condition
+- [deletePlaybookPropertyField](deletePlaybookPropertyField.md) — `DELETE` `/plugins/playbooks/api/v0/playbooks/{id}/property_fields/{field_id}` — Delete a property field for a playbook
+- [DeletePost](DeletePost.md) — `DELETE` `/api/v4/posts/{post_id}` — Delete a post
+- [DeletePreferences](DeletePreferences.md) — `POST` `/api/v4/users/{user_id}/preferences/delete` — Delete user's preferences
+- [DeletePropertyField](DeletePropertyField.md) — `DELETE` `/api/v4/properties/groups/{group_name}/{object_type}/fields/{field_id}` — Delete a property field
+- [DeleteReaction](DeleteReaction.md) — `DELETE` `/api/v4/users/{user_id}/posts/{post_id}/reactions/{emoji_name}` — Remove a reaction from a post
+- [DeleteRecap](DeleteRecap.md) — `DELETE` `/api/v4/recaps/{recap_id}` — Delete a recap
+- [DeleteRemoteCluster](DeleteRemoteCluster.md) — `DELETE` `/api/v4/remotecluster/{remote_id}` — Delete a remote cluster.
+- [DeleteSamlIdpCertificate](DeleteSamlIdpCertificate.md) — `DELETE` `/api/v4/saml/certificate/idp` — Remove IDP certificate
+- [DeleteSamlPrivateCertificate](DeleteSamlPrivateCertificate.md) — `DELETE` `/api/v4/saml/certificate/private` — Remove private key
+- [DeleteSamlPublicCertificate](DeleteSamlPublicCertificate.md) — `DELETE` `/api/v4/saml/certificate/public` — Remove public certificate
+- [DeleteScheduledPost](DeleteScheduledPost.md) — `DELETE` `/api/v4/posts/schedule/{scheduled_post_id}` — Delete a scheduled post
+- [DeleteScheduledRecap](DeleteScheduledRecap.md) — `DELETE` `/api/v4/scheduled_recaps/{scheduled_recap_id}` — Delete a scheduled recap
+- [DeleteScheme](DeleteScheme.md) — `DELETE` `/api/v4/schemes/{scheme_id}` — Delete a scheme
+- [DeleteUser](DeleteUser.md) — `DELETE` `/api/v4/users/{user_id}` — Deactivate a user account.
+- [DemoteUserToGuest](DemoteUserToGuest.md) — `POST` `/api/v4/users/{user_id}/demote` — Demote a user to a guest
+- [DetachPlugin](DetachPlugin.md) — `POST` `/api/v4/plugins/{plugin_id}/detach` — Detach a reattached plugin process
+- [DisableBot](DisableBot.md) — `POST` `/api/v4/bots/{bot_user_id}/disable` — Disable a bot
+- [DisablePlugin](DisablePlugin.md) — `POST` `/api/v4/plugins/{plugin_id}/disable` — Disable plugin
+- [DisableUserAccessToken](DisableUserAccessToken.md) — `POST` `/api/v4/users/tokens/disable` — Disable personal access token
+- [DoPostAction](DoPostAction.md) — `POST` `/api/v4/posts/{post_id}/actions/{action_id}` — Perform a post action
+- [DownloadComplianceReport](DownloadComplianceReport.md) — `GET` `/api/v4/compliance/reports/{report_id}/download` — Download a report
+- [DownloadExport](DownloadExport.md) — `GET` `/api/v4/exports/{export_name}` — Download an export file
+- [DownloadJob](DownloadJob.md) — `GET` `/api/v4/jobs/{job_id}/download` — Download the results of a job.
+- [DownloadSystemLogs](DownloadSystemLogs.md) — `GET` `/api/v4/logs/download` — Download system logs
+- [EnableBot](EnableBot.md) — `POST` `/api/v4/bots/{bot_user_id}/enable` — Enable a bot
+- [EnablePlugin](EnablePlugin.md) — `POST` `/api/v4/plugins/{plugin_id}/enable` — Enable plugin
+- [EnableUserAccessToken](EnableUserAccessToken.md) — `POST` `/api/v4/users/tokens/enable` — Enable personal access token
+- [endPlaybookRun](endPlaybookRun.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/end` — End a playbook run
+- [endPlaybookRunDialog](endPlaybookRunDialog.md) — `POST` `/plugins/playbooks/api/v0/runs/{id}/end` — End a playbook run from dialog
+- [ExecuteCommand](ExecuteCommand.md) — `POST` `/api/v4/commands/execute` — Execute a command
+- [ExecuteDialogAction](ExecuteDialogAction.md) — `POST` `/api/v4/actions/dialogs/execute` — Execute a dialog action button
+- [finish](finish.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/finish` — Finish a playbook
+- [GenerateCFPostReport](GenerateCFPostReport.md) — `POST` `/api/v4/content_flagging/post/{post_id}/report` — Generate and download a flagged post report
+- [GenerateMfaSecret](GenerateMfaSecret.md) — `POST` `/api/v4/users/{user_id}/mfa/generate` — Generate MFA secret
+- [GenerateRemoteClusterInvite](GenerateRemoteClusterInvite.md) — `POST` `/api/v4/remotecluster/{remote_id}/generate_invite` — Generate invite code.
+- [GenerateSupportPacket](GenerateSupportPacket.md) — `GET` `/api/v4/system/support_packet` — Download a zip file which contains helpful and useful information for troubleshooting your mattermost instance.
+- [GetAccessControlPolicy](GetAccessControlPolicy.md) — `GET` `/api/v4/access_control_policies/{policy_id}` — Get an access control policy
+- [GetAccessControlPolicyAutocompleteFields](GetAccessControlPolicyAutocompleteFields.md) — `GET` `/api/v4/access_control_policies/cel/autocomplete/fields` — Get autocomplete fields for access control policies
+- [GetAgents](GetAgents.md) — `GET` `/api/v4/agents` — Get available agents
+- [GetAgentsStatus](GetAgentsStatus.md) — `GET` `/api/v4/agents/status` — Get agents bridge status
+- [GetAIBridgeTestHelper](GetAIBridgeTestHelper.md) — `GET` `/api/v4/system/e2e/ai_bridge` — Get AI bridge E2E test helper state
+- [GetAllChannels](GetAllChannels.md) — `GET` `/api/v4/channels` — Get a list of all channels
+- [GetAllRoles](GetAllRoles.md) — `GET` `/api/v4/roles` — Get a list of all the roles
+- [GetAllSharedChannels](GetAllSharedChannels.md) — `GET` `/api/v4/sharedchannels/{team_id}` — Get all shared channels for team.
+- [GetAllTeams](GetAllTeams.md) — `GET` `/api/v4/teams` — Get teams
+- [GetAnalyticsOld](GetAnalyticsOld.md) — `GET` `/api/v4/analytics/old` — Get analytics
+- [GetAncillaryPermissionsPost](GetAncillaryPermissionsPost.md) — `POST` `/api/v4/permissions/ancillary` — Return all system console subsection ancillary permissions
+- [GetAppliedSchemaMigrations](GetAppliedSchemaMigrations.md) — `GET` `/api/v4/system/schema/version` — Get applied database schema migrations
+- [GetAudits](GetAudits.md) — `GET` `/api/v4/audits` — Get audits
+- [GetAuthorizationServerMetadata](GetAuthorizationServerMetadata.md) — `GET` `/.well-known/oauth-authorization-server` — Get OAuth 2.0 Authorization Server Metadata
+- [GetAuthorizedOAuthAppsForUser](GetAuthorizedOAuthAppsForUser.md) — `GET` `/api/v4/users/{user_id}/oauth/apps/authorized` — Get authorized OAuth apps
+- [getAutoFollows](getAutoFollows.md) — `GET` `/plugins/playbooks/api/v0/playbooks/{id}/autofollows` — Get the list of followers' user IDs of a playbook
+- [GetBot](GetBot.md) — `GET` `/api/v4/bots/{bot_user_id}` — Get a bot
+- [GetBots](GetBots.md) — `GET` `/api/v4/bots` — Get bots
+- [GetBrandImage](GetBrandImage.md) — `GET` `/api/v4/brand/image` — Get brand image
+- [GetBulkReactions](GetBulkReactions.md) — `POST` `/api/v4/posts/ids/reactions` — Bulk get the reaction for posts
+- [GetCELVisualAST](GetCELVisualAST.md) — `POST` `/api/v4/access_control_policies/cel/visual_ast` — Get the visual AST for a CEL expression
+- [GetCFConfig](GetCFConfig.md) — `GET` `/api/v4/content_flagging/config` — Get the system content flagging configuration
+- [GetCFFields](GetCFFields.md) — `GET` `/api/v4/content_flagging/fields` — Get content flagging property fields
+- [GetCFFlagConfig](GetCFFlagConfig.md) — `GET` `/api/v4/content_flagging/flag/config` — Get content flagging configuration
+- [GetCFPost](GetCFPost.md) — `GET` `/api/v4/content_flagging/post/{post_id}` — Get a flagged post with all its content.
+- [GetCFPostFieldValues](GetCFPostFieldValues.md) — `GET` `/api/v4/content_flagging/post/{post_id}/field_values` — Get content flagging property field values for a post
+- [GetCFTeamStatus](GetCFTeamStatus.md) — `GET` `/api/v4/content_flagging/team/{team_id}/status` — Get content flagging status for a team
+- [GetChannel](GetChannel.md) — `GET` `/api/v4/channels/{channel_id}` — Get a channel
+- [GetChannelAccessControlAttributes](GetChannelAccessControlAttributes.md) — `GET` `/api/v4/channels/{channel_id}/access_control/attributes` — Get access control attributes for a channel
+- [GetChannelByName](GetChannelByName.md) — `GET` `/api/v4/teams/{team_id}/channels/name/{channel_name}` — Get a channel by name
+- [GetChannelByNameForTeamName](GetChannelByNameForTeamName.md) — `GET` `/api/v4/teams/name/{team_name}/channels/name/{channel_name}` — Get a channel by name and team name
+- [GetChannelMember](GetChannelMember.md) — `GET` `/api/v4/channels/{channel_id}/members/{user_id}` — Get channel member
+- [GetChannelMemberCountsByGroup](GetChannelMemberCountsByGroup.md) — `GET` `/api/v4/channels/{channel_id}/member_counts_by_group` — Channel members counts for each group that has atleast one member in the channel
+- [GetChannelMembers](GetChannelMembers.md) — `GET` `/api/v4/channels/{channel_id}/members` — Get channel members
+- [GetChannelMembersByIds](GetChannelMembersByIds.md) — `POST` `/api/v4/channels/{channel_id}/members/ids` — Get channel members by ids
+- [GetChannelMembersForUser](GetChannelMembersForUser.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/channels/members` — Get channel memberships and roles for a user
+- [GetChannelMembersTimezones](GetChannelMembersTimezones.md) — `GET` `/api/v4/channels/{channel_id}/timezones` — Get timezones in a channel
+- [GetChannelMembersWithTeamDataForUser](GetChannelMembersWithTeamDataForUser.md) — `GET` `/api/v4/users/{user_id}/channel_members` — Get all channel members from all teams for a user
+- [GetChannelModerations](GetChannelModerations.md) — `GET` `/api/v4/channels/{channel_id}/moderations` — Get information about channel's moderation.
+- [GetChannelPoliciesForUser](GetChannelPoliciesForUser.md) — `GET` `/api/v4/users/{user_id}/data_retention/channel_policies` — Get the policies which are applied to a user's channels
+- [getChannels](getChannels.md) — `GET` `/plugins/playbooks/api/v0/runs/channels` — Get playbook run channels
+- [GetChannelsForAccessControlPolicy](GetChannelsForAccessControlPolicy.md) — `GET` `/api/v4/access_control_policies/{policy_id}/resources/channels` — Get channels for an access control policy
+- [GetChannelsForRetentionPolicy](GetChannelsForRetentionPolicy.md) — `GET` `/api/v4/data_retention/policies/{policy_id}/channels` — Get the channels for a granular data retention policy
+- [GetChannelsForScheme](GetChannelsForScheme.md) — `GET` `/api/v4/schemes/{scheme_id}/channels` — Get a page of channels which use this scheme.
+- [GetChannelsForTeamForUser](GetChannelsForTeamForUser.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/channels` — Get channels for user
+- [GetChannelsForUser](GetChannelsForUser.md) — `GET` `/api/v4/users/{user_id}/channels` — Get all channels from all teams
+- [GetChannelsMemberCount](GetChannelsMemberCount.md) — `POST` `/api/v4/channels/stats/member_count` — Get member counts for multiple channels
+- [GetChannelStats](GetChannelStats.md) — `GET` `/api/v4/channels/{channel_id}/stats` — Get channel statistics
+- [GetChannelUnread](GetChannelUnread.md) — `GET` `/api/v4/users/{user_id}/channels/{channel_id}/unread` — Get unread messages
+- [GetChannelView](GetChannelView.md) — `GET` `/api/v4/channels/{channel_id}/views/{view_id}` — Get a channel view
+- [getChecklistAutocomplete](getChecklistAutocomplete.md) — `GET` `/plugins/playbooks/api/v0/runs/checklist-autocomplete` — Get autocomplete data for /playbook check
+- [GetClientConfig](GetClientConfig.md) — `GET` `/api/v4/config/client` — Get client configuration
+- [GetClientLicense](GetClientLicense.md) — `GET` `/api/v4/license/client` — Get client license
+- [GetCloudCustomer](GetCloudCustomer.md) — `GET` `/api/v4/cloud/customer` — Get cloud customer
+- [GetCloudLimits](GetCloudLimits.md) — `GET` `/api/v4/cloud/limits` — Get cloud workspace limits
+- [GetCloudProducts](GetCloudProducts.md) — `GET` `/api/v4/cloud/products` — Get cloud products
+- [GetClusterStatus](GetClusterStatus.md) — `GET` `/api/v4/cluster/status` — Get cluster status
+- [GetCommandById](GetCommandById.md) — `GET` `/api/v4/commands/{command_id}` — Get a command
+- [GetComplianceReport](GetComplianceReport.md) — `GET` `/api/v4/compliance/reports/{report_id}` — Get a report
+- [GetComplianceReports](GetComplianceReports.md) — `GET` `/api/v4/compliance/reports` — Get reports
+- [GetConfig](GetConfig.md) — `GET` `/api/v4/config` — Get configuration
+- [GetCPAGroup](GetCPAGroup.md) — `GET` `/api/v4/custom_profile_attributes/group` — Get Custom Profile Attribute property group data
+- [GetDataRetentionPolicies](GetDataRetentionPolicies.md) — `GET` `/api/v4/data_retention/policies` — Get the granular data retention policies
+- [GetDataRetentionPoliciesCount](GetDataRetentionPoliciesCount.md) — `GET` `/api/v4/data_retention/policies_count` — Get the number of granular data retention policies
+- [GetDataRetentionPolicy](GetDataRetentionPolicy.md) — `GET` `/api/v4/data_retention/policy` — Get the global data retention policy
+- [GetDataRetentionPolicyByID](GetDataRetentionPolicyByID.md) — `GET` `/api/v4/data_retention/policies/{policy_id}` — Get a granular data retention policy
+- [GetDefaultProfileImage](GetDefaultProfileImage.md) — `GET` `/api/v4/users/{user_id}/image/default` — Return user's default (generated) profile image
+- [GetDeletedChannelsForTeam](GetDeletedChannelsForTeam.md) — `GET` `/api/v4/teams/{team_id}/channels/deleted` — Get deleted channels
+- [GetDrafts](GetDrafts.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/drafts` — Get synced drafts for a team
+- [GetEditHistoryForPost](GetEditHistoryForPost.md) — `GET` `/api/v4/posts/{post_id}/edit_history` — Get post edit history
+- [GetEmoji](GetEmoji.md) — `GET` `/api/v4/emoji/{emoji_id}` — Get a custom emoji
+- [GetEmojiByName](GetEmojiByName.md) — `GET` `/api/v4/emoji/name/{emoji_name}` — Get a custom emoji by name
+- [GetEmojiImage](GetEmojiImage.md) — `GET` `/api/v4/emoji/{emoji_id}/image` — Get custom emoji image
+- [GetEmojiList](GetEmojiList.md) — `GET` `/api/v4/emoji` — Get a list of custom emoji
+- [GetEmojisByNames](GetEmojisByNames.md) — `POST` `/api/v4/emoji/names` — Get custom emojis by name
+- [GetEndpointForInstallationInformation](GetEndpointForInstallationInformation.md) — `GET` `/api/v4/cloud/installation` — GET endpoint for Installation information
+- [GetEnvironmentConfig](GetEnvironmentConfig.md) — `GET` `/api/v4/config/environment` — Get configuration made through environment variables
+- [GetFile](GetFile.md) — `GET` `/api/v4/files/{file_id}` — Get a file
+- [GetFileInfo](GetFileInfo.md) — `GET` `/api/v4/files/{file_id}/info` — Get metadata for a file
+- [GetFileInfosForPost](GetFileInfosForPost.md) — `GET` `/api/v4/posts/{post_id}/files/info` — Get file info for post
+- [GetFileLink](GetFileLink.md) — `GET` `/api/v4/files/{file_id}/link` — Get a public file link
+- [GetFilePreview](GetFilePreview.md) — `GET` `/api/v4/files/{file_id}/preview` — Get a file's preview
+- [GetFilePublic](GetFilePublic.md) — `GET` `/files/{file_id}/public` — Get a public file
+- [GetFileThumbnail](GetFileThumbnail.md) — `GET` `/api/v4/files/{file_id}/thumbnail` — Get a file's thumbnail
+- [GetFlaggedPostsForUser](GetFlaggedPostsForUser.md) — `GET` `/api/v4/users/{user_id}/posts/flagged` — Get a list of flagged posts
+- [GetGroup](GetGroup.md) — `GET` `/api/v4/groups/{group_id}` — Get a group
+- [GetGroupMessageMembersCommonTeams](GetGroupMessageMembersCommonTeams.md) — `GET` `/api/v4/channels/{channel_id}/common_teams` — Get common teams for members of a Group Message.
+- [GetGroups](GetGroups.md) — `GET` `/api/v4/groups` — Get groups
+- [GetGroupsAssociatedToChannelsByTeam](GetGroupsAssociatedToChannelsByTeam.md) — `GET` `/api/v4/teams/{team_id}/groups_by_channels` — Get team groups by channels
+- [GetGroupsByChannel](GetGroupsByChannel.md) — `GET` `/api/v4/channels/{channel_id}/groups` — Get channel groups
+- [GetGroupsByNames](GetGroupsByNames.md) — `POST` `/api/v4/groups/names` — Get groups by name
+- [GetGroupsByTeam](GetGroupsByTeam.md) — `GET` `/api/v4/teams/{team_id}/groups` — Get team groups
+- [GetGroupsByUserId](GetGroupsByUserId.md) — `GET` `/api/v4/users/{user_id}/groups` — Get groups for a userId
+- [GetGroupStats](GetGroupStats.md) — `GET` `/api/v4/groups/{group_id}/stats` — Get group stats
+- [GetGroupSyncableForChannelId](GetGroupSyncableForChannelId.md) — `GET` `/api/v4/groups/{group_id}/channels/{channel_id}` — Get a channel syncable for a group
+- [GetGroupSyncableForTeamId](GetGroupSyncableForTeamId.md) — `GET` `/api/v4/groups/{group_id}/teams/{team_id}` — Get a team syncable for a group
+- [GetGroupSyncablesChannels](GetGroupSyncablesChannels.md) — `GET` `/api/v4/groups/{group_id}/channels` — Get channel syncables for a group
+- [GetGroupSyncablesTeams](GetGroupSyncablesTeams.md) — `GET` `/api/v4/groups/{group_id}/teams` — Get team syncables for a group
+- [GetGroupUsers](GetGroupUsers.md) — `GET` `/api/v4/groups/{group_id}/members` — Get group users
+- [GetImageByUrl](GetImageByUrl.md) — `GET` `/api/v4/image` — Get an image by url
+- [GetIncomingWebhook](GetIncomingWebhook.md) — `GET` `/api/v4/hooks/incoming/{hook_id}` — Get an incoming webhook
+- [GetIncomingWebhooks](GetIncomingWebhooks.md) — `GET` `/api/v4/hooks/incoming` — List incoming webhooks
+- [GetInvoiceForSubscriptionAsPdf](GetInvoiceForSubscriptionAsPdf.md) — `GET` `/api/v4/cloud/subscription/invoices/{invoice_id}/pdf` — Get cloud invoice PDF
+- [GetInvoicesForSubscription](GetInvoicesForSubscription.md) — `GET` `/api/v4/cloud/subscription/invoices` — Get cloud subscription invoices
+- [GetIPFilters](GetIPFilters.md) — `GET` `/api/v4/ip_filtering` — Get all IP filters
+- [GetJob](GetJob.md) — `GET` `/api/v4/jobs/{job_id}` — Get a job.
+- [GetJobs](GetJobs.md) — `GET` `/api/v4/jobs` — Get the jobs.
+- [GetJobsByType](GetJobsByType.md) — `GET` `/api/v4/jobs/type/{job_type}` — Get the jobs of the given type.
+- [GetKnownUsers](GetKnownUsers.md) — `GET` `/api/v4/users/known` — Get user IDs of known users
+- [GetLatestVersion](GetLatestVersion.md) — `GET` `/api/v4/latest_version` — Get latest public server release information
+- [GetLdapGroups](GetLdapGroups.md) — `GET` `/api/v4/ldap/groups` — Returns a list of LDAP groups
+- [GetLicenseLoadMetric](GetLicenseLoadMetric.md) — `GET` `/api/v4/license/load_metric` — Get license load metric
+- [GetLLMServices](GetLLMServices.md) — `GET` `/api/v4/llmservices` — Get available LLM services
+- [GetLoginType](GetLoginType.md) — `POST` `/api/v4/users/login/type` — Get login authentication type
+- [GetLogs](GetLogs.md) — `GET` `/api/v4/logs` — Get logs
+- [GetManagedCategories](GetManagedCategories.md) — `GET` `/api/v4/teams/{team_id}/channels/managed_categories` — Get managed category mappings
+- [GetMarketplacePlugins](GetMarketplacePlugins.md) — `GET` `/api/v4/plugins/marketplace` — Gets all the marketplace plugins
+- [GetMarketplaceVisitedByAdmin](GetMarketplaceVisitedByAdmin.md) — `GET` `/api/v4/plugins/marketplace/first_admin_visit` — Get if the Plugin Marketplace has been visited by at least an admin.
+- [GetNonCompliantUserAccessTokenCount](GetNonCompliantUserAccessTokenCount.md) — `GET` `/api/v4/users/tokens/non_compliant/count` — Count non-compliant personal access tokens
+- [GetNotices](GetNotices.md) — `GET` `/api/v4/system/notices/{team_id}` — Get notices for logged in user in specified team
+- [GetOAuthApp](GetOAuthApp.md) — `GET` `/api/v4/oauth/apps/{app_id}` — Get an OAuth app
+- [GetOAuthAppInfo](GetOAuthAppInfo.md) — `GET` `/api/v4/oauth/apps/{app_id}/info` — Get info on an OAuth app
+- [GetOAuthApps](GetOAuthApps.md) — `GET` `/api/v4/oauth/apps` — Get OAuth apps
+- [GetOnboardingComplete](GetOnboardingComplete.md) — `GET` `/api/v4/system/onboarding/complete` — Get first admin onboarding completion status
+- [GetOutgoingOAuthConnection](GetOutgoingOAuthConnection.md) — `GET` `/api/v4/oauth/outgoing_connections/{outgoing_oauth_connection_id}` — Get a connection
+- [GetOutgoingWebhook](GetOutgoingWebhook.md) — `GET` `/api/v4/hooks/outgoing/{hook_id}` — Get an outgoing webhook
+- [GetOutgoingWebhooks](GetOutgoingWebhooks.md) — `GET` `/api/v4/hooks/outgoing` — List outgoing webhooks
+- [getOwners](getOwners.md) — `GET` `/plugins/playbooks/api/v0/runs/owners` — Get all owners
+- [GetPing](GetPing.md) — `GET` `/api/v4/system/ping` — Check system health
+- [GetPinnedPosts](GetPinnedPosts.md) — `GET` `/api/v4/channels/{channel_id}/pinned` — Get a channel's pinned posts
+- [getPlaybook](getPlaybook.md) — `GET` `/plugins/playbooks/api/v0/playbooks/{id}` — Get a playbook
+- [getPlaybookConditions](getPlaybookConditions.md) — `GET` `/plugins/playbooks/api/v0/playbooks/{id}/conditions` — List playbook conditions
+- [getPlaybookPropertyFields](getPlaybookPropertyFields.md) — `GET` `/plugins/playbooks/api/v0/playbooks/{id}/property_fields` — Get property fields for a playbook
+- [getPlaybookRun](getPlaybookRun.md) — `GET` `/plugins/playbooks/api/v0/runs/{id}` — Get a playbook run
+- [getPlaybookRunByChannelId](getPlaybookRunByChannelId.md) — `GET` `/plugins/playbooks/api/v0/runs/channel/{channel_id}` — Find playbook run by channel ID
+- [getPlaybookRunMetadata](getPlaybookRunMetadata.md) — `GET` `/plugins/playbooks/api/v0/runs/{id}/metadata` — Get playbook run metadata
+- [getPlaybooks](getPlaybooks.md) — `GET` `/plugins/playbooks/api/v0/playbooks` — List all playbooks
+- [GetPlugins](GetPlugins.md) — `GET` `/api/v4/plugins` — Get plugins
+- [GetPluginStatuses](GetPluginStatuses.md) — `GET` `/api/v4/plugins/statuses` — Get plugins status
+- [GetPost](GetPost.md) — `GET` `/api/v4/posts/{post_id}` — Get a post
+- [GetPostInfo](GetPostInfo.md) — `GET` `/api/v4/posts/{post_id}/info` — Get post info
+- [GetPostsAroundLastUnread](GetPostsAroundLastUnread.md) — `GET` `/api/v4/users/{user_id}/channels/{channel_id}/posts/unread` — Get posts around oldest unread
+- [getPostsByIds](getPostsByIds.md) — `POST` `/api/v4/posts/ids` — Get posts by a list of ids
+- [GetPostsForChannel](GetPostsForChannel.md) — `GET` `/api/v4/channels/{channel_id}/posts` — Get posts for a channel
+- [GetPostsForReporting](GetPostsForReporting.md) — `POST` `/api/v4/reports/posts` — Get posts for reporting and compliance purposes using cursor-based pagination
+- [GetPostsForView](GetPostsForView.md) — `GET` `/api/v4/channels/{channel_id}/views/{view_id}/posts` — Get posts for a view
+- [GetPostsUsage](GetPostsUsage.md) — `GET` `/api/v4/usage/posts` — Get current usage of posts
+- [GetPostThread](GetPostThread.md) — `GET` `/api/v4/posts/{post_id}/thread` — Get a thread
+- [GetPreferences](GetPreferences.md) — `GET` `/api/v4/users/{user_id}/preferences` — Get the user's preferences
+- [GetPreferencesByCategory](GetPreferencesByCategory.md) — `GET` `/api/v4/users/{user_id}/preferences/{category}` — List a user's preferences by category
+- [GetPreferencesByCategoryByName](GetPreferencesByCategoryByName.md) — `GET` `/api/v4/users/{user_id}/preferences/{category}/name/{preference_name}` — Get a specific user preference
+- [GetPreviewModalData](GetPreviewModalData.md) — `GET` `/api/v4/cloud/preview/modal_data` — Get cloud preview modal data
+- [GetPrevTrialLicense](GetPrevTrialLicense.md) — `GET` `/api/v4/trial-license/prev` — Get last trial license used
+- [GetPrivateChannelsForTeam](GetPrivateChannelsForTeam.md) — `GET` `/api/v4/teams/{team_id}/channels/private` — Get private channels
+- [GetProfileImage](GetProfileImage.md) — `GET` `/api/v4/users/{user_id}/image` — Get user's profile image
+- [GetPropertyFields](GetPropertyFields.md) — `GET` `/api/v4/properties/groups/{group_name}/{object_type}/fields` — Get property fields
+- [GetPropertyValues](GetPropertyValues.md) — `GET` `/api/v4/properties/groups/{group_name}/{object_type}/values/{target_id}` — Get property values for a target
+- [GetPublicChannelsByIdsForTeam](GetPublicChannelsByIdsForTeam.md) — `POST` `/api/v4/teams/{team_id}/channels/ids` — Get a list of channels by ids
+- [GetPublicChannelsForTeam](GetPublicChannelsForTeam.md) — `GET` `/api/v4/teams/{team_id}/channels` — Get public channels
+- [GetReactions](GetReactions.md) — `GET` `/api/v4/posts/{post_id}/reactions` — Get a list of reactions to a post
+- [GetRecap](GetRecap.md) — `GET` `/api/v4/recaps/{recap_id}` — Get a specific recap
+- [GetRecapLimitStatus](GetRecapLimitStatus.md) — `GET` `/api/v4/recaps/limit_status` — Get recap limit status for the current user
+- [GetRecapsForUser](GetRecapsForUser.md) — `GET` `/api/v4/recaps` — Get current user's recaps
+- [GetRecommendedChannelsForTeam](GetRecommendedChannelsForTeam.md) — `GET` `/api/v4/teams/{team_id}/channels/recommended` — Get recommended public channels for the current user
+- [GetRedirectLocation](GetRedirectLocation.md) — `GET` `/api/v4/redirect_location` — Get redirect location
+- [GetRemoteCluster](GetRemoteCluster.md) — `GET` `/api/v4/remotecluster/{remote_id}` — Get a remote cluster.
+- [GetRemoteClusterInfo](GetRemoteClusterInfo.md) — `GET` `/api/v4/sharedchannels/remote_info/{remote_id}` — Get remote cluster info by ID for user.
+- [GetRemoteClusters](GetRemoteClusters.md) — `GET` `/api/v4/remotecluster` — Get a list of remote clusters.
+- [GetRole](GetRole.md) — `GET` `/api/v4/roles/{role_id}` — Get a role
+- [GetRoleByName](GetRoleByName.md) — `GET` `/api/v4/roles/name/{role_name}` — Get a role
+- [GetRolesByNames](GetRolesByNames.md) — `POST` `/api/v4/roles/names` — Get a list of roles by name
+- [getRunConditions](getRunConditions.md) — `GET` `/plugins/playbooks/api/v0/runs/{id}/conditions` — List run conditions
+- [getRunPropertyFields](getRunPropertyFields.md) — `GET` `/plugins/playbooks/api/v0/runs/{id}/property_fields` — Get property fields for a playbook run
+- [getRunPropertyValues](getRunPropertyValues.md) — `GET` `/plugins/playbooks/api/v0/runs/{id}/property_values` — Get property values for a playbook run
+- [GetSamlCertificateStatus](GetSamlCertificateStatus.md) — `GET` `/api/v4/saml/certificate/status` — Get certificate status
+- [GetSamlMetadata](GetSamlMetadata.md) — `GET` `/api/v4/saml/metadata` — Get metadata
+- [GetSamlMetadataFromIdp](GetSamlMetadataFromIdp.md) — `POST` `/api/v4/saml/metadatafromidp` — Get metadata from Identity Provider
+- [GetScheduledRecap](GetScheduledRecap.md) — `GET` `/api/v4/scheduled_recaps/{scheduled_recap_id}` — Get a scheduled recap
+- [GetScheduledRecaps](GetScheduledRecaps.md) — `GET` `/api/v4/scheduled_recaps` — Get current user's scheduled recaps
+- [GetScheme](GetScheme.md) — `GET` `/api/v4/schemes/{scheme_id}` — Get a scheme
+- [GetSchemes](GetSchemes.md) — `GET` `/api/v4/schemes` — Get the schemes.
+- [GetServerBusyExpires](GetServerBusyExpires.md) — `GET` `/api/v4/server_busy` — Get server busy expiry time.
+- [GetServerLimits](GetServerLimits.md) — `GET` `/api/v4/limits/server` — Gets the server limits for the server
+- [GetSessionAttributesManifest](GetSessionAttributesManifest.md) — `GET` `/api/v4/users/sessions/attributes/manifest` — Get the session attributes manifest
+- [GetSessions](GetSessions.md) — `GET` `/api/v4/users/{user_id}/sessions` — Get user's sessions
+- [GetSharedChannelRemotes](GetSharedChannelRemotes.md) — `GET` `/api/v4/sharedchannels/{channel_id}/remotes` — Get remote clusters for a shared channel
+- [GetSharedChannelRemotesByRemoteCluster](GetSharedChannelRemotesByRemoteCluster.md) — `GET` `/api/v4/remotecluster/{remote_id}/sharedchannelremotes` — Get shared channel remotes by remote cluster.
+- [GetSidebarCategoriesForTeamForUser](GetSidebarCategoriesForTeamForUser.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories` — Get user's sidebar categories
+- [GetSidebarCategoryForTeamForUser](GetSidebarCategoryForTeamForUser.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories/{category_id}` — Get sidebar category
+- [GetSidebarCategoryOrderForTeamForUser](GetSidebarCategoryOrderForTeamForUser.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories/order` — Get user's sidebar category order
+- [GetStorageUsage](GetStorageUsage.md) — `GET` `/api/v4/usage/storage` — Get the total file storage usage for the instance in bytes.
+- [GetSubscription](GetSubscription.md) — `GET` `/api/v4/cloud/subscription` — Get cloud subscription
+- [GetSupportedTimezone](GetSupportedTimezone.md) — `GET` `/api/v4/system/timezones` — Retrieve a list of supported timezones
+- [GetSystemPropertyValues](GetSystemPropertyValues.md) — `GET` `/api/v4/properties/groups/{group_name}/system/values` — Get property values for the system
+- [GetTeam](GetTeam.md) — `GET` `/api/v4/teams/{team_id}` — Get a team
+- [GetTeamAccessControlAttributes](GetTeamAccessControlAttributes.md) — `GET` `/api/v4/teams/{team_id}/access_control/attributes` — Get the access control attributes governing a team
+- [GetTeamAccessControlPolicy](GetTeamAccessControlPolicy.md) — `GET` `/api/v4/teams/{team_id}/access_control/policy` — Get the access control policy for a team
+- [GetTeamByName](GetTeamByName.md) — `GET` `/api/v4/teams/name/{team_name}` — Get a team by name
+- [GetTeamIcon](GetTeamIcon.md) — `GET` `/api/v4/teams/{team_id}/image` — Get the team icon
+- [GetTeamInviteInfo](GetTeamInviteInfo.md) — `GET` `/api/v4/teams/invite/{invite_id}` — Get invite info for a team
+- [GetTeamMember](GetTeamMember.md) — `GET` `/api/v4/teams/{team_id}/members/{user_id}` — Get a team member
+- [GetTeamMembers](GetTeamMembers.md) — `GET` `/api/v4/teams/{team_id}/members` — Get team members
+- [GetTeamMembersByIds](GetTeamMembersByIds.md) — `POST` `/api/v4/teams/{team_id}/members/ids` — Get team members by ids
+- [GetTeamMembersForUser](GetTeamMembersForUser.md) — `GET` `/api/v4/users/{user_id}/teams/members` — Get team members for a user
+- [GetTeamPoliciesForUser](GetTeamPoliciesForUser.md) — `GET` `/api/v4/users/{user_id}/data_retention/team_policies` — Get the policies which are applied to a user's teams
+- [GetTeamsForRetentionPolicy](GetTeamsForRetentionPolicy.md) — `GET` `/api/v4/data_retention/policies/{policy_id}/teams` — Get the teams for a granular data retention policy
+- [GetTeamsForScheme](GetTeamsForScheme.md) — `GET` `/api/v4/schemes/{scheme_id}/teams` — Get a page of teams which use this scheme.
+- [GetTeamsForUser](GetTeamsForUser.md) — `GET` `/api/v4/users/{user_id}/teams` — Get a user's teams
+- [GetTeamStats](GetTeamStats.md) — `GET` `/api/v4/teams/{team_id}/stats` — Get a team stats
+- [GetTeamsUnreadForUser](GetTeamsUnreadForUser.md) — `GET` `/api/v4/users/{user_id}/teams/unread` — Get team unreads for a user
+- [GetTeamsUsage](GetTeamsUsage.md) — `GET` `/api/v4/usage/teams` — Get current usage of teams
+- [GetTeamUnread](GetTeamUnread.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/unread` — Get unreads for a team
+- [GetTermsOfService](GetTermsOfService.md) — `GET` `/api/v4/terms_of_service` — Get latest terms of service
+- [GetTotalUsersStats](GetTotalUsersStats.md) — `GET` `/api/v4/users/stats` — Get total count of users in the system
+- [GetTotalUsersStatsFiltered](GetTotalUsersStatsFiltered.md) — `GET` `/api/v4/users/stats/filtered` — Get total count of users in the system matching the specified filters
+- [GetUpload](GetUpload.md) — `GET` `/api/v4/uploads/{upload_id}` — Get an upload session
+- [GetUploadsForUser](GetUploadsForUser.md) — `GET` `/api/v4/users/{user_id}/uploads` — Get uploads for a user
+- [GetUser](GetUser.md) — `GET` `/api/v4/users/{user_id}` — Get a user
+- [GetUserAccessToken](GetUserAccessToken.md) — `GET` `/api/v4/users/tokens/{token_id}` — Get a user access token
+- [GetUserAccessTokens](GetUserAccessTokens.md) — `GET` `/api/v4/users/tokens` — Get user access tokens
+- [GetUserAccessTokensForUser](GetUserAccessTokensForUser.md) — `GET` `/api/v4/users/{user_id}/tokens` — Get user access tokens
+- [GetUserAudits](GetUserAudits.md) — `GET` `/api/v4/users/{user_id}/audits` — Get user's audits
+- [GetUserByAuthData](GetUserByAuthData.md) — `GET` `/api/v4/users/auth_data` — Get a user by auth data
+- [GetUserByEmail](GetUserByEmail.md) — `GET` `/api/v4/users/email/{email}` — Get a user by email
+- [GetUserByUsername](GetUserByUsername.md) — `GET` `/api/v4/users/username/{username}` — Get a user by username
+- [GetUserCountForReporting](GetUserCountForReporting.md) — `GET` `/api/v4/reports/users/count` — Gets the full count of users that match the filter.
+- [GetUsers](GetUsers.md) — `GET` `/api/v4/users` — Get users
+- [GetUsersByGroupChannelIds](GetUsersByGroupChannelIds.md) — `POST` `/api/v4/users/group_channels` — Get users by group channels ids
+- [GetUsersByIds](GetUsersByIds.md) — `POST` `/api/v4/users/ids` — Get users by ids
+- [GetUsersByUsernames](GetUsersByUsernames.md) — `POST` `/api/v4/users/usernames` — Get users by usernames
+- [GetUserScheduledPosts](GetUserScheduledPosts.md) — `GET` `/api/v4/posts/scheduled/team/{team_id}` — Gets all scheduled posts for a user for the specified team..
+- [GetUsersForReporting](GetUsersForReporting.md) — `GET` `/api/v4/reports/users` — Get a list of paged and sorted users for admin reporting purposes
+- [GetUsersStatusesByIds](GetUsersStatusesByIds.md) — `POST` `/api/v4/users/status/ids` — Get user statuses by id
+- [GetUserStatus](GetUserStatus.md) — `GET` `/api/v4/users/{user_id}/status` — Get user status
+- [GetUsersWithInvalidEmails](GetUsersWithInvalidEmails.md) — `GET` `/api/v4/users/invalid_emails` — Get users with invalid emails
+- [GetUserTermsOfService](GetUserTermsOfService.md) — `GET` `/api/v4/users/{user_id}/terms_of_service` — Fetches user's latest terms of service action if the latest action was for acceptance.
+- [GetUserThread](GetUserThread.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/threads/{thread_id}` — Get a thread followed by the user
+- [GetUserThreads](GetUserThreads.md) — `GET` `/api/v4/users/{user_id}/teams/{team_id}/threads` — Get all threads that user is following
+- [GetWebappPlugins](GetWebappPlugins.md) — `GET` `/api/v4/plugins/webapp` — Get webapp plugins
+- [HeadFile](HeadFile.md) — `HEAD` `/api/v4/files/{file_id}` — Get file metadata headers
+- [HeadFilePreview](HeadFilePreview.md) — `HEAD` `/api/v4/files/{file_id}/preview` — Get preview metadata headers
+- [HeadFilePublic](HeadFilePublic.md) — `HEAD` `/files/{file_id}/public` — Get public file metadata headers
+- [HeadFileThumbnail](HeadFileThumbnail.md) — `HEAD` `/api/v4/files/{file_id}/thumbnail` — Get thumbnail metadata headers
+- [HostedCustomerSignupAvailable](HostedCustomerSignupAvailable.md) — `GET` `/api/v4/hosted_customer/signup_available` — Check hosted signup availability
+- [ImportTeam](ImportTeam.md) — `POST` `/api/v4/teams/{team_id}/import` — Import a Team from other application
+- [InstallMarketplacePlugin](InstallMarketplacePlugin.md) — `POST` `/api/v4/plugins/marketplace` — Installs a marketplace plugin
+- [InstallPluginFromUrl](InstallPluginFromUrl.md) — `POST` `/api/v4/plugins/install_from_url` — Install plugin from url
+- [InvalidateCaches](InvalidateCaches.md) — `POST` `/api/v4/caches/invalidate` — Invalidate all the caches
+- [InvalidateEmailInvites](InvalidateEmailInvites.md) — `DELETE` `/api/v4/teams/invites/email` — Invalidate active email invitations
+- [InviteGuestsToTeam](InviteGuestsToTeam.md) — `POST` `/api/v4/teams/{team_id}/invite-guests/email` — Invite guests to the team by email
+- [InviteRemoteClusterToChannel](InviteRemoteClusterToChannel.md) — `POST` `/api/v4/remotecluster/{remote_id}/channels/{channel_id}/invite` — Invites a remote cluster to a channel.
+- [InviteUsersToTeam](InviteUsersToTeam.md) — `POST` `/api/v4/teams/{team_id}/invite/email` — Invite users to the team by email
+- [IsAllowedToUpgradeToEnterprise](IsAllowedToUpgradeToEnterprise.md) — `GET` `/api/v4/upgrade_to_enterprise/allowed` — Check if the user is allowed to upgrade to Enterprise Edition
+- [itemDelete](itemDelete.md) — `DELETE` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/item/{item}` — Delete an item of a playbook run's checklist
+- [itemRename](itemRename.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/item/{item}` — Update an item of a playbook run's checklist
+- [itemRun](itemRun.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/item/{item}/run` — Run an item's slash command
+- [itemSetAssignee](itemSetAssignee.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/item/{item}/assignee` — Update the assignee of an item
+- [itemSetState](itemSetState.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/item/{item}/state` — Update the state of an item
+- [KeepCFPost](KeepCFPost.md) — `PUT` `/api/v4/content_flagging/post/{post_id}/keep` — Keep a flagged post
+- [LinkGroupSyncableForChannel](LinkGroupSyncableForChannel.md) — `POST` `/api/v4/groups/{group_id}/channels/{channel_id}/link` — Link a channel to a group
+- [LinkGroupSyncableForTeam](LinkGroupSyncableForTeam.md) — `POST` `/api/v4/groups/{group_id}/teams/{team_id}/link` — Link a team to a group
+- [LinkLdapGroup](LinkLdapGroup.md) — `POST` `/api/v4/ldap/groups/{remote_id}/link` — Link a LDAP group
+- [ListAllCPAFields](ListAllCPAFields.md) — `GET` `/api/v4/custom_profile_attributes/fields` — List all the Custom Profile Attributes fields
+- [ListAutocompleteCommands](ListAutocompleteCommands.md) — `GET` `/api/v4/teams/{team_id}/commands/autocomplete` — List autocomplete commands
+- [ListChannelBookmarksForChannel](ListChannelBookmarksForChannel.md) — `GET` `/api/v4/channels/{channel_id}/bookmarks` — Get channel bookmarks for Channel
+- [ListChannelViews](ListChannelViews.md) — `GET` `/api/v4/channels/{channel_id}/views` — List channel views
+- [ListCommandAutocompleteSuggestions](ListCommandAutocompleteSuggestions.md) — `GET` `/api/v4/teams/{team_id}/commands/autocomplete_suggestions` — List commands' autocomplete data
+- [ListCommands](ListCommands.md) — `GET` `/api/v4/commands` — List commands for a team
+- [ListCPAValues](ListCPAValues.md) — `GET` `/api/v4/users/{user_id}/custom_profile_attributes` — List Custom Profile Attribute values
+- [ListExports](ListExports.md) — `GET` `/api/v4/exports` — List export files
+- [ListImports](ListImports.md) — `GET` `/api/v4/imports` — List import files
+- [ListOutgoingOAuthConnections](ListOutgoingOAuthConnections.md) — `GET` `/api/v4/oauth/outgoing_connections` — List all connections
+- [listPlaybookRuns](listPlaybookRuns.md) — `GET` `/plugins/playbooks/api/v0/runs` — List all playbook runs
+- [Login](Login.md) — `POST` `/api/v4/users/login` — Login to Mattermost server
+- [LoginByCwsToken](LoginByCwsToken.md) — `POST` `/api/v4/users/login/cws` — Auto-Login to Mattermost server using CWS token
+- [LoginIntune](LoginIntune.md) — `POST` `/oauth/intune` — Login with Microsoft Intune MAM
+- [LoginSSOCodeExchange](LoginSSOCodeExchange.md) — `POST` `/api/v4/users/login/sso/code-exchange` — Exchange SSO login code for session tokens
+- [LoginWithDesktopToken](LoginWithDesktopToken.md) — `POST` `/api/v4/users/login/desktop_token` — Login using desktop token
+- [Logout](Logout.md) — `POST` `/api/v4/users/logout` — Logout from the Mattermost server
+- [LookupInteractiveDialog](LookupInteractiveDialog.md) — `POST` `/api/v4/actions/dialogs/lookup` — Lookup dialog elements
+- [ManualTest](ManualTest.md) — `GET` `/manualtest` — Run manual testing helpers
+- [MarkAllDirectMessagesRead](MarkAllDirectMessagesRead.md) — `PUT` `/api/v4/channels/members/{user_id}/direct/read` — Mark all direct and group messages as read
+- [MarkAllTeamChannelsRead](MarkAllTeamChannelsRead.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/read` — Mark all channels and threads in a team as read
+- [MarkChannelsReadForUser](MarkChannelsReadForUser.md) — `POST` `/api/v4/channels/members/{user_id}/mark_read` — Mark multiple channels as read
+- [MarkNoticesViewed](MarkNoticesViewed.md) — `PUT` `/api/v4/system/notices/view` — Update notices as 'viewed'
+- [MarkRecapAsRead](MarkRecapAsRead.md) — `POST` `/api/v4/recaps/{recap_id}/read` — Mark a recap as read
+- [MarkRecapsAsViewed](MarkRecapsAsViewed.md) — `POST` `/api/v4/recaps/mark_viewed` — Mark all of the authenticated user's finished recaps as viewed
+- [MigrateAuthToLdap](MigrateAuthToLdap.md) — `POST` `/api/v4/users/migrate_auth/ldap` — Migrate user accounts authentication type to LDAP.
+- [MigrateAuthToSaml](MigrateAuthToSaml.md) — `POST` `/api/v4/users/migrate_auth/saml` — Migrate user accounts authentication type to SAML.
+- [MigrateConfig](MigrateConfig.md) — `POST` `/api/v4/config/migrate` — Migrate config storage
+- [MigrateIdLdap](MigrateIdLdap.md) — `POST` `/api/v4/ldap/migrateid` — Migrate Id LDAP
+- [MoveChannel](MoveChannel.md) — `POST` `/api/v4/channels/{channel_id}/move` — Move a channel
+- [MoveCommand](MoveCommand.md) — `PUT` `/api/v4/commands/{command_id}/move` — Move a command
+- [MoveThread](MoveThread.md) — `POST` `/api/v4/posts/{post_id}/move` — Move a post (and any posts within that post's thread)
+- [MyIP](MyIP.md) — `GET` `/api/v4/ip_filtering/my_ip` — Get all IP filters
+- [nextStageDialog](nextStageDialog.md) — `POST` `/plugins/playbooks/api/v0/runs/{id}/next-stage-dialog` — Go to next stage from dialog
+- [NotifyAdmin](NotifyAdmin.md) — `POST` `/api/v4/users/notify-admin` — Save notify-admin intent
+- [OpenInteractiveDialog](OpenInteractiveDialog.md) — `POST` `/api/v4/actions/dialogs/open` — Open a dialog
+- [PatchBot](PatchBot.md) — `PUT` `/api/v4/bots/{bot_user_id}` — Patch a bot
+- [PatchChannel](PatchChannel.md) — `PUT` `/api/v4/channels/{channel_id}/patch` — Patch a channel
+- [PatchChannelModerations](PatchChannelModerations.md) — `PUT` `/api/v4/channels/{channel_id}/moderations/patch` — Update a channel's moderation settings.
+- [PatchConfig](PatchConfig.md) — `PUT` `/api/v4/config/patch` — Patch configuration
+- [PatchCPAField](PatchCPAField.md) — `PATCH` `/api/v4/custom_profile_attributes/fields/{field_id}` — Patch a Custom Profile Attribute field
+- [PatchCPAValues](PatchCPAValues.md) — `PATCH` `/api/v4/custom_profile_attributes/values` — Patch Custom Profile Attribute values
+- [PatchCPAValuesForUser](PatchCPAValuesForUser.md) — `PATCH` `/api/v4/users/{user_id}/custom_profile_attributes` — Update custom profile attribute values for a user
+- [PatchDataRetentionPolicy](PatchDataRetentionPolicy.md) — `PATCH` `/api/v4/data_retention/policies/{policy_id}` — Patch a granular data retention policy
+- [PatchGroup](PatchGroup.md) — `PUT` `/api/v4/groups/{group_id}/patch` — Patch a group
+- [PatchGroupSyncableForChannel](PatchGroupSyncableForChannel.md) — `PUT` `/api/v4/groups/{group_id}/channels/{channel_id}/patch` — Patch a channel syncable for a group
+- [PatchGroupSyncableForTeam](PatchGroupSyncableForTeam.md) — `PUT` `/api/v4/groups/{group_id}/teams/{team_id}/patch` — Patch a team syncable for a group
+- [PatchPost](PatchPost.md) — `PUT` `/api/v4/posts/{post_id}/patch` — Patch a post
+- [PatchRemoteCluster](PatchRemoteCluster.md) — `PATCH` `/api/v4/remotecluster/{remote_id}` — Patch a remote cluster.
+- [PatchRole](PatchRole.md) — `PUT` `/api/v4/roles/{role_id}/patch` — Patch a role
+- [PatchScheme](PatchScheme.md) — `PUT` `/api/v4/schemes/{scheme_id}/patch` — Patch a scheme
+- [PatchTeam](PatchTeam.md) — `PUT` `/api/v4/teams/{team_id}/patch` — Patch a team
+- [PatchUser](PatchUser.md) — `PUT` `/api/v4/users/{user_id}/patch` — Patch a user
+- [PauseScheduledRecap](PauseScheduledRecap.md) — `POST` `/api/v4/scheduled_recaps/{scheduled_recap_id}/pause` — Pause a scheduled recap
+- [PermanentDeleteAllUsers](PermanentDeleteAllUsers.md) — `DELETE` `/api/v4/users` — Permanent delete all users
+- [PinPost](PinPost.md) — `POST` `/api/v4/posts/{post_id}/pin` — Pin a post to the channel
+- [PostCFPostFlag](PostCFPostFlag.md) — `POST` `/api/v4/content_flagging/post/{post_id}/flag` — Flag a post
+- [PostCFPostReviewer](PostCFPostReviewer.md) — `POST` `/api/v4/content_flagging/post/{post_id}/assign/{content_reviewer_id}` — Assign a content reviewer to a flagged post
+- [PostEndpointForCwsWebhooks](PostEndpointForCwsWebhooks.md) — `POST` `/api/v4/cloud/webhook` — POST endpoint for CWS Webhooks
+- [PostLog](PostLog.md) — `POST` `/api/v4/logs` — Add log message
+- [PostUserRecentCustomStatusDelete](PostUserRecentCustomStatusDelete.md) — `POST` `/api/v4/users/{user_id}/status/custom/recent/delete` — Delete user's recent custom status
+- [PresignExport](PresignExport.md) — `POST` `/api/v4/exports/{export_name}/presign-url` — Create a presigned URL for export download
+- [PreviewLicenseFile](PreviewLicenseFile.md) — `POST` `/api/v4/license/preview` — Preview license file
+- [PromoteGuestToUser](PromoteGuestToUser.md) — `POST` `/api/v4/users/{user_id}/promote` — Promote a guest to user
+- [PublishUserTyping](PublishUserTyping.md) — `POST` `/api/v4/users/{user_id}/typing` — Publish a user typing websocket event.
+- [PurgeElasticsearchIndexes](PurgeElasticsearchIndexes.md) — `POST` `/api/v4/elasticsearch/purge_indexes` — Purge all Elasticsearch indexes
+- [QueryLogs](QueryLogs.md) — `POST` `/api/v4/logs/query` — Query server logs with filters
+- [ReattachPlugin](ReattachPlugin.md) — `POST` `/api/v4/plugins/reattach` — Reattach a plugin process
+- [RegenCommandToken](RegenCommandToken.md) — `PUT` `/api/v4/commands/{command_id}/regen_token` — Generate a new token
+- [RegenerateOAuthAppSecret](RegenerateOAuthAppSecret.md) — `POST` `/api/v4/oauth/apps/{app_id}/regen_secret` — Regenerate OAuth app secret
+- [RegenerateRecap](RegenerateRecap.md) — `POST` `/api/v4/recaps/{recap_id}/regenerate` — Regenerate a recap
+- [RegenerateTeamInviteId](RegenerateTeamInviteId.md) — `POST` `/api/v4/teams/{team_id}/regenerate_invite_id` — Regenerate the Invite ID from a Team
+- [RegenOutgoingHookToken](RegenOutgoingHookToken.md) — `POST` `/api/v4/hooks/outgoing/{hook_id}/regen_token` — Regenerate the token for the outgoing webhook.
+- [RegisterOAuthClient](RegisterOAuthClient.md) — `POST` `/api/v4/oauth/apps/register` — Register OAuth client using Dynamic Client Registration
+- [RegisterTermsOfServiceAction](RegisterTermsOfServiceAction.md) — `POST` `/api/v4/users/{user_id}/terms_of_service` — Records user action when they accept or decline custom terms of service
+- [ReloadConfig](ReloadConfig.md) — `POST` `/api/v4/config/reload` — Reload configuration
+- [RemoteClusterAcceptMessage](RemoteClusterAcceptMessage.md) — `POST` `/api/v4/remotecluster/msg` — Receive a remote cluster message.
+- [RemoteClusterConfirmInvite](RemoteClusterConfirmInvite.md) — `POST` `/api/v4/remotecluster/confirm_invite` — Confirm an invite with a remote cluster.
+- [RemoteClusterPing](RemoteClusterPing.md) — `POST` `/api/v4/remotecluster/ping` — Receive a ping from a remote cluster.
+- [RemoteSetProfileImage](RemoteSetProfileImage.md) — `POST` `/api/v4/remotecluster/{user_id}/image` — Set profile image for a remote user.
+- [RemoveAuditLogCertificate](RemoveAuditLogCertificate.md) — `DELETE` `/api/v4/audit_logs/certificate` — Remove audit log certificate
+- [RemoveCFPost](RemoveCFPost.md) — `PUT` `/api/v4/content_flagging/post/{post_id}/remove` — Remove a flagged post
+- [RemoveChannelsFromRetentionPolicy](RemoveChannelsFromRetentionPolicy.md) — `DELETE` `/api/v4/data_retention/policies/{policy_id}/channels` — Delete channels from a granular data retention policy
+- [RemoveLicenseFile](RemoveLicenseFile.md) — `DELETE` `/api/v4/license` — Remove license file
+- [RemovePlugin](RemovePlugin.md) — `DELETE` `/api/v4/plugins/{plugin_id}` — Remove plugin
+- [RemoveRecentCustomStatus](RemoveRecentCustomStatus.md) — `DELETE` `/api/v4/users/{user_id}/status/custom/recent` — Delete user's recent custom status
+- [RemoveSidebarCategoryForTeamForUser](RemoveSidebarCategoryForTeamForUser.md) — `DELETE` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories/{category_id}` — Delete sidebar category
+- [RemoveTeamIcon](RemoveTeamIcon.md) — `DELETE` `/api/v4/teams/{team_id}/image` — Remove the team icon
+- [RemoveTeamMember](RemoveTeamMember.md) — `DELETE` `/api/v4/teams/{team_id}/members/{user_id}` — Remove user from team
+- [RemoveTeamsFromRetentionPolicy](RemoveTeamsFromRetentionPolicy.md) — `DELETE` `/api/v4/data_retention/policies/{policy_id}/teams` — Delete teams from a granular data retention policy
+- [removeTimelineEvent](removeTimelineEvent.md) — `DELETE` `/plugins/playbooks/api/v0/runs/{id}/timeline/{event_id}` — Remove a timeline event from the playbook run
+- [RemoveUserFromChannel](RemoveUserFromChannel.md) — `DELETE` `/api/v4/channels/{channel_id}/members/{user_id}` — Remove user from channel
+- [reoderChecklistItem](reoderChecklistItem.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/checklists/{checklist}/reorder` — Reorder an item in a playbook run's checklist
+- [reorderPlaybookPropertyFields](reorderPlaybookPropertyFields.md) — `POST` `/plugins/playbooks/api/v0/playbooks/{id}/property_fields/reorder` — Reorder property fields for a playbook
+- [RequestTrialLicense](RequestTrialLicense.md) — `POST` `/api/v4/trial-license` — Request and install a trial license for your server
+- [ResetPassword](ResetPassword.md) — `POST` `/api/v4/users/password/reset` — Reset password
+- [resetPasswordFailedAttempts](resetPasswordFailedAttempts.md) — `POST` `/api/v4/users/{user_id}/reset_failed_attempts` — Reset the failed password attempts for a user
+- [ResetSamlAuthDataToEmail](ResetSamlAuthDataToEmail.md) — `POST` `/api/v4/saml/reset_auth_data` — Reset AuthData to Email
+- [restartPlaybookRun](restartPlaybookRun.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/restart` — Restart a playbook run
+- [RestartServer](RestartServer.md) — `POST` `/api/v4/restart` — Restart the system after an upgrade from Team Edition to Enterprise Edition
+- [RestoreChannel](RestoreChannel.md) — `POST` `/api/v4/channels/{channel_id}/restore` — Restore a channel
+- [RestoreGroup](RestoreGroup.md) — `POST` `/api/v4/groups/{group_id}/restore` — Restore a previously deleted group.
+- [RestorePostVersion](RestorePostVersion.md) — `POST` `/api/v4/posts/{post_id}/restore/{restore_version_id}` — Restores a past version of a post
+- [RestoreTeam](RestoreTeam.md) — `POST` `/api/v4/teams/{team_id}/restore` — Restore a team
+- [ResumeScheduledRecap](ResumeScheduledRecap.md) — `POST` `/api/v4/scheduled_recaps/{scheduled_recap_id}/resume` — Resume a scheduled recap
+- [RevealPost](RevealPost.md) — `GET` `/api/v4/posts/{post_id}/reveal` — Reveal a burn-on-read post
+- [RevokeAllSessions](RevokeAllSessions.md) — `POST` `/api/v4/users/{user_id}/sessions/revoke/all` — Revoke all active sessions for a user
+- [RevokeNonCompliantUserAccessTokens](RevokeNonCompliantUserAccessTokens.md) — `POST` `/api/v4/users/tokens/non_compliant/revoke` — Revoke non-compliant personal access tokens
+- [RevokeSession](RevokeSession.md) — `POST` `/api/v4/users/{user_id}/sessions/revoke` — Revoke a user session
+- [RevokeSessionsFromAllUsers](RevokeSessionsFromAllUsers.md) — `POST` `/api/v4/users/sessions/revoke/all` — Revoke all sessions from all users.
+- [RevokeUserAccessToken](RevokeUserAccessToken.md) — `POST` `/api/v4/users/tokens/revoke` — Revoke a user access token
+- [RewriteMessage](RewriteMessage.md) — `POST` `/api/v4/posts/rewrite` — Rewrite a message using AI
+- [RotateUserAccessToken](RotateUserAccessToken.md) — `POST` `/api/v4/users/tokens/rotate` — Rotate a personal access token
+- [SaveAcknowledgementForPost](SaveAcknowledgementForPost.md) — `POST` `/api/v4/users/{user_id}/posts/{post_id}/ack` — Acknowledge a post
+- [SaveReaction](SaveReaction.md) — `POST` `/api/v4/reactions` — Create a reaction
+- [SearchAccessControlPolicies](SearchAccessControlPolicies.md) — `POST` `/api/v4/access_control_policies/search` — Search access control policies
+- [SearchAllChannels](SearchAllChannels.md) — `POST` `/api/v4/channels/search` — Search all private and open type channels across all teams
+- [SearchCFTeamReviewers](SearchCFTeamReviewers.md) — `GET` `/api/v4/content_flagging/team/{team_id}/reviewers/search` — Search content reviewers in a team
+- [SearchChannels](SearchChannels.md) — `POST` `/api/v4/teams/{team_id}/channels/search` — Search channels
+- [SearchChannelsForAccessControlPolicy](SearchChannelsForAccessControlPolicy.md) — `POST` `/api/v4/access_control_policies/{policy_id}/resources/channels/search` — Search channels for an access control policy
+- [SearchChannelsForRetentionPolicy](SearchChannelsForRetentionPolicy.md) — `POST` `/api/v4/data_retention/policies/{policy_id}/channels/search` — Search for the channels in a granular data retention policy
+- [SearchEmoji](SearchEmoji.md) — `POST` `/api/v4/emoji/search` — Search custom emoji
+- [SearchFiles](SearchFiles_2.md) — `POST` `/api/v4/files/search` — Search files across the teams of the current user
+- [SearchFiles](SearchFiles.md) — `POST` `/api/v4/teams/{team_id}/files/search` — Search files in a team
+- [SearchGroupChannels](SearchGroupChannels.md) — `POST` `/api/v4/channels/group/search` — Search Group Channels
+- [SearchPosts](SearchPosts.md) — `POST` `/api/v4/teams/{team_id}/posts/search` — Search for team posts
+- [SearchPostsInAllTeams](SearchPostsInAllTeams.md) — `POST` `/api/v4/posts/search` — Search posts across all teams
+- [SearchPropertyFields](SearchPropertyFields.md) — `POST` `/api/v4/properties/groups/{group_name}/fields/search` — Search property fields across multiple object types
+- [SearchTeams](SearchTeams.md) — `POST` `/api/v4/teams/search` — Search teams
+- [SearchTeamsForRetentionPolicy](SearchTeamsForRetentionPolicy.md) — `POST` `/api/v4/data_retention/policies/{policy_id}/teams/search` — Search for the teams in a granular data retention policy
+- [SearchUserAccessTokens](SearchUserAccessTokens.md) — `POST` `/api/v4/users/tokens/search` — Search tokens
+- [SearchUsers](SearchUsers.md) — `POST` `/api/v4/users/search` — Search users
+- [SendPasswordResetEmail](SendPasswordResetEmail.md) — `POST` `/api/v4/users/password/reset/send` — Send password reset email
+- [SendVerificationEmail](SendVerificationEmail.md) — `POST` `/api/v4/users/email/verify/send` — Send verification email
+- [SetAIBridgeTestHelper](SetAIBridgeTestHelper.md) — `PUT` `/api/v4/system/e2e/ai_bridge` — Configure AI bridge E2E test helper
+- [SetChannelMembers](SetChannelMembers.md) — `PUT` `/api/v4/channels/{channel_id}/members` — Set channel members
+- [SetDefaultProfileImage](SetDefaultProfileImage.md) — `DELETE` `/api/v4/users/{user_id}/image` — Delete user's profile image
+- [SetPostReminder](SetPostReminder.md) — `POST` `/api/v4/users/{user_id}/posts/{post_id}/reminder` — Set a post reminder
+- [SetPostUnread](SetPostUnread.md) — `POST` `/api/v4/users/{user_id}/posts/{post_id}/set_unread` — Mark as unread from a post.
+- [SetProfileImage](SetProfileImage.md) — `POST` `/api/v4/users/{user_id}/image` — Set user's profile image
+- [setRunPropertyValue](setRunPropertyValue.md) — `PUT` `/plugins/playbooks/api/v0/runs/{id}/property_fields/{field_id}/value` — Set a property value for a playbook run
+- [SetServerBusy](SetServerBusy.md) — `POST` `/api/v4/server_busy` — Set the server busy (high load) flag
+- [SetTeamIcon](SetTeamIcon.md) — `POST` `/api/v4/teams/{team_id}/image` — Sets the team icon
+- [SetThreadUnreadByPostId](SetThreadUnreadByPostId.md) — `POST` `/api/v4/users/{user_id}/teams/{team_id}/threads/{thread_id}/set_unread/{post_id}` — Mark a thread that user is following as unread based on a post id
+- [SimulateAccessControlPolicyForUsers](SimulateAccessControlPolicyForUsers.md) — `POST` `/api/v4/access_control_policies/cel/simulate_users` — Simulate an access control policy decision for an explicit user list
+- [SoftDeleteTeam](SoftDeleteTeam.md) — `DELETE` `/api/v4/teams/{team_id}` — Delete a team
+- [StartBatchUsersExport](StartBatchUsersExport.md) — `POST` `/api/v4/reports/users/export` — Starts a job to export the users to a report file.
+- [StartFollowingThread](StartFollowingThread.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/threads/{thread_id}/following` — Start following a thread
+- [StopFollowingThread](StopFollowingThread.md) — `DELETE` `/api/v4/users/{user_id}/teams/{team_id}/threads/{thread_id}/following` — Stop following a thread
+- [SubmitInteractiveDialog](SubmitInteractiveDialog.md) — `POST` `/api/v4/actions/dialogs/submit` — Submit a dialog
+- [SubmitPerformanceReport](SubmitPerformanceReport.md) — `POST` `/api/v4/client_perf` — Report client performance metrics
+- [SwitchAccountType](SwitchAccountType.md) — `POST` `/api/v4/users/login/switch` — Switch login method
+- [SyncLdap](SyncLdap.md) — `POST` `/api/v4/ldap/sync` — Sync with LDAP
+- [TeamExists](TeamExists.md) — `GET` `/api/v4/teams/name/{team_name}/exists` — Check if team exists
+- [TeamMembersMinusGroupMembers](TeamMembersMinusGroupMembers.md) — `GET` `/api/v4/teams/{team_id}/members_minus_group_members` — Team members minus group members.
+- [TestAccessControlPolicyExpression](TestAccessControlPolicyExpression.md) — `POST` `/api/v4/access_control_policies/cel/test` — Test an access control policy expression
+- [TestElasticsearch](TestElasticsearch.md) — `POST` `/api/v4/elasticsearch/test` — Test Elasticsearch configuration
+- [TestEmail](TestEmail.md) — `POST` `/api/v4/email/test` — Send a test email
+- [TestFileStoreConnection](TestFileStoreConnection.md) — `POST` `/api/v4/file/test` — Test the configured file storage backend
+- [TestLdap](TestLdap.md) — `POST` `/api/v4/ldap/test` — Test LDAP configuration
+- [TestLdapConnection](TestLdapConnection.md) — `POST` `/api/v4/ldap/test_connection` — Test LDAP connection with specific settings
+- [TestLdapDiagnostics](TestLdapDiagnostics.md) — `POST` `/api/v4/ldap/test_diagnostics` — Test LDAP diagnostics with specific settings
+- [TestNotification](TestNotification.md) — `POST` `/api/v4/notifications/test` — Send a test notification
+- [TestS3Connection](TestS3Connection.md) — `POST` `/api/v4/file/s3_test` — Test AWS S3 connection
+- [TestSiteURL](TestSiteURL.md) — `POST` `/api/v4/site_url/test` — Checks the validity of a Site URL
+- [TriggerNotifyAdminPosts](TriggerNotifyAdminPosts.md) — `POST` `/api/v4/users/trigger-notify-admin-posts` — Trigger notify-admin posts
+- [UnassignAccessControlPolicyFromChannels](UnassignAccessControlPolicyFromChannels.md) — `DELETE` `/api/v4/access_control_policies/{policy_id}/unassign` — Unassign an access control policy from channels or teams
+- [UninviteRemoteClusterToChannel](UninviteRemoteClusterToChannel.md) — `POST` `/api/v4/remotecluster/{remote_id}/channels/{channel_id}/uninvite` — Uninvites a remote cluster to a channel.
+- [UnlinkGroupSyncableForChannel](UnlinkGroupSyncableForChannel.md) — `DELETE` `/api/v4/groups/{group_id}/channels/{channel_id}/link` — Unlink a channel from a group
+- [UnlinkGroupSyncableForTeam](UnlinkGroupSyncableForTeam.md) — `DELETE` `/api/v4/groups/{group_id}/teams/{team_id}/link` — Unlink a team from a group
+- [UnlinkLdapGroup](UnlinkLdapGroup.md) — `DELETE` `/api/v4/ldap/groups/{remote_id}/link` — Delete a link for LDAP group
+- [UnpinPost](UnpinPost.md) — `POST` `/api/v4/posts/{post_id}/unpin` — Unpin a post to the channel
+- [UnsetUserCustomStatus](UnsetUserCustomStatus.md) — `DELETE` `/api/v4/users/{user_id}/status/custom` — Unsets user custom status
+- [UpdateAccessControlPoliciesActive](UpdateAccessControlPoliciesActive.md) — `PUT` `/api/v4/access_control_policies/activate` — Activate or deactivate access control policies
+- [UpdateAccessControlPolicyActiveStatus](UpdateAccessControlPolicyActiveStatus.md) — `GET` `/api/v4/access_control_policies/{policy_id}/activate` — Activate or deactivate an access control policy
+- [UpdateCFConfig](UpdateCFConfig.md) — `PUT` `/api/v4/content_flagging/config` — Update the system content flagging configuration
+- [UpdateChannel](UpdateChannel.md) — `PUT` `/api/v4/channels/{channel_id}` — Update a channel
+- [UpdateChannelBookmark](UpdateChannelBookmark.md) — `PATCH` `/api/v4/channels/{channel_id}/bookmarks/{bookmark_id}` — Update channel bookmark
+- [UpdateChannelBookmarkSortOrder](UpdateChannelBookmarkSortOrder.md) — `POST` `/api/v4/channels/{channel_id}/bookmarks/{bookmark_id}/sort_order` — Update channel bookmark's order
+- [UpdateChannelMemberAutotranslation](UpdateChannelMemberAutotranslation.md) — `PUT` `/api/v4/channels/{channel_id}/members/{user_id}/autotranslation` — Update channel member autotranslation setting
+- [UpdateChannelMemberSchemeRoles](UpdateChannelMemberSchemeRoles.md) — `PUT` `/api/v4/channels/{channel_id}/members/{user_id}/schemeRoles` — Update the scheme-derived roles of a channel member.
+- [UpdateChannelNotifyProps](UpdateChannelNotifyProps.md) — `PUT` `/api/v4/channels/{channel_id}/members/{user_id}/notify_props` — Update channel notifications
+- [UpdateChannelPrivacy](UpdateChannelPrivacy.md) — `PUT` `/api/v4/channels/{channel_id}/privacy` — Update channel's privacy
+- [UpdateChannelRoles](UpdateChannelRoles.md) — `PUT` `/api/v4/channels/{channel_id}/members/{user_id}/roles` — Update channel roles
+- [UpdateChannelScheme](UpdateChannelScheme.md) — `PUT` `/api/v4/channels/{channel_id}/scheme` — Set a channel's scheme
+- [UpdateChannelView](UpdateChannelView.md) — `PATCH` `/api/v4/channels/{channel_id}/views/{view_id}` — Update a channel view
+- [UpdateChannelViewSortOrder](UpdateChannelViewSortOrder.md) — `POST` `/api/v4/channels/{channel_id}/views/{view_id}/sort_order` — Update a channel view's sort order
+- [UpdateCloudCustomer](UpdateCloudCustomer.md) — `PUT` `/api/v4/cloud/customer` — Update cloud customer
+- [UpdateCloudCustomerAddress](UpdateCloudCustomerAddress.md) — `PUT` `/api/v4/cloud/customer/address` — Update cloud customer address
+- [UpdateCommand](UpdateCommand.md) — `PUT` `/api/v4/commands/{command_id}` — Update a command
+- [UpdateConfig](UpdateConfig.md) — `PUT` `/api/v4/config` — Update configuration
+- [UpdateIncomingWebhook](UpdateIncomingWebhook.md) — `PUT` `/api/v4/hooks/incoming/{hook_id}` — Update an incoming webhook
+- [UpdateJobStatus](UpdateJobStatus.md) — `PATCH` `/api/v4/jobs/{job_id}/status` — Update the status of a job
+- [UpdateMarketplaceVisitedByAdmin](UpdateMarketplaceVisitedByAdmin.md) — `POST` `/api/v4/plugins/marketplace/first_admin_visit` — Stores that the Plugin Marketplace has been visited by at least an admin.
+- [UpdateOAuthApp](UpdateOAuthApp.md) — `PUT` `/api/v4/oauth/apps/{app_id}` — Update an OAuth app
+- [UpdateOutgoingOAuthConnection](UpdateOutgoingOAuthConnection.md) — `PUT` `/api/v4/oauth/outgoing_connections/{outgoing_oauth_connection_id}` — Update a connection
+- [UpdateOutgoingWebhook](UpdateOutgoingWebhook.md) — `PUT` `/api/v4/hooks/outgoing/{hook_id}` — Update an outgoing webhook
+- [updatePlaybook](updatePlaybook.md) — `PUT` `/plugins/playbooks/api/v0/playbooks/{id}` — Update a playbook
+- [updatePlaybookCondition](updatePlaybookCondition.md) — `PUT` `/plugins/playbooks/api/v0/playbooks/{id}/conditions/{conditionID}` — Update a playbook condition
+- [updatePlaybookPropertyField](updatePlaybookPropertyField.md) — `PUT` `/plugins/playbooks/api/v0/playbooks/{id}/property_fields/{field_id}` — Update a property field for a playbook
+- [updatePlaybookRun](updatePlaybookRun.md) — `PATCH` `/plugins/playbooks/api/v0/runs/{id}` — Update a playbook run
+- [updatePlaybookRunStatus](updatePlaybookRunStatus.md) — `POST` `/plugins/playbooks/api/v0/runs/{id}/status` — Update a playbook run's status
+- [UpdatePost](UpdatePost.md) — `PUT` `/api/v4/posts/{post_id}` — Update a post
+- [UpdatePreferences](UpdatePreferences.md) — `PUT` `/api/v4/users/{user_id}/preferences` — Save the user's preferences
+- [UpdatePropertyField](UpdatePropertyField.md) — `PATCH` `/api/v4/properties/groups/{group_name}/{object_type}/fields/{field_id}` — Update a property field
+- [UpdatePropertyValues](UpdatePropertyValues.md) — `PATCH` `/api/v4/properties/groups/{group_name}/{object_type}/values/{target_id}` — Update property values for a target
+- [UpdateScheduledPost](UpdateScheduledPost.md) — `PUT` `/api/v4/posts/schedule/{scheduled_post_id}` — Update a scheduled post
+- [UpdateScheduledRecap](UpdateScheduledRecap.md) — `PUT` `/api/v4/scheduled_recaps/{scheduled_recap_id}` — Update a scheduled recap
+- [UpdateSidebarCategoriesForTeamForUser](UpdateSidebarCategoriesForTeamForUser.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories` — Update user's sidebar categories
+- [UpdateSidebarCategoryForTeamForUser](UpdateSidebarCategoryForTeamForUser.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories/{category_id}` — Update sidebar category
+- [UpdateSidebarCategoryOrderForTeamForUser](UpdateSidebarCategoryOrderForTeamForUser.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/channels/categories/order` — Update user's sidebar category order
+- [UpdateSystemPropertyValues](UpdateSystemPropertyValues.md) — `PATCH` `/api/v4/properties/groups/{group_name}/system/values` — Update property values for the system
+- [UpdateTeam](UpdateTeam.md) — `PUT` `/api/v4/teams/{team_id}` — Update a team
+- [UpdateTeamMemberRoles](UpdateTeamMemberRoles.md) — `PUT` `/api/v4/teams/{team_id}/members/{user_id}/roles` — Update a team member roles
+- [UpdateTeamMemberSchemeRoles](UpdateTeamMemberSchemeRoles.md) — `PUT` `/api/v4/teams/{team_id}/members/{user_id}/schemeRoles` — Update the scheme-derived roles of a team member.
+- [UpdateTeamPrivacy](UpdateTeamPrivacy.md) — `PUT` `/api/v4/teams/{team_id}/privacy` — Update teams's privacy
+- [UpdateTeamScheme](UpdateTeamScheme.md) — `PUT` `/api/v4/teams/{team_id}/scheme` — Set a team's scheme
+- [UpdateThreadReadForUser](UpdateThreadReadForUser.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/threads/{thread_id}/read/{timestamp}` — Mark a thread that user is following read state to the timestamp
+- [UpdateThreadsReadForUser](UpdateThreadsReadForUser.md) — `PUT` `/api/v4/users/{user_id}/teams/{team_id}/threads/read` — Mark all threads that user is following as read
+- [UpdateUser](UpdateUser.md) — `PUT` `/api/v4/users/{user_id}` — Update a user
+- [UpdateUserActive](UpdateUserActive.md) — `PUT` `/api/v4/users/{user_id}/active` — Activate or deactivate a user
+- [UpdateUserAuth](UpdateUserAuth.md) — `PUT` `/api/v4/users/{user_id}/auth` — Update a user's authentication method
+- [UpdateUserCustomStatus](UpdateUserCustomStatus.md) — `PUT` `/api/v4/users/{user_id}/status/custom` — Update user custom status
+- [UpdateUserMfa](UpdateUserMfa.md) — `PUT` `/api/v4/users/{user_id}/mfa` — Update a user's MFA
+- [UpdateUserPassword](UpdateUserPassword.md) — `PUT` `/api/v4/users/{user_id}/password` — Update a user's password
+- [UpdateUserRoles](UpdateUserRoles.md) — `PUT` `/api/v4/users/{user_id}/roles` — Update a user's roles
+- [UpdateUserStatus](UpdateUserStatus.md) — `PUT` `/api/v4/users/{user_id}/status` — Update user status
+- [UpgradeToEnterprise](UpgradeToEnterprise.md) — `POST` `/api/v4/upgrade_to_enterprise` — Executes an inplace upgrade from Team Edition to Enterprise Edition
+- [UpgradeToEnterpriseStatus](UpgradeToEnterpriseStatus.md) — `GET` `/api/v4/upgrade_to_enterprise/status` — Get the current status for the inplace upgrade from Team Edition to Enterprise Edition
+- [UploadBrandImage](UploadBrandImage.md) — `POST` `/api/v4/brand/image` — Upload brand image
+- [UploadData](UploadData.md) — `POST` `/api/v4/uploads/{upload_id}` — Perform a file upload
+- [UploadFile](UploadFile.md) — `POST` `/api/v4/files` — Upload a file
+- [UploadLdapPrivateCertificate](UploadLdapPrivateCertificate.md) — `POST` `/api/v4/ldap/certificate/private` — Upload private key
+- [UploadLdapPublicCertificate](UploadLdapPublicCertificate.md) — `POST` `/api/v4/ldap/certificate/public` — Upload public certificate
+- [UploadLicenseFile](UploadLicenseFile.md) — `POST` `/api/v4/license` — Upload license file
+- [UploadPlugin](UploadPlugin.md) — `POST` `/api/v4/plugins` — Upload plugin
+- [UploadRemoteClusterData](UploadRemoteClusterData.md) — `POST` `/api/v4/remotecluster/upload/{upload_id}` — Upload file data for a remote upload session.
+- [UploadSamlIdpCertificate](UploadSamlIdpCertificate.md) — `POST` `/api/v4/saml/certificate/idp` — Upload IDP certificate
+- [UploadSamlPrivateCertificate](UploadSamlPrivateCertificate.md) — `POST` `/api/v4/saml/certificate/private` — Upload private key
+- [UploadSamlPublicCertificate](UploadSamlPublicCertificate.md) — `POST` `/api/v4/saml/certificate/public` — Upload public certificate
+- [UpsertDraft](UpsertDraft.md) — `POST` `/api/v4/drafts` — Upsert synced draft
+- [ValidateBusinessEmail](ValidateBusinessEmail.md) — `POST` `/api/v4/cloud/validate-business-email` — Validate business email
+- [ValidateExpressionAgainstRequester](ValidateExpressionAgainstRequester.md) — `POST` `/api/v4/access_control_policies/cel/validate_requester` — Validate if the current user matches a CEL expression
+- [ValidateOutgoingOAuthConnection](ValidateOutgoingOAuthConnection.md) — `POST` `/api/v4/oauth/outgoing_connections/validate` — Validate a connection configuration
+- [ValidateWorkspaceBusinessEmail](ValidateWorkspaceBusinessEmail.md) — `POST` `/api/v4/cloud/validate-workspace-business-email` — Validate workspace business email
+- [VerifyUserEmail](VerifyUserEmail.md) — `POST` `/api/v4/users/email/verify` — Verify user email
+- [VerifyUserEmailWithoutToken](VerifyUserEmailWithoutToken.md) — `POST` `/api/v4/users/{user_id}/email/verify/member` — Verify user email by ID
+- [ViewChannel](ViewChannel.md) — `POST` `/api/v4/channels/members/{user_id}/view` — View channel

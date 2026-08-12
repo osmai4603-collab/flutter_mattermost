@@ -1,0 +1,25 @@
+# Get an incoming webhook
+
+Original OpenAPI operationId: `GetIncomingWebhook`
+- Method: `GET`
+- Path: `/api/v4/hooks/incoming/{hook_id}`
+- Summary: Get an incoming webhook
+- Description: Get an incoming webhook given the hook id.
+##### Permissions
+`manage_webhooks` for system or `manage_webhooks` for the specific team or `manage_webhooks` for the channel.
+
+- Tags: webhooks
+
+## Parameters
+- `hook_id` (path, required, string) - Incoming Webhook GUID
+
+## Request body
+No request body.
+
+## Responses
+- `200`: Webhook retrieval successful
+  - `application/json` -> IncomingWebhook
+- `400`: No description available.
+- `401`: No description available.
+- `403`: No description available.
+- `404`: No description available.

@@ -1,0 +1,18 @@
+- [x] Dependency Management
+    - [x] Add `shared_preferences` to `pubspec.yaml`
+- [x] Core Fixes
+    - [x] Fix `ChannelType` comparisons in `lib/core/modals/modal_registrations.dart`
+    - [x] Remove dead code/null-aware operators in `lib/core/permissions/permissions_provider.dart`
+- [x] Model and Entity Fixes
+    - [x] Remove invalid `toMap` override in `lib/features/system/data/models/license_config_model.dart`
+    - [x] Remove invalid `toMap` override in `lib/features/admin/data/models/role_model.dart`
+    - [x] Added `@override` to `RoleModel.copyWith`
+- [x] Cleanup and Style
+    - [x] Remove unnecessary import in `lib/app/routes/app_router.dart`
+    - [x] Remove unused import in `lib/core/sync/delta_sync_service.dart`
+    - [x] Fix string concatenation in `lib/core/endpoints/jobs_endpoint.dart`
+    - [x] Remove unnecessary braces in `lib/core/utils/post_key_press.dart`
+    - [x] Remove unused import in `lib/core/utils/timezone_offset.dart`
+- [x] Verification
+    - [x] Run `flutter pub get`
+    - [x] Run `flutter analyze` (Targeted files are clean)
