@@ -41,7 +41,7 @@ dependencies:
 
   # Dependency Injection
   get_it: ^7.7.0
-  injectable: ^2.4.2
+  injectable: ^2.6.0
 
   # Networking & Realtime
   dio: ^5.4.3+1
@@ -58,8 +58,8 @@ dependencies:
   shared_preferences: ^2.2.2
 
   # Data Models & Serialization
-  freezed_annotation: ^2.4.4
-  json_annotation: ^4.9.0
+  freezed_annotation: ^3.1.0
+  json_annotation: ^4.11.0
 
   # Navigation & Desktop Window Management
   go_router: ^14.2.0
@@ -82,6 +82,10 @@ dependencies:
   url_launcher: ^6.3.0
   markdown: ^7.2.2
   flutter_webrtc: ^1.6.0
+  injectable_generator: ^2.10.0
+  freezed: ^3.2.5
+  json_serializable: ^6.13.0
+  build_runner: ^2.15.1
 
 
 dev_dependencies:
@@ -91,10 +95,6 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
   # Code Generation
-  build_runner: ^2.4.10
-  injectable_generator: ^2.6.2
-  freezed: ^2.5.2
-  json_serializable: ^6.8.0
   drift_dev: ^2.18.0
 
 # For information on the generic Dart part of this file, see the

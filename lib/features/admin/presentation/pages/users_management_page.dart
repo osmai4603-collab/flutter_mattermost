@@ -311,7 +311,9 @@ class _AdminConsoleUsersManagementPageState extends State<AdminConsoleUsersManag
                 ),
               ),
               Switch(
-                value: user.mfaActive,
+                value: user.isActive,
+                activeTrackColor: Colors.greenAccent.withValues(alpha: 0.5),
+                inactiveTrackColor: Colors.redAccent.withValues(alpha: 0.3),
                 onChanged: (value) => _setActive(user, value),
               ),
             ],

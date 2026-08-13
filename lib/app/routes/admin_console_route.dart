@@ -4,6 +4,7 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/authenticat
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/general_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/jobs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/license_page.dart';
@@ -24,8 +25,12 @@ sealed class AdminConsoleRoutes {
   static const overview = root;
   static const logs = '$root/logs';
   static const analytics = '$root/analytics';
-  static const users = '$root/users';
   static const general = '$root/general';
+  static const users = '$root/users';
+  static const webServer = '$root/environment/web_server';
+  static const database = '$root/environment/database';
+  static const fileStorage = '$root/environment/file_storage';
+  static const smtp = '$root/environment/smtp';
   static const authentication = '$root/authentication';
   static const notifications = '$root/notifications';
   static const security = '$root/security';
@@ -93,8 +98,45 @@ final adminRoute = StatefulShellRoute.indexedStack(
     StatefulShellBranch(
       routes: [
         GoRoute(
+          path: AdminConsoleRoutes.webServer,
+          builder: (context, state) =>
+              const AdminConsoleEnvironmentSettingsPage(subTab: 'web_server'),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.database,
+          builder: (context, state) =>
+              const AdminConsoleEnvironmentSettingsPage(subTab: 'database'),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.fileStorage,
+          builder: (context, state) =>
+              const AdminConsoleEnvironmentSettingsPage(subTab: 'file_storage'),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.smtp,
+          builder: (context, state) =>
+              const AdminConsoleEnvironmentSettingsPage(subTab: 'smtp'),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
           path: AdminConsoleRoutes.authentication,
-          builder: (context, state) => const AdminConsoleAuthenticationSettingsPage(),
+          builder: (context, state) =>
+              const AdminConsoleAuthenticationSettingsPage(),
         ),
       ],
     ),
@@ -102,7 +144,8 @@ final adminRoute = StatefulShellRoute.indexedStack(
       routes: [
         GoRoute(
           path: AdminConsoleRoutes.notifications,
-          builder: (context, state) => const AdminConsoleNotificationsSettingsPage(),
+          builder: (context, state) =>
+              const AdminConsoleNotificationsSettingsPage(),
         ),
       ],
     ),
@@ -150,7 +193,8 @@ final adminRoute = StatefulShellRoute.indexedStack(
       routes: [
         GoRoute(
           path: AdminConsoleRoutes.plugins,
-          builder: (context, state) => const AdminConsolePluginsManagementPage(),
+          builder: (context, state) =>
+              const AdminConsolePluginsManagementPage(),
         ),
       ],
     ),

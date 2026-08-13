@@ -1,5 +1,6 @@
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/api_client.dart';
+import 'package:flutter_mattermost/core/network/api_error.dart';
 import 'package:flutter_mattermost/core/network/api_result.dart';
 import 'package:flutter_mattermost/features/channels/data/models/channel_bookmark_model.dart';
 
@@ -38,7 +39,9 @@ class ChannelBookmarksRemoteDataSourceImpl
   ChannelBookmarksRemoteDataSourceImpl(this._apiClient);
 
   @override
-  Future<List<ChannelBookmarkModel>> getChannelBookmarks(String channelId) async {
+  Future<List<ChannelBookmarkModel>> getChannelBookmarks(
+    String channelId,
+  ) async {
     final result = await _apiClient.get<List<ChannelBookmarkModel>>(
       ChannelsEndPoint.bookmarks(channelId),
       fromJson: (json) => (json as List<dynamic>)
@@ -48,6 +51,10 @@ class ChannelBookmarksRemoteDataSourceImpl
     if (result is ApiSuccess<List<ChannelBookmarkModel>>) {
       return result.data;
     }
+    // if (result is ApiFailure<List<ChannelBookmarkModel>> &&
+    //     result.error is FeatureError) {
+    //   return [];
+    // }
     throw Exception('Failed to get bookmarks of channel $channelId');
   }
 

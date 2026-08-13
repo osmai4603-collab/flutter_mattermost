@@ -109,7 +109,7 @@ class _ProductMenuButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(5, 3, 6, 3),
             child: Row(
-              crossAxisAlignment: .center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.dashboard_customize_rounded,
@@ -121,7 +121,7 @@ class _ProductMenuButton extends StatelessWidget {
                   'assets/images/mattermost.ico',
                   width: 18,
                   height: 18,
-                  colorBlendMode: .saturation,
+                  colorBlendMode: BlendMode.saturation,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -135,16 +135,16 @@ class _ProductMenuButton extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 Container(
-                  padding: .symmetric(horizontal: 4, vertical: 1),
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                   decoration: BoxDecoration(
                     color: theme.mentionColor,
-                    borderRadius: .circular(4),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     'Team Edition'.toUpperCase(),
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: .w400,
+                      fontWeight: FontWeight.w400,
                       color: theme.mentionBg.withValues(alpha: 0.60),
                     ),
                   ),

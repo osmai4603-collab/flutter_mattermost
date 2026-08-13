@@ -51,6 +51,8 @@ class UserEntity extends Entity {
     this.position = '',
   });
 
+  bool get isActive => deleteAt == 0;
+
   @override
   List<Object?> get props => [
         id,

@@ -44,10 +44,21 @@ class RetryInterceptor extends Interceptor {
   }
 
   bool _shouldRetry(DioException err) {
-    return err.type == DioExceptionType.connectionTimeout ||
+    if (err.type == DioExceptionType.connectionTimeout ||
         err.type == DioExceptionType.sendTimeout ||
         err.type == DioExceptionType.receiveTimeout ||
-        err.type == DioExceptionType.connectionError ||
-        (err.response != null && err.response!.statusCode! >= 500);
+        err.type == DioExceptionType.connectionError) {
+      return true;
+    }
+    final statusCode = err.response?.statusCode;
+    if (statusCode != null) {
+      // Only retry transient server errors (500, 502, 503, 504).
+      // Do NOT retry 501 Not Implemented or 505.
+      return statusCode == 500 ||
+          statusCode == 502 ||
+          statusCode == 503 ||
+          statusCode == 504;
+    }
+    return false;
   }
 }

@@ -28,20 +28,15 @@ class ApiClient {
   final SecureStorageService _secureStorage;
   final SessionController _sessionController;
 
-  ApiClient(
-    this._secureStorage,
-    this._sessionController, {
-    ContentType contentType = .applicationJson,
-    AcceptType acceptType = .applicationJson,
-  }) {
+  ApiClient(this._secureStorage, this._sessionController) {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConfig.defaultBaseUrl,
         connectTimeout: AppConfig.connectionTimeout,
         receiveTimeout: AppConfig.receiveTimeout,
         headers: {
-          'Content-Type': contentType.value,
-          'Accept': acceptType.value,
+          'Content-Type': ContentType.applicationJson.value,
+          'Accept': AcceptType.applicationJson.value,
         },
       ),
     );
@@ -57,14 +52,32 @@ class ApiClient {
     dio.options.baseUrl = newUrl;
   }
 
+  String _resolveEndpoint(String endpoint) {
+    if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
+      return endpoint;
+    }
+    if (endpoint.startsWith('/plugins/com.') ||
+        endpoint.startsWith('/plugins/playbooks/') ||
+        endpoint.startsWith('plugins/com.') ||
+        endpoint.startsWith('plugins/playbooks/')) {
+      final formattedEndpoint = endpoint.startsWith('/')
+          ? endpoint
+          : '/$endpoint';
+      final baseUri = Uri.parse(dio.options.baseUrl);
+      return '${baseUri.origin}$formattedEndpoint';
+    }
+    return endpoint;
+  }
+
   Future<ApiResult<T>> get<T>(
     String endpoint, {
     Map<String, dynamic>? queryParameters,
     required T Function(dynamic) fromJson,
   }) async {
     try {
+      final resolvedUrl = _resolveEndpoint(endpoint);
       final response = await dio.get(
-        endpoint,
+        resolvedUrl,
         queryParameters: queryParameters,
       );
       return ApiSuccess(fromJson(response.data));
@@ -82,8 +95,9 @@ class ApiClient {
     required T Function(dynamic) fromJson,
   }) async {
     try {
+      final resolvedUrl = _resolveEndpoint(endpoint);
       final response = await dio.post(
-        endpoint,
+        resolvedUrl,
         data: data,
         queryParameters: queryParameters,
       );
@@ -101,8 +115,9 @@ class ApiClient {
     required T Function(dynamic) fromJson,
   }) async {
     try {
+      final resolvedUrl = _resolveEndpoint(endpoint);
       final response = await dio.head(
-        endpoint,
+        resolvedUrl,
         queryParameters: queryParameters,
       );
       return ApiSuccess(fromJson(response.data));
@@ -120,8 +135,9 @@ class ApiClient {
     required T Function(dynamic) fromJson,
   }) async {
     try {
+      final resolvedUrl = _resolveEndpoint(endpoint);
       final response = await dio.put(
-        endpoint,
+        resolvedUrl,
         data: data,
         queryParameters: queryParameters,
       );
@@ -140,8 +156,9 @@ class ApiClient {
     required T Function(dynamic) fromJson,
   }) async {
     try {
+      final resolvedUrl = _resolveEndpoint(endpoint);
       final response = await dio.patch(
-        endpoint,
+        resolvedUrl,
         data: data,
         queryParameters: queryParameters,
       );
@@ -159,7 +176,12 @@ class ApiClient {
     dynamic data,
   }) async {
     try {
-      await dio.delete(endpoint, queryParameters: queryParameters, data: data);
+      final resolvedUrl = _resolveEndpoint(endpoint);
+      await dio.delete(
+        resolvedUrl,
+        queryParameters: queryParameters,
+        data: data,
+      );
       return const ApiSuccess(null);
     } on DioException catch (e) {
       return ApiFailure(_mapDioError(e));

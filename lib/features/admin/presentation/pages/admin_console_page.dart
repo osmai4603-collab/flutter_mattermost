@@ -5,6 +5,7 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/authenticat
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/general_settings_page.dart';
 import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/jobs_page.dart';
@@ -61,6 +62,10 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                 const AdminConsoleSystemAnalyticsPage(),
                 const AdminConsoleUsersManagementPage(),
                 const AdminConsoleGeneralSettingsPage(),
+                const AdminConsoleEnvironmentSettingsPage(subTab: 'web_server'),
+                const AdminConsoleEnvironmentSettingsPage(subTab: 'database'),
+                const AdminConsoleEnvironmentSettingsPage(subTab: 'file_storage'),
+                const AdminConsoleEnvironmentSettingsPage(subTab: 'smtp'),
                 const AdminConsoleAuthenticationSettingsPage(),
                 const AdminConsoleNotificationsSettingsPage(),
                 AdminConsoleSecuritySettingsPage(),
@@ -68,8 +73,8 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                 AdminConsoleJobsPage(),
                 const AdminConsoleRolesSchemesPage(),
                 const AdminConsoleGroupsPage(),
-                const AdminConsolePluginsManagementPage(),
                 const AdminConsoleLicensePage(),
+                const AdminConsolePluginsManagementPage(),
                 const AdminConsoleDataRetentionPage(),
                 const AdminConsoleContentFlaggingPage(),
                 const AdminConsoleAccessControlPage(),

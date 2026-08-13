@@ -79,7 +79,7 @@ class ReactionsRemoteDataSourceImpl implements ReactionsRemoteDataSource {
   ) async {
     final result = await _apiClient.post<Map<String, List<ReactionModel>>>(
       PostsEndPoint.idsReactions,
-      data: {'post_ids': postIds},
+      data: postIds,
       fromJson: (json) {
         final data = json as Map<String, dynamic>;
         return data.map(

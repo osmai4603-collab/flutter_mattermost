@@ -1,5 +1,5 @@
-// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
+// dart format width=80
 
 // **************************************************************************
 // InjectableConfigGenerator
@@ -152,6 +152,8 @@ import '../../features/chat/data/repositories/post_repository_impl.dart'
 import '../../features/chat/data/repositories/scheduled_posts_repository_impl.dart'
     as _i221;
 import '../../features/chat/data/sync/offline_sync_service.dart' as _i223;
+import '../../features/chat/domain/repositories/calls_rest_repository.dart'
+    as _i217;
 import '../../features/chat/domain/repositories/drafts_repository.dart'
     as _i366;
 import '../../features/chat/domain/repositories/post_repository.dart' as _i686;
@@ -244,6 +246,7 @@ import '../../features/users/presentation/bloc/user_preferences_bloc.dart'
     as _i486;
 import '../../features/users/presentation/bloc/user_profile_bloc.dart' as _i433;
 import '../../features/users/presentation/bloc/user_status_bloc.dart' as _i516;
+import '../calls/audio_session_manager.dart' as _i809;
 import '../calls/calls_manager.dart' as _i875;
 import '../network/api_client.dart' as _i557;
 import '../network/connectivity_monitor.dart' as _i286;
@@ -266,13 +269,16 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final storageModule = _$StorageModule();
     gh.singleton<_i787.SessionController>(() => _i787.SessionController());
-    gh.lazySingleton<_i286.ConnectivityMonitor>(
-      () => _i286.ConnectivityMonitor(),
+    gh.lazySingleton<_i809.AudioSessionManager>(
+      () => _i809.AudioSessionManager(),
     );
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => storageModule.secureStorage,
     );
     gh.lazySingleton<_i500.QueryExecutor>(() => storageModule.databaseExecutor);
+    gh.lazySingleton<_i286.ConnectivityMonitor>(
+      () => _i286.ConnectivityMonitor(),
+    );
     gh.lazySingleton<_i666.SecureStorageService>(
       () => _i666.SecureStorageService(),
     );
@@ -285,6 +291,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i909.ServerManager>(
       () => _i909.ServerManager(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i217.CallsRestRepository>(
+      () => _i217.CallsRestRepository(gh<_i557.ApiClient>()),
     );
     gh.lazySingleton<_i949.AdminJobsDataSource>(
       () => _i949.AdminJobsDataSourceImpl(gh<_i557.ApiClient>()),
@@ -352,9 +361,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i777.WebSocketClientManager>(
       () => _i777.WebSocketClientManager(gh<_i666.SecureStorageService>()),
     );
-    gh.lazySingleton<_i875.CallsManager>(
-      () => _i875.CallsManager(gh<_i777.WebSocketClientManager>()),
-    );
     gh.lazySingleton<_i1065.TeamRepository>(
       () => _i437.TeamRepositoryImpl(gh<_i222.TeamsRemoteDataSource>()),
     );
@@ -396,6 +402,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i977.SystemConfigRemoteDataSource>(
       () => _i977.SystemConfigRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i875.CallsManager>(
+      () => _i875.CallsManager(
+        gh<_i777.WebSocketClientManager>(),
+        gh<_i217.CallsRestRepository>(),
+        gh<_i809.AudioSessionManager>(),
+      ),
     );
     gh.lazySingleton<_i690.AppDatabase>(
       () => _i690.AppDatabase(gh<_i500.QueryExecutor>()),
@@ -628,11 +641,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i260.AdminConfigRepository>(
       () => _i556.AdminConfigRepositoryImpl(gh<_i261.AdminConfigDataSource>()),
     );
-    gh.lazySingleton<_i433.UserProfileBloc>(
-      () => _i433.UserProfileBloc(gh<_i658.UserRepository>()),
-    );
     gh.lazySingleton<_i486.UserPreferencesBloc>(
       () => _i486.UserPreferencesBloc(gh<_i658.UserRepository>()),
+    );
+    gh.lazySingleton<_i433.UserProfileBloc>(
+      () => _i433.UserProfileBloc(gh<_i658.UserRepository>()),
     );
     gh.lazySingleton<_i259.BotsBloc>(
       () => _i259.BotsBloc(gh<_i564.BotsRepository>()),

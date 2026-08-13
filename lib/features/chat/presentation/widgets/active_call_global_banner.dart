@@ -10,8 +10,6 @@ class ActiveCallGlobalBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-
     return BlocBuilder<CallsBloc, CallsState>(
       builder: (context, state) {
         if (state is! CallConnectedState) {

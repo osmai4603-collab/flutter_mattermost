@@ -68,25 +68,20 @@ class _AdminConsoleAuthenticationSettingsPageState
       _error = null;
     });
     try {
-      final config = Map<String, dynamic>.from(_config);
-      final team = Map<String, dynamic>.from(
-        (config['TeamSettings'] as Map?) ?? const {},
-      );
-      final service = Map<String, dynamic>.from(
-        (config['ServiceSettings'] as Map?) ?? const {},
-      );
-      final password = Map<String, dynamic>.from(
-        (config['PasswordSettings'] as Map?) ?? const {},
-      );
-      team['EnableSignUpWithEmail'] = _enableSignUpWithEmail;
-      service['EnableSignInWithEmail'] = _enableSignInWithEmail;
-      service['EnableSignInWithUsername'] = _enableSignInWithUsername;
-      service['EnableGuests'] = _enableGuestAccounts;
-      password['MinimumLength'] = int.tryParse(_minPasswordLength.text) ?? 8;
-      config['TeamSettings'] = team;
-      config['ServiceSettings'] = service;
-      config['PasswordSettings'] = password;
-      await _repository.updateConfig(config);
+      final patch = {
+        'TeamSettings': {
+          'EnableSignUpWithEmail': _enableSignUpWithEmail,
+        },
+        'ServiceSettings': {
+          'EnableSignInWithEmail': _enableSignInWithEmail,
+          'EnableSignInWithUsername': _enableSignInWithUsername,
+          'EnableGuests': _enableGuestAccounts,
+        },
+        'PasswordSettings': {
+          'MinimumLength': int.tryParse(_minPasswordLength.text) ?? 8,
+        },
+      };
+      await _repository.patchConfig(patch);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

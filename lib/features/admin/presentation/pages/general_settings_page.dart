@@ -66,21 +66,18 @@ class _AdminConsoleGeneralSettingsPageState extends State<AdminConsoleGeneralSet
       _error = null;
     });
     try {
-      final config = Map<String, dynamic>.from(_config);
-      final team = Map<String, dynamic>.from(
-        (config['TeamSettings'] as Map?) ?? const {},
-      );
-      final service = Map<String, dynamic>.from(
-        (config['ServiceSettings'] as Map?) ?? const {},
-      );
-      team['SiteName'] = _siteName.text;
-      team['CustomDescriptionText'] = _description.text;
-      service['SiteURL'] = _siteUrl.text;
-      service['EnableUserCreation'] = _enableUserCreation;
-      service['EnableCustomEmoji'] = _enableCustomEmoji;
-      config['TeamSettings'] = team;
-      config['ServiceSettings'] = service;
-      await _repository.updateConfig(config);
+      final patch = {
+        'TeamSettings': {
+          'SiteName': _siteName.text,
+          'CustomDescriptionText': _description.text,
+        },
+        'ServiceSettings': {
+          'SiteURL': _siteUrl.text,
+          'EnableUserCreation': _enableUserCreation,
+          'EnableCustomEmoji': _enableCustomEmoji,
+        },
+      };
+      await _repository.patchConfig(patch);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

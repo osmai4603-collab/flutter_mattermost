@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter_mattermost/core/network/api_result.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
@@ -54,7 +55,8 @@ class CallsManager {
   final StreamController<CallStartedEvent> _incomingCallsController =
       StreamController<CallStartedEvent>.broadcast();
 
-  final StreamController<Map<String, CallParticipantState>> _participantsController =
+  final StreamController<Map<String, CallParticipantState>>
+  _participantsController =
       StreamController<Map<String, CallParticipantState>>.broadcast();
 
   RTCPeerConnection? _peerConnection;
@@ -159,14 +161,12 @@ class CallsManager {
     };
 
     final configResult = await _callsRestRepository.getCallsConfig();
-    configResult.when(
-      success: (config) {
-        if (config.containsKey('ice_servers')) {
-          iceConfiguration = {'iceServers': config['ice_servers']};
-        }
-      },
-      failure: (_) {},
-    );
+    if (configResult is ApiSuccess<Map<String, dynamic>>) {
+      final config = configResult.data;
+      if (config.containsKey('ice_servers')) {
+        iceConfiguration = {'iceServers': config['ice_servers']};
+      }
+    }
 
     _peerConnection = await createPeerConnection(iceConfiguration);
 
@@ -218,13 +218,9 @@ class CallsManager {
 
   Future<void> _restartIce() async {
     if (_peerConnection == null) return;
-    final offer = await _peerConnection!.createOffer({
-      'iceRestart': true,
-    });
+    final offer = await _peerConnection!.createOffer({'iceRestart': true});
     await _peerConnection!.setLocalDescription(offer);
-    _webSocketClientManager.sendCallSignal('webrtc_offer', {
-      'sdp': offer.sdp,
-    });
+    _webSocketClientManager.sendCallSignal('webrtc_offer', {'sdp': offer.sdp});
   }
 
   void toggleMute() {

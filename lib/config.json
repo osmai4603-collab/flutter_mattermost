@@ -1,0 +1,49 @@
+{
+    "ICEHostOverride": "192.168.137.1",
+    "ICEHostPortOverride": null,
+    "UDPServerAddress": "",
+    "TCPServerAddress": "",
+    "UDPServerPort": 8443,
+    "TCPServerPort": 8443,
+    "RTCDServiceURL": "",
+    "TURNStaticAuthSecret": "",
+    "TURNCredentialsExpirationMinutes": 240,
+    "ServerSideTURN": false,
+    "JobServiceURL": "",
+    "RecordingQuality": "medium",
+    "EnableIPv6": false,
+    "EnableRinging": true,
+    "TranscriberModelSize": "base",
+    "TranscribeAPI": "whisper.cpp",
+    "TranscribeAPIAzureSpeechKey": "",
+    "TranscribeAPIAzureSpeechRegion": "",
+    "TranscriberNumThreads": 2,
+    "EnableLiveCaptions": false,
+    "LiveCaptionsModelSize": "tiny",
+    "LiveCaptionsNumTranscribers": 1,
+    "LiveCaptionsNumThreadsPerTranscriber": 2,
+    "LiveCaptionsLanguage": "en",
+    "ICEServers": null,
+    "ICEServersConfigs": [
+        {
+            "urls": [
+                "stun:stun.global.calls.mattermost.com:3478"
+            ]
+        }
+    ],
+    "AllowEnableCalls": true,
+    "DefaultEnabled": true,
+    "MaxCallParticipants": 0,
+    "NeedsTURNCredentials": false,
+    "AllowScreenSharing": true,
+    "EnableRecordings": false,
+    "EnableTranscriptions": false,
+    "MaxRecordingDuration": 60,
+    "EnableSimulcast": false,
+    "sku_short_name": "starter",
+    "HostControlsAllowed": false,
+    "EnableAV1": false,
+    "GroupCallsAllowed": false,
+    "EnableDCSignaling": false,
+    "EnableVideo": false
+}

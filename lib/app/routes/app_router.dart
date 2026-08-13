@@ -92,6 +92,16 @@ FutureOr<String?> _onRouteRedirect(
 
     // Admin Console route access
     if (matchedLocation.startsWith('/admin_console')) {
+      final user = authState.user;
+      final roles = user.roles.split(' ').where((r) => r.isNotEmpty).toList();
+      final hasAdminRole = roles.contains('system_admin') ||
+          roles.contains('system_read_only_admin') ||
+          roles.any((r) => r.startsWith('system_'));
+      if (!hasAdminRole) {
+        final teamState = getIt<TeamBloc>().state;
+        final team = teamState is TeamsLoadedState ? teamState.selectedTeam : null;
+        return team != null ? '/${team.name}' : '/';
+      }
       return null;
     }
 

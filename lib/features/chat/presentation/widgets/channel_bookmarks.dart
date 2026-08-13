@@ -24,23 +24,36 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
   List<ChannelBookmarkEntity> _bookmarks = const [];
   String _loadedChannelId = '';
   bool _loading = false;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final channelState = context.watch<ChannelBloc>().state;
+      final channel = channelState is ChannelsLoadedState
+          ? channelState.selectedChannel
+          : null;
+      final channelId = channel?.id ?? '';
+
+      if (channelId.isNotEmpty && channelId != _loadedChannelId) {
+        _loadedChannelId = channelId;
+        _loadBookmarks(channelId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final channelState = context.watch<ChannelBloc>().state;
-    final channel = channelState is ChannelsLoadedState
-        ? channelState.selectedChannel
-        : null;
-    final channelId = channel?.id ?? '';
-
-    if (channelId.isNotEmpty && channelId != _loadedChannelId) {
-      _loadedChannelId = channelId;
-      _loadBookmarks(channelId);
+    final theme = AppTheme.of(context);
+    if (errorMessage != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(errorMessage!, style: TextStyle(fontSize: 17)),
+      );
     }
-
     if (_bookmarks.isEmpty && !_loading) return const SizedBox.shrink();
 
-    final theme = AppTheme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 4),
@@ -74,7 +87,8 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
         _bookmarks = bookmarks;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
+      errorMessage = e.toString();
       if (!mounted) return;
       setState(() {
         _bookmarks = const [];
@@ -86,7 +100,9 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
   void _openBookmark(ChannelBookmarkEntity bookmark) {
     if (bookmark.type == ChannelBookmarkType.file) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('الإشارة مرتبطة بملف (${bookmark.displayName})')),
+        SnackBar(
+          content: Text('الإشارة مرتبطة بملف (${bookmark.displayName})'),
+        ),
       );
       return;
     }
@@ -130,7 +146,9 @@ class _BookmarkChip extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                bookmark.displayName.isEmpty ? bookmark.linkUrl : bookmark.displayName,
+                bookmark.displayName.isEmpty
+                    ? bookmark.linkUrl
+                    : bookmark.displayName,
                 style: TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w500,
