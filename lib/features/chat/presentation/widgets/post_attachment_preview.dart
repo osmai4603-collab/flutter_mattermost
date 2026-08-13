@@ -1,0 +1,226 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
+import 'package:flutter_mattermost/core/network/server_manager.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
+
+/// يعرض مرفقات الرسالة (الصور والملفات) بشكل تفاعلي.
+class PostAttachmentPreview extends StatelessWidget {
+  final List<FileInfoEntity> files;
+
+  const PostAttachmentPreview({super.key, required this.files});
+
+  @override
+  Widget build(BuildContext context) {
+    if (files.isEmpty) return const SizedBox.shrink();
+
+    final images = files.where((f) => _isImage(f.extension)).toList();
+    final otherFiles = files.where((f) => !_isImage(f.extension)).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (images.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: _ImageGrid(files: images, allFiles: files),
+          ),
+        if (otherFiles.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: otherFiles.map((f) => _FileCard(
+                file: f,
+                allFiles: files,
+                index: files.indexOf(f),
+              )).toList(),
+            ),
+          ),
+      ],
+    );
+  }
+
+  bool _isImage(String ext) {
+    final e = ext.toLowerCase();
+    return e == 'png' || e == 'jpg' || e == 'jpeg' || e == 'gif' || e == 'webp';
+  }
+}
+
+class _ImageGrid extends StatelessWidget {
+  final List<FileInfoEntity> files;
+  final List<FileInfoEntity> allFiles;
+
+  const _ImageGrid({required this.files, required this.allFiles});
+
+  @override
+  Widget build(BuildContext context) {
+    if (files.length == 1) {
+      return _SingleImage(
+        file: files.first,
+        allFiles: allFiles,
+        index: allFiles.indexOf(files.first),
+      );
+    }
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 200,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childAspectRatio: 1,
+      ),
+      itemCount: files.length,
+      itemBuilder: (context, i) {
+        final f = files[i];
+        return _Thumbnail(
+          file: f,
+          allFiles: allFiles,
+          index: allFiles.indexOf(f),
+        );
+      },
+    );
+  }
+}
+
+class _SingleImage extends StatelessWidget {
+  final FileInfoEntity file;
+  final List<FileInfoEntity> allFiles;
+  final int index;
+
+  const _SingleImage({required this.file, required this.allFiles, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final serverUrl = getIt<ServerManager>().activeServerUrl;
+    final imageUrl = '$serverUrl/api/v4/files/${file.id}';
+
+    return GestureDetector(
+      onTap: () => _showPreview(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 300),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return const SizedBox(
+                height: 100,
+                child: Center(child: CircularProgressIndicator()),
+              );
+            },
+            errorBuilder: (context, error, stack) => const Icon(Icons.broken_image),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPreview(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => FilePreviewModal(files: allFiles, initialIndex: index),
+    );
+  }
+}
+
+class _Thumbnail extends StatelessWidget {
+  final FileInfoEntity file;
+  final List<FileInfoEntity> allFiles;
+  final int index;
+
+  const _Thumbnail({required this.file, required this.allFiles, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final serverUrl = getIt<ServerManager>().activeServerUrl;
+    final thumbUrl = '$serverUrl/api/v4/files/${file.id}/thumbnail';
+
+    return GestureDetector(
+      onTap: () => _showPreview(context),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.network(
+          thumbUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stack) => const Icon(Icons.image),
+        ),
+      ),
+    );
+  }
+
+  void _showPreview(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => FilePreviewModal(files: allFiles, initialIndex: index),
+    );
+  }
+}
+
+class _FileCard extends StatelessWidget {
+  final FileInfoEntity file;
+  final List<FileInfoEntity> allFiles;
+  final int index;
+
+  const _FileCard({required this.file, required this.allFiles, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return InkWell(
+      onTap: () => showDialog(
+        context: context,
+        builder: (context) => FilePreviewModal(files: allFiles, initialIndex: index),
+      ),
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: theme.centerChannelColor.withValues(alpha: 0.05),
+          border: Border.all(color: theme.centerChannelColor.withValues(alpha: 0.1)),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.insert_drive_file_outlined, size: 20, color: theme.linkColor),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    file.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 14, color: theme.centerChannelColor),
+                  ),
+                  Text(
+                    _formatFileSize(file.size),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.centerChannelColor.withValues(alpha: 0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
