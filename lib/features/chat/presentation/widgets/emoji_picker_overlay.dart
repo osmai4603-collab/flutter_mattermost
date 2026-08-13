@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
@@ -24,6 +26,7 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _hoveredEmojiName = '';
 
   // Standard categories from emoji_picker_flutter
   final List<Category> _categories = [
@@ -54,42 +57,39 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
+    final screenSize = MediaQuery.sizeOf(context);
+    final overlayWidth = math.min(400.0, screenSize.width - 32);
+    final overlayHeight = math.min(450.0, screenSize.height - 120);
 
-    return Container(
-      width: 400,
-      height: 450,
-      decoration: BoxDecoration(
+    return Card(
+      elevation: 8,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: overlayWidth,
+        height: overlayHeight,
         color: theme.centerChannelBg,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: theme.centerChannelColor.withValues(alpha: 0.1),
+        child: Column(
+          children: [
+            _buildHeader(theme, l10n),
+            _buildSearchBar(theme, l10n),
+            _buildTabs(theme),
+            Expanded(
+              child: _searchQuery.isEmpty
+                  ? _buildEmojiGrid(theme)
+                  : _buildSearchResults(theme),
+            ),
+            _buildFooter(theme),
+          ],
         ),
-      ),
-      child: Column(
-        children: [
-          _buildHeader(theme, l10n),
-          _buildSearchBar(theme, l10n),
-          _buildTabs(theme),
-          Expanded(
-            child: _searchQuery.isEmpty
-                ? _buildEmojiGrid(theme)
-                : _buildSearchResults(theme),
-          ),
-        ],
       ),
     );
   }
 
   Widget _buildHeader(MattermostColors theme, AppLocalizations l10n) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -167,17 +167,18 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
         return _EmojiCategoryGrid(
           emojis: emojis,
           onEmojiSelected: widget.onEmojiSelected,
+          onHover: (name) => setState(() => _hoveredEmojiName = name),
         );
       }).toList(),
     );
   }
 
   Widget _buildSearchResults(MattermostColors theme) {
-    // Basic search across all categories
     final results = <Emoji>[];
+    final query = _searchQuery.toLowerCase();
     for (final set in defaultEmojiSet) {
       for (final emoji in set.emoji) {
-        if (emoji.name.contains(_searchQuery.toLowerCase())) {
+        if (emoji.name.toLowerCase().contains(query)) {
           results.add(emoji);
         }
       }
@@ -197,6 +198,31 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     return _EmojiCategoryGrid(
       emojis: results,
       onEmojiSelected: widget.onEmojiSelected,
+      onHover: (name) => setState(() => _hoveredEmojiName = name),
+    );
+  }
+
+  Widget _buildFooter(MattermostColors theme) {
+    return Container(
+      height: 32,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: theme.centerChannelColor.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
+      child: Text(
+        _hoveredEmojiName,
+        style: TextStyle(
+          color: theme.centerChannelColor.withValues(alpha: 0.6),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -227,30 +253,36 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
 class _EmojiCategoryGrid extends StatelessWidget {
   final List<Emoji> emojis;
   final Function(String) onEmojiSelected;
+  final Function(String) onHover;
 
   const _EmojiCategoryGrid({
     required this.emojis,
     required this.onEmojiSelected,
+    required this.onHover,
   });
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 8,
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 45,
         mainAxisSpacing: 4,
         crossAxisSpacing: 4,
       ),
       itemCount: emojis.length,
       itemBuilder: (context, index) {
         final emoji = emojis[index];
-        return InkWell(
-          onTap: () => onEmojiSelected(emoji.emoji),
-          borderRadius: BorderRadius.circular(6),
-          child: Container(
-            alignment: Alignment.center,
-            child: emojiWidget(emoji.emoji, size: 24),
+        return MouseRegion(
+          onEnter: (_) => onHover(emoji.name),
+          onExit: (_) => onHover(''),
+          child: InkWell(
+            onTap: () => onEmojiSelected(emoji.emoji),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              alignment: Alignment.center,
+              child: emojiWidget(emoji.emoji, size: 24),
+            ),
           ),
         );
       },

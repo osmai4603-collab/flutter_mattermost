@@ -13,7 +13,8 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
@@ -44,7 +45,7 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
   String? _channelId;
   final Set<String> _requestedUserIds = {};
   final Set<String> _requestedChannelIds = {};
-  Map<String, String> _channelNames = {};
+  Map<String, ChannelEntity> _channels = {};
 
   @override
   void initState() {
@@ -72,6 +73,7 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
   void _reload() {
     setState(() => _postsFuture = _fetch());
   }
+
   void _loadProfiles(List<PostEntity> posts) {
     final ids = posts
         .map((p) => p.userId)
@@ -83,28 +85,34 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
     context.read<UserStatusBloc>().add(LoadUserStatusesEvent(ids));
   }
 
-  void _resolveChannelNames(List<PostEntity> posts) {
+  void _resolveChannels(List<PostEntity> posts) {
     final channelState = context.read<ChannelBloc>().state;
-    final loaded =
-        channelState is ChannelsLoadedState ? channelState : null;
+    final loaded = channelState is ChannelsLoadedState ? channelState : null;
 
     for (final post in posts) {
       final id = post.channelId;
       if (id.isEmpty) continue;
-      String? name;
+      ChannelEntity? channel;
       if (loaded != null) {
         for (final c in loaded.channels) {
           if (c.id == id) {
-            name = c.displayName;
+            channel = c;
             break;
           }
         }
       }
-      if (name == null && _requestedChannelIds.add(id)) {
-        getIt<ChannelRepository>().getChannelById(id).then((channel) {
-          if (!mounted) return;
-          setState(() => _channelNames = {..._channelNames, id: channel.displayName});
-        }).catchError((_) {});
+      if (channel != null) {
+        if (_channels[id] != channel) {
+          setState(() => _channels = {..._channels, id: channel!});
+        }
+      } else if (_requestedChannelIds.add(id)) {
+        getIt<ChannelRepository>()
+            .getChannelById(id)
+            .then((c) {
+              if (!mounted) return;
+              setState(() => _channels = {..._channels, id: c});
+            })
+            .catchError((_) {});
       }
     }
   }
@@ -120,16 +128,7 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
   }
 
   void _navigateToPost(PostEntity post) {
-    final channelState = context.read<ChannelBloc>().state;
-    ChannelEntity? channel;
-    if (channelState is ChannelsLoadedState) {
-      for (final c in channelState.channels) {
-        if (c.id == post.channelId) {
-          channel = c;
-          break;
-        }
-      }
-    }
+    final channel = _channels[post.channelId];
     if (channel == null) return;
 
     context.read<ChannelBloc>().add(SelectChannelEvent(channel));
@@ -178,7 +177,7 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
           widget.onLoad?.call(posts.length);
         });
         _loadProfiles(posts);
-        _resolveChannelNames(posts);
+        _resolveChannels(posts);
         if (posts.isEmpty) {
           return widget.isPinned
               ? _PinnedEmptyState(l10n: l10n)
@@ -222,8 +221,10 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
           post: post,
           profile: profiles[post.userId],
           status: statuses?.statusOf(post.userId),
-          channelName: widget.isPinned ? null : _channelNames[post.channelId],
-          removeIcon: widget.isPinned ? Icons.push_pin_outlined : Icons.bookmark_border,
+          channel: widget.isPinned ? null : _channels[post.channelId],
+          removeIcon: widget.isPinned
+              ? Icons.push_pin_outlined
+              : Icons.bookmark_border,
           removeTooltip: widget.isPinned
               ? l10n.postMenuUnpin
               : l10n.postMenuUnflag,
@@ -267,7 +268,7 @@ class _PostRow extends StatelessWidget {
   final PostEntity post;
   final UserEntity? profile;
   final UserStatus? status;
-  final String? channelName;
+  final ChannelEntity? channel;
   final IconData removeIcon;
   final String removeTooltip;
   final VoidCallback onRemove;
@@ -277,7 +278,7 @@ class _PostRow extends StatelessWidget {
     required this.post,
     required this.profile,
     required this.status,
-    required this.channelName,
+    required this.channel,
     required this.removeIcon,
     required this.removeTooltip,
     required this.onRemove,
@@ -288,12 +289,14 @@ class _PostRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-    final time = DateFormat('h:mm a').format(
-      DateTime.fromMillisecondsSinceEpoch(post.createAt),
-    );
+    final time = DateFormat(
+      'h:mm a',
+    ).format(DateTime.fromMillisecondsSinceEpoch(post.createAt));
     final displayName = profile != null && profile!.firstName.isNotEmpty
         ? '${profile!.firstName} ${profile!.lastName}'.trim()
         : profile?.username ?? '@unknown';
+
+    final isArchived = channel?.deleteAt != null && channel!.deleteAt > 0;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -320,25 +323,46 @@ class _PostRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // شريط المصدر (Channel Badge)
-              if (channelName != null)
+              if (channel != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.tag,
-                        size: 14,
-                        color: theme.linkColor,
-                      ),
+                      Icon(Icons.tag, size: 14, color: theme.linkColor),
                       const SizedBox(width: 4),
-                      Text(
-                        channelName!,
-                        style: TextStyle(
-                          color: theme.linkColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                      Expanded(
+                        child: Text(
+                          channel!.displayName,
+                          style: TextStyle(
+                            color: theme.linkColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
+                      if (isArchived)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: theme.centerChannelColor.withValues(
+                              alpha: 0.05,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            l10n.search_itemChannelArchived,
+                            style: TextStyle(
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.5,
+                              ),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -374,26 +398,54 @@ class _PostRow extends StatelessWidget {
                             Text(
                               time,
                               style: TextStyle(
-                                color: theme.centerChannelColor
-                                    .withValues(alpha: 0.3),
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.3,
+                                ),
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 4),
-                        RichText(
-                          text: TextSpan(
-                            children: emojiAwareSpans(
-                              post.message,
-                              TextStyle(
-                                color: theme.centerChannelColor,
-                                fontSize: 13,
-                                height: 1.4,
+                        if (post.deleteAt > 0)
+                          Text(
+                            l10n.postDeleted,
+                            style: TextStyle(
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.5,
                               ),
+                              fontSize: 13,
+                              fontStyle: FontStyle.italic,
+                              height: 1.4,
                             ),
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              MarkdownMessage(
+                                text: post.message,
+                                style: TextStyle(
+                                  color: theme.centerChannelColor,
+                                  fontSize: 13,
+                                  height: 1.4,
+                                ),
+                              ),
+                              if (post.editAt > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    l10n.postEdited,
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontStyle: FontStyle.italic,
+                                      color: theme.centerChannelColor
+                                          .withValues(alpha: 0.4),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -419,19 +471,32 @@ class _PostRow extends StatelessWidget {
                     children: [
                       _QuickAction(
                         icon: Icons.add_reaction_outlined,
-                        onTap: () {},
+                        onTap: () async {
+                          final emoji = await showReactionPicker(context);
+                          if (emoji != null && context.mounted) {
+                            context.read<PostBloc>().add(
+                              ToggleReactionEvent(post.id, emoji),
+                            );
+                          }
+                        },
                       ),
                       _QuickAction(
                         icon: Icons.reply_outlined,
                         onTap: () {
-                          context
-                              .read<RhsBloc>()
-                              .add(OpenThreadEvent(post.id, post.channelId));
+                          context.read<RhsBloc>().add(
+                            OpenThreadEvent(post.id, post.channelId),
+                          );
                         },
                       ),
                       _QuickAction(
                         icon: Icons.share_outlined,
-                        onTap: () {},
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Share - coming soon'),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

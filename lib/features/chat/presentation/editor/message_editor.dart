@@ -281,20 +281,9 @@ class _MessageEditorState extends State<MessageEditor> {
             if (_rootId.isNotEmpty)
               _AlsoSendToChannelCheckbox(
                 value: _alsoSendToChannel,
-                onChanged: (val) => setState(() => _alsoSendToChannel = val ?? false),
+                onChanged: (val) =>
+                    setState(() => _alsoSendToChannel = val ?? false),
               ),
-            AttachmentPreview(
-              draft: composer.draft,
-              onRemove: upload.removeFile,
-            ),
-            FormattingBar(
-              onFormat: composer.applyMarkdown,
-              showPreview: composer.showPreview,
-              onTogglePreview: composer.togglePreview,
-              message: controller.text,
-              selectionStart: selectionStart,
-              selectionEnd: selectionEnd,
-            ),
             Container(
               decoration: BoxDecoration(
                 color: theme.centerChannelBg,
@@ -303,126 +292,151 @@ class _MessageEditorState extends State<MessageEditor> {
                 ),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.add,
-                      size: 22,
-                      color: upload.canAddMore
-                          ? theme.centerChannelColor.withValues(alpha: 0.6)
-                          : theme.centerChannelColor.withValues(alpha: 0.25),
-                    ),
-                    tooltip: l10n.editorAddAttachment,
-                    onPressed: upload.canAddMore ? upload.pickFiles : null,
+                  AttachmentPreview(
+                    draft: composer.draft,
+                    onRemove: upload.removeFile,
                   ),
-                  OverlayPortal(
-                    controller: _emojiPortal,
-                    overlayChildBuilder: (_) => CompositedTransformFollower(
-                      link: _emojiLink,
-                      showWhenUnlinked: false,
-                      targetAnchor: Alignment.topRight,
-                      followerAnchor: Alignment.bottomRight,
-                      offset: const Offset(0, -8),
-                      child: EmojiPickerOverlay(
-                        onEmojiSelected: composer.insertEmoji,
-                        onClose: composer.closeEmojiPicker,
-                      ),
-                    ),
-                    child: CompositedTransformTarget(
-                      link: _emojiLink,
-                      child: IconButton(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      IconButton(
                         icon: Icon(
-                          Icons.emoji_emotions_outlined,
+                          Icons.add,
+                          size: 22,
+                          color: upload.canAddMore
+                              ? theme.centerChannelColor.withValues(alpha: 0.6)
+                              : theme.centerChannelColor.withValues(
+                                  alpha: 0.25,
+                                ),
+                        ),
+                        tooltip: l10n.editorAddAttachment,
+                        onPressed: upload.canAddMore ? upload.pickFiles : null,
+                      ),
+                      OverlayPortal(
+                        controller: _emojiPortal,
+                        overlayChildBuilder: (_) => CompositedTransformFollower(
+                          link: _emojiLink,
+                          showWhenUnlinked: false,
+                          targetAnchor: Alignment.topRight,
+                          followerAnchor: Alignment.bottomRight,
+                          offset: const Offset(0, -10),
+                          child: EmojiPickerOverlay(
+                            onEmojiSelected: composer.insertEmoji,
+                            onClose: composer.closeEmojiPicker,
+                          ),
+                        ),
+                        child: CompositedTransformTarget(
+                          link: _emojiLink,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.emoji_emotions_outlined,
+                              size: 22,
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.6,
+                              ),
+                            ),
+                            tooltip: l10n.editorAddEmoji,
+                            onPressed: composer.toggleEmojiPicker,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.flash_on_outlined,
                           size: 22,
                           color: theme.centerChannelColor.withValues(
                             alpha: 0.6,
                           ),
                         ),
-                        tooltip: l10n.editorAddEmoji,
-                        onPressed: composer.toggleEmojiPicker,
+                        tooltip: l10n.editorSlashCommands,
+                        onPressed: composer.openSlashCommands,
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: Icon(
-                      Icons.flash_on_outlined,
-                      size: 22,
-                      color: theme.centerChannelColor.withValues(alpha: 0.6),
-                    ),
-                    tooltip: l10n.editorSlashCommands,
-                    onPressed: composer.openSlashCommands,
-                  ),
-                  Expanded(
-                    child: composer.showPreview
-                        ? _PreviewPane(composer: composer)
-                        : TextField(
-                            controller: controller,
-                            focusNode: composer.focusNode,
-                            onChanged: (value) {
-                              composer.onComposerTextChanged();
-                              composer.clearServerError();
-                              upload.clearError();
-                            },
-                            minLines: 1,
-                            maxLines: 8,
-                            keyboardType: TextInputType.multiline,
-                            style: TextStyle(
-                              color: theme.centerChannelColor,
-                              fontSize: 14,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: channelName != null
-                                  ? l10n.create_postWrite(channelName)
-                                  : l10n.editorPlaceholder,
-                              hintStyle: TextStyle(
-                                color: theme.centerChannelColor.withValues(
-                                  alpha: 0.45,
+                      Expanded(
+                        child: composer.showPreview
+                            ? _PreviewPane(composer: composer)
+                            : TextField(
+                                controller: controller,
+                                focusNode: composer.focusNode,
+                                onChanged: (value) {
+                                  composer.onComposerTextChanged();
+                                  composer.clearServerError();
+                                  upload.clearError();
+                                },
+                                minLines: 1,
+                                maxLines: 8,
+                                keyboardType: TextInputType.multiline,
+                                style: TextStyle(
+                                  color: theme.centerChannelColor,
+                                  fontSize: 14,
                                 ),
-                                fontSize: 14,
+                                decoration: InputDecoration(
+                                  hintText: channelName != null
+                                      ? l10n.create_postWrite(channelName)
+                                      : l10n.editorPlaceholder,
+                                  hintStyle: TextStyle(
+                                    color: theme.centerChannelColor.withValues(
+                                      alpha: 0.45,
+                                    ),
+                                    fontSize: 14,
+                                  ),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                    horizontal: 8,
+                                  ),
+                                ),
                               ),
-                              border: InputBorder.none,
-                              isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 10,
-                                horizontal: 8,
-                              ),
-                            ),
-                          ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      final teamId = _teamId;
-                      if (teamId.isNotEmpty) {
-                        context.go('/$teamId/drafts');
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: Text(
-                      l10n.editorDrafts,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.centerChannelColor.withValues(alpha: 0.6),
-                        fontWeight: FontWeight.w500,
                       ),
-                    ),
+                      TextButton(
+                        onPressed: () {
+                          final teamId = _teamId;
+                          if (teamId.isNotEmpty) {
+                            context.go('/$teamId/drafts');
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text(
+                          l10n.editorDrafts,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: theme.centerChannelColor.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: Icon(
+                          Icons.send,
+                          size: 22,
+                          color: composer.canSend
+                              ? theme.buttonBg
+                              : theme.buttonBg.withValues(alpha: 0.3),
+                        ),
+                        tooltip: l10n.editorSend,
+                        onPressed: composer.canSend
+                            ? () => composer.send()
+                            : null,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: Icon(
-                      Icons.send,
-                      size: 22,
-                      color: composer.canSend
-                          ? theme.buttonBg
-                          : theme.buttonBg.withValues(alpha: 0.3),
-                    ),
-                    tooltip: l10n.editorSend,
-                    onPressed: composer.canSend ? () => composer.send() : null,
+                  FormattingBar(
+                    onFormat: composer.applyMarkdown,
+                    showPreview: composer.showPreview,
+                    onTogglePreview: composer.togglePreview,
+                    message: controller.text,
+                    selectionStart: selectionStart,
+                    selectionEnd: selectionEnd,
                   ),
                 ],
               ),
@@ -445,7 +459,7 @@ class _MessageEditorState extends State<MessageEditor> {
             targetAnchor: Alignment.topLeft,
             followerAnchor: Alignment.bottomLeft,
             offset: const Offset(8, -8),
-            child: AutocompleteOverlay(controller: autocomplete, height: 320),
+            child: AutocompleteOverlay(controller: autocomplete, height: 300),
           );
         },
         child: CompositedTransformTarget(
@@ -557,7 +571,10 @@ class _AlsoSendToChannelCheckbox extends StatelessWidget {
   final bool value;
   final ValueChanged<bool?> onChanged;
 
-  const _AlsoSendToChannelCheckbox({required this.value, required this.onChanged});
+  const _AlsoSendToChannelCheckbox({
+    required this.value,
+    required this.onChanged,
+  });
 
   @override
   Widget build(BuildContext context) {

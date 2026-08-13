@@ -11,12 +11,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:drift/drift.dart' as _i500;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i558;
-import 'package:flutter_webrtc/flutter_webrtc.dart' as _i367;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
 import '../../features/admin/data/datasources/admin_access_control_data_source.dart'
     as _i117;
+import '../../features/admin/data/datasources/admin_agents_data_source.dart'
+    as _i548;
 import '../../features/admin/data/datasources/admin_cloud_data_source.dart'
     as _i431;
 import '../../features/admin/data/datasources/admin_compliance_data_source.dart'
@@ -144,13 +145,25 @@ import '../../features/chat/data/datasources/threads_remote_data_source.dart'
 import '../../features/chat/data/datasources/typing_remote_data_source.dart'
     as _i428;
 import '../../features/chat/data/realtime/realtime_sync_service.dart' as _i468;
+import '../../features/chat/data/repositories/drafts_repository_impl.dart'
+    as _i152;
 import '../../features/chat/data/repositories/post_repository_impl.dart'
     as _i985;
+import '../../features/chat/data/repositories/scheduled_posts_repository_impl.dart'
+    as _i221;
 import '../../features/chat/data/sync/offline_sync_service.dart' as _i223;
+import '../../features/chat/domain/repositories/drafts_repository.dart'
+    as _i366;
 import '../../features/chat/domain/repositories/post_repository.dart' as _i686;
+import '../../features/chat/domain/repositories/scheduled_posts_repository.dart'
+    as _i300;
+import '../../features/chat/presentation/bloc/calls_bloc.dart' as _i396;
 import '../../features/chat/presentation/bloc/lhs_bloc.dart' as _i894;
 import '../../features/chat/presentation/bloc/post_bloc.dart' as _i486;
 import '../../features/chat/presentation/bloc/rhs_bloc.dart' as _i478;
+import '../../features/chat/presentation/bloc/search_bloc.dart' as _i860;
+import '../../features/common/data/datasources/playbooks_remote_data_source.dart'
+    as _i960;
 import '../../features/groups/data/datasources/groups_remote_data_source.dart'
     as _i236;
 import '../../features/groups/data/repositories/groups_repository_impl.dart'
@@ -203,6 +216,8 @@ import '../../features/system/data/repositories/system_repository_impl.dart'
 import '../../features/system/domain/repositories/system_repository.dart'
     as _i323;
 import '../../features/system/presentation/bloc/system_info_bloc.dart' as _i363;
+import '../../features/teams/data/datasources/team_local_data_source.dart'
+    as _i326;
 import '../../features/teams/data/datasources/team_members_remote_data_source.dart'
     as _i865;
 import '../../features/teams/data/datasources/teams_remote_data_source.dart'
@@ -231,12 +246,14 @@ import '../../features/users/presentation/bloc/user_profile_bloc.dart' as _i433;
 import '../../features/users/presentation/bloc/user_status_bloc.dart' as _i516;
 import '../calls/calls_manager.dart' as _i875;
 import '../network/api_client.dart' as _i557;
+import '../network/connectivity_monitor.dart' as _i286;
 import '../network/server_manager.dart' as _i909;
 import '../network/session_controller.dart' as _i787;
 import '../network/websocket_client.dart' as _i777;
 import '../permissions/permissions_provider.dart' as _i1011;
 import '../storage/app_database.dart' as _i690;
 import '../storage/secure_storage_service.dart' as _i666;
+import '../sync/delta_sync_service.dart' as _i1041;
 import '../sync/websocket_db_sync_service.dart' as _i791;
 import 'storage_module.dart' as _i371;
 
@@ -249,6 +266,9 @@ extension GetItInjectableX on _i174.GetIt {
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
     final storageModule = _$StorageModule();
     gh.singleton<_i787.SessionController>(() => _i787.SessionController());
+    gh.lazySingleton<_i286.ConnectivityMonitor>(
+      () => _i286.ConnectivityMonitor(),
+    );
     gh.lazySingleton<_i558.FlutterSecureStorage>(
       () => storageModule.secureStorage,
     );
@@ -306,11 +326,19 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i187.AdminRemoteClusterDataSource>(
       () => _i187.AdminRemoteClusterDataSourceImpl(gh<_i557.ApiClient>()),
     );
+    gh.lazySingleton<_i300.ScheduledPostsRepository>(
+      () => _i221.ScheduledPostsRepositoryImpl(
+        gh<_i582.ScheduledPostsRemoteDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i995.DraftsRemoteDataSource>(
       () => _i995.DraftsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
     gh.lazySingleton<_i931.ThreadsRemoteDataSource>(
       () => _i931.ThreadsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i960.PlaybooksRemoteDataSource>(
+      () => _i960.PlaybooksRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
     gh.lazySingleton<_i851.AdminSharedChannelsDataSource>(
       () => _i851.AdminSharedChannelsDataSourceImpl(gh<_i557.ApiClient>()),
@@ -323,6 +351,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i777.WebSocketClientManager>(
       () => _i777.WebSocketClientManager(gh<_i666.SecureStorageService>()),
+    );
+    gh.lazySingleton<_i875.CallsManager>(
+      () => _i875.CallsManager(gh<_i777.WebSocketClientManager>()),
     );
     gh.lazySingleton<_i1065.TeamRepository>(
       () => _i437.TeamRepositoryImpl(gh<_i222.TeamsRemoteDataSource>()),
@@ -398,13 +429,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i776.ScheduledRecapsRemoteDataSource>(
       () => _i776.ScheduledRecapsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
-    gh.lazySingleton<_i875.CallsManager>(
-      () => _i875.CallsManager(
-        gh<_i777.WebSocketClientManager>(),
-        localRenderer: gh<_i367.RTCVideoRenderer>(),
-        remoteRenderer: gh<_i367.RTCVideoRenderer>(),
-      ),
-    );
     gh.lazySingleton<_i787.AuthRepository>(
       () => _i153.AuthRepositoryImpl(
         gh<_i107.AuthRemoteDataSource>(),
@@ -423,6 +447,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i377.PermissionsRemoteDataSource>(
       () => _i377.PermissionsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.factory<_i396.CallsBloc>(
+      () => _i396.CallsBloc(gh<_i875.CallsManager>()),
     );
     gh.lazySingleton<_i804.ChannelCategoriesRemoteDataSource>(
       () => _i804.ChannelCategoriesRemoteDataSourceImpl(gh<_i557.ApiClient>()),
@@ -448,6 +475,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i240.OAuthRepository>(
       () => _i39.OAuthRepositoryImpl(gh<_i923.OAuthRemoteDataSource>()),
     );
+    gh.lazySingleton<_i548.AdminAgentsDataSource>(
+      () => _i548.AdminAgentsDataSourceImpl(gh<_i557.ApiClient>()),
+    );
     gh.lazySingleton<_i488.UserTokensRemoteDataSource>(
       () => _i488.UserTokensRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
@@ -460,6 +490,12 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1009.SchemesRemoteDataSource>(
       () => _i1009.SchemesRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
+    gh.lazySingleton<_i860.SearchBloc>(
+      () => _i860.SearchBloc(
+        gh<_i20.PostRemoteDataSource>(),
+        gh<_i937.FilesRemoteDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i940.WebhooksBloc>(
       () => _i940.WebhooksBloc(gh<_i822.WebhooksRepository>()),
     );
@@ -467,6 +503,12 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i29.AdminRolesSchemesRepositoryImpl(
         gh<_i147.RolesRemoteDataSource>(),
         gh<_i1009.SchemesRemoteDataSource>(),
+      ),
+    );
+    gh.lazySingleton<_i326.TeamLocalDataSource>(
+      () => _i326.TeamLocalDataSourceImpl(
+        gh<_i690.AppDatabase>(),
+        gh<_i909.ServerManager>(),
       ),
     );
     gh.lazySingleton<_i915.AdminSharedChannelsRepository>(
@@ -497,6 +539,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i777.WebSocketClientManager>(),
         gh<_i94.ChatLocalDataSource>(),
       ),
+    );
+    gh.lazySingleton<_i366.DraftsRepository>(
+      () => _i152.DraftsRepositoryImpl(gh<_i995.DraftsRemoteDataSource>()),
     );
     gh.lazySingleton<_i252.AdminAccessControlRepository>(
       () => _i925.AdminAccessControlRepositoryImpl(
@@ -592,6 +637,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i259.BotsBloc>(
       () => _i259.BotsBloc(gh<_i564.BotsRepository>()),
     );
+    gh.lazySingleton<_i1041.DeltaSyncService>(
+      () => _i1041.DeltaSyncService(
+        gh<_i94.ChatLocalDataSource>(),
+        gh<_i20.PostRemoteDataSource>(),
+        gh<_i787.AuthRepository>(),
+      ),
+    );
     gh.lazySingleton<_i223.OfflineSyncService>(
       () => _i223.OfflineSyncService(
         gh<_i94.ChatLocalDataSource>(),
@@ -602,14 +654,6 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i516.UserStatusBloc(
         gh<_i658.UserRepository>(),
         gh<_i777.WebSocketClientManager>(),
-      ),
-    );
-    gh.lazySingleton<_i486.PostBloc>(
-      () => _i486.PostBloc(
-        gh<_i686.PostRepository>(),
-        gh<_i777.WebSocketClientManager>(),
-        gh<_i428.TypingRemoteDataSource>(),
-        gh<_i666.SecureStorageService>(),
       ),
     );
     gh.lazySingleton<_i515.ChannelBloc>(
@@ -633,6 +677,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i777.WebSocketClientManager>(),
         gh<_i468.RealtimeSyncService>(),
         gh<_i223.OfflineSyncService>(),
+      ),
+    );
+    gh.lazySingleton<_i486.PostBloc>(
+      () => _i486.PostBloc(
+        gh<_i686.PostRepository>(),
+        gh<_i777.WebSocketClientManager>(),
+        gh<_i428.TypingRemoteDataSource>(),
+        gh<_i666.SecureStorageService>(),
+        gh<_i515.ChannelBloc>(),
       ),
     );
     gh.lazySingleton<_i478.RhsBloc>(

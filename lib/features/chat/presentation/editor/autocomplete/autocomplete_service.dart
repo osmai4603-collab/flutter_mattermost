@@ -76,14 +76,14 @@ class AutocompleteService {
               userId: u.id,
               title: getMentionDisplayName(
                 username: u.username,
-                nickname: u.nickname ?? '',
-                firstName: u.firstName ?? '',
-                lastName: u.lastName ?? '',
+                nickname: u.nickname,
+                firstName: u.firstName,
+                lastName: u.lastName,
               ),
               subtitle: '@${u.username}',
               insertText: '@${u.username} ',
               status: statuses[u.id],
-              roles: u.roles ?? '',
+              roles: u.roles,
             ),
           ),
         );
@@ -221,16 +221,14 @@ class AutocompleteService {
     try {
       final customs = await getIt<EmojiRemoteDataSource>()
           .autocompleteCustomEmoji(prefix: query);
-      for (final emoji in customs) {
-        final name = emoji.name;
-        if (name == null || name.isEmpty) continue;
+      for (final emoji in customs.where((custom) => custom.name.isNotEmpty)) {
         result.add(
           AutocompleteItem(
             kind: AutocompleteKind.emoji,
-            title: ':$name:',
+            title: ':${emoji.name}:',
             subtitle: 'custom',
-            insertText: ':$name: ',
-            emojiName: name,
+            insertText: ':${emoji.name}: ',
+            emojiName: emoji.name,
           ),
         );
       }

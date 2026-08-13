@@ -26,10 +26,5 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ThreadsBloc>(
     () => ThreadsBloc(getIt<ThreadsRepository>()),
   );
-  getIt.registerLazySingleton<CallsBloc>(
-    () => CallsBloc(getIt<CallsManager>()),
-  );
-  getIt.registerLazySingleton<DraftStorageService>(
-    () => DraftStorageService(),
-  );
+  getIt.registerLazySingleton<DraftStorageService>(() => DraftStorageService());
 }

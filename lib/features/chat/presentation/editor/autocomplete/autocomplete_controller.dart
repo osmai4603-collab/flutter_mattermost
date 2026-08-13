@@ -148,10 +148,23 @@ class AutocompleteController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void selectIndex(int index) {
+    if (_items.isEmpty || index < 0 || index >= _items.length) return;
+    _selectedIndex = index;
+    notifyListeners();
+  }
+
   /// يُدرج العنصر المحدد بدل نطاق الإكمال ثم يُغلق القائمة.
-  void insertCurrent() {
-    if (!isOpen || _items.isEmpty) return;
-    final item = _items[_selectedIndex < _items.length ? _selectedIndex : 0];
+  void insertCurrent() => _insertAt(_selectedIndex);
+
+  /// يُدرج العنصر عند فهرس مُحدَّد (نقرة على شبكة الإيموجي) ثم يُغلق القائمة.
+  void insertAt(int index) => _insertAt(index);
+
+  void _insertAt(int index) {
+    if (!isOpen || _items.isEmpty || index < 0 || index >= _items.length) {
+      return;
+    }
+    final item = _items[index];
     final text = textController.text;
     final start = _replaceRange.start.clamp(0, text.length);
     final end = _replaceRange.end.clamp(start, text.length);

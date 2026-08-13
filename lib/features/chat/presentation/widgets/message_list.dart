@@ -10,6 +10,7 @@ import 'package:flutter_mattermost/core/widgets/matter_button.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
@@ -17,11 +18,13 @@ import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
-import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_modal.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_attachment_preview.dart';
+import 'package:intl/intl.dart';
 
 /// قائمة الرسائل الافتراضية (أحدث الرسائل في الأسفل).
 class PostList extends StatefulWidget {
@@ -153,6 +156,7 @@ class _PostListBodyState extends State<_PostListBody> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final state = widget.state;
+    final theme = AppTheme.of(context);
 
     final profiles =
         context.watch<UserProfileBloc>().state is UserProfileLoadedState
@@ -169,6 +173,14 @@ class _PostListBodyState extends State<_PostListBody> {
               'me'
         : 'me';
 
+    final channelState = context.watch<ChannelBloc>().state;
+    int lastViewedAt = 0;
+    ChannelEntity? selectedChannel;
+    if (channelState is ChannelsLoadedState) {
+      selectedChannel = channelState.selectedChannel;
+      lastViewedAt = channelState.members[state.channelId]?.lastViewedAt ?? 0;
+    }
+
     final items = <Widget>[];
     if (state.hasMore && state.posts.isNotEmpty) {
       items.add(
@@ -184,23 +196,72 @@ class _PostListBodyState extends State<_PostListBody> {
         ),
       );
     }
-    if (state.posts.isEmpty) {
+    if (state.posts.isEmpty && selectedChannel != null) {
       items.add(
         Padding(
-          padding: const EdgeInsets.all(32),
-          child: Center(child: Text(l10n.postListNoMessages)),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 64),
+          child: Column(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: theme.centerChannelColor.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  selectedChannel.type.value == 'D' ? Icons.person : Icons.tag,
+                  size: 40,
+                  color: theme.centerChannelColor.withValues(alpha: 0.5),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Beginning of ${selectedChannel.displayName}',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: theme.centerChannelColor,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'This is the start of the ${selectedChannel.displayName} channel.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: theme.centerChannelColor.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     DateTime? previousDay;
-    for (final post in state.posts) {
+    bool newMessagesLineShown = false;
+
+    // posts are sorted latest to oldest (reverse: true)
+    for (int i = 0; i < state.posts.length; i++) {
+      final post = state.posts[i];
+      final isNew = lastViewedAt > 0 && post.createAt > lastViewedAt && post.userId != myUserId;
+
       final day = DateTime.fromMillisecondsSinceEpoch(post.createAt);
       final dayKey = DateTime(day.year, day.month, day.day);
-      if (previousDay == null || dayKey != previousDay) {
-        items.add(_DateSeparator(date: day));
-        previousDay = dayKey;
+
+      // Check if we need to insert "New Messages" line.
+      // Since it's reversed, we check if the NEXT post (which is older) was the last viewed one.
+      if (!newMessagesLineShown && isNew) {
+        // If this is the last post or the next one is older than lastViewedAt
+        final isLastNew = (i == state.posts.length - 1) ||
+            (state.posts[i + 1].createAt <= lastViewedAt);
+        if (isLastNew) {
+          items.add(const _NewMessagesSeparator());
+          newMessagesLineShown = true;
+        }
       }
+
       final isFocused = post.id == state.focusPostId;
       final item = PostItem(
         key: isFocused ? _focusKey : null,
@@ -213,23 +274,59 @@ class _PostListBodyState extends State<_PostListBody> {
         filesList: state.filesFor(post.id),
         replyCount: post.rootId.isEmpty ? state.replyCountFor(post.id) : 0,
         isReply: post.rootId.isNotEmpty,
+        isNew: isNew,
       );
       items.add(
         isFocused
             ? _FocusFlash(key: ValueKey('flash_${post.id}'), child: item)
             : item,
       );
+
+      if (previousDay == null || dayKey != previousDay) {
+        items.add(_DateSeparator(date: day));
+        previousDay = dayKey;
+      }
     }
 
     if (state.typingUserIds.isNotEmpty) {
       items.add(_TypingRow(userIds: state.typingUserIds.toList()));
     }
 
+
     return ListView(
       controller: widget.scrollController,
       reverse: true,
       padding: const EdgeInsets.only(bottom: 8),
       children: items,
+    );
+  }
+}
+
+class _NewMessagesSeparator extends StatelessWidget {
+  const _NewMessagesSeparator();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: theme.errorTextColor, thickness: 1)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(
+              'New Messages',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: theme.errorTextColor,
+              ),
+            ),
+          ),
+          Expanded(child: Divider(color: theme.errorTextColor, thickness: 1)),
+        ],
+      ),
     );
   }
 }
@@ -330,6 +427,7 @@ class PostItem extends StatefulWidget {
   final int replyCount;
   final bool isReply;
   final bool showFullHeader;
+  final bool isNew;
 
   const PostItem({
     super.key,
@@ -343,6 +441,7 @@ class PostItem extends StatefulWidget {
     this.replyCount = 0,
     this.isReply = false,
     this.showFullHeader = true,
+    this.isNew = false,
   });
 
   @override
@@ -360,10 +459,15 @@ class _PostItemState extends State<PostItem> {
 
     final username = widget.profile?.username ?? post.userId;
     final time = _formatTime(post.createAt);
+    final fullTime = DateFormat('EEEE, MMMM d, yyyy h:mm a').format(
+      DateTime.fromMillisecondsSinceEpoch(post.createAt).toLocal(),
+    );
     final isMine =
         post.userId == 'current_user' || post.userId == widget.myUserId;
     final canDelete = isMine || post.pendingPostId.isNotEmpty;
     final avatarUrl = _avatarUrlFor(post.userId);
+    final isBot = widget.profile?.roles.contains('bot') == true ||
+        post.propsData['from_webhook'] == 'true';
 
     final status =
         context.watch<UserStatusBloc>().state is UserStatusesLoadedState
@@ -424,13 +528,41 @@ class _PostItemState extends State<PostItem> {
                               ),
                             ),
                           ),
+                          if (isBot) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.08,
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: Text(
+                                'BOT',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.centerChannelColor.withValues(
+                                    alpha: 0.6,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(width: 6),
-                          Text(
-                            time,
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.45,
+                          Tooltip(
+                            message: fullTime,
+                            child: Text(
+                              time,
+                              style: TextStyle(
+                                fontSize: 11.5,
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.45,
+                                ),
                               ),
                             ),
                           ),
@@ -458,70 +590,30 @@ class _PostItemState extends State<PostItem> {
                       ),
                     )
                   else
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            post.message,
-                            style: TextStyle(
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.9,
-                              ),
-                              fontSize: 14,
-                              height: 1.35,
-                            ),
-                          ),
-                        ),
-                        if (post.editAt > 0) ...[
-                          const SizedBox(width: 6),
-                          Text(
-                            l10n.postEdited,
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontStyle: FontStyle.italic,
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.45,
+                        MarkdownMessage(text: post.message),
+                        if (post.editAt > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              l10n.postEdited,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontStyle: FontStyle.italic,
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.45,
+                                ),
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
                   if (widget.filesList.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: _FileChipsRow(files: widget.filesList),
-                    ),
-                  if (widget.post.fileIds.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.attach_file,
-                            size: 14,
-                            color: theme.centerChannelColor.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            l10n.postAttachmentsCount(
-                              widget.post.fileIds.length,
-                            ),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if ((widget.reactions.isNotEmpty || _hovered) && post.deleteAt == 0)
+                    PostAttachmentPreview(files: widget.filesList),
+                  if ((widget.reactions.isNotEmpty || _hovered) &&
+                      post.deleteAt == 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: _ReactionsBar(
@@ -574,6 +666,7 @@ class _PostItemState extends State<PostItem> {
     return '$h:$m';
   }
 }
+
 
 class _PostActions extends StatelessWidget {
   final PostEntity post;
@@ -636,6 +729,16 @@ class _PostActions extends StatelessWidget {
               label: l10n.postMenuCopy,
               icon: const Icon(Icons.copy, size: 18),
               onTap: () => Clipboard.setData(ClipboardData(text: post.message)),
+            ),
+            MatterMenuItem(
+              id: 'copy_link',
+              label: 'Copy Link',
+              icon: const Icon(Icons.link, size: 18),
+              onTap: () {
+                final serverUrl = getIt<ServerManager>().activeServerUrl;
+                final link = '$serverUrl/_redirect/pl/${post.id}';
+                Clipboard.setData(ClipboardData(text: link));
+              },
             ),
             MatterMenuItem(
               id: 'flag',
@@ -909,137 +1012,6 @@ class _ReactionChip extends StatelessWidget {
       ),
     );
   }
-}
-
-/// صف ملفات الرسالة: اسم الملف + الحجم لكل مرفق.
-class _FileChipsRow extends StatelessWidget {
-  final List<FileInfoEntity> files;
-
-  const _FileChipsRow({required this.files});
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      children: [
-        for (var i = 0; i < files.length; i++)
-          _FileChip(file: files[i], files: files, index: i),
-      ],
-    );
-  }
-}
-
-class _FileChip extends StatelessWidget {
-  final FileInfoEntity file;
-  final List<FileInfoEntity> files;
-  final int index;
-
-  const _FileChip({required this.file, required this.files, required this.index});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-
-    return Tooltip(
-      message: '${file.name} (${file.mimeType})',
-      child: InkWell(
-        onTap: () => _showFileDetails(context, files, index),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: BoxDecoration(
-            color: theme.centerChannelColor.withValues(alpha: 0.04),
-            border: Border.all(
-              color: theme.centerChannelColor.withValues(alpha: 0.15),
-            ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(_fileIcon(file.extension), size: 14, color: theme.linkColor),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 220),
-                child: Text(
-                  file.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    color: theme.centerChannelColor.withValues(alpha: 0.85),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                _formatFileSize(file.size),
-                style: TextStyle(
-                  fontSize: 11,
-                  color: theme.centerChannelColor.withValues(alpha: 0.45),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showFileDetails(
-    BuildContext context,
-    List<FileInfoEntity> files,
-    int index,
-  ) async {
-    showDialog<void>(
-      context: context,
-      builder: (context) => FilePreviewModal(files: files, initialIndex: index),
-    );
-  }
-
-  IconData _fileIcon(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'png':
-      case 'jpg':
-      case 'jpeg':
-      case 'gif':
-      case 'webp':
-      case 'bmp':
-      case 'svg':
-        return Icons.image_outlined;
-      case 'pdf':
-        return Icons.picture_as_pdf_outlined;
-      case 'zip':
-      case 'rar':
-      case '7z':
-      case 'tar':
-      case 'gz':
-        return Icons.folder_zip_outlined;
-      case 'mp4':
-      case 'mov':
-      case 'avi':
-      case 'mkv':
-      case 'webm':
-        return Icons.movie_outlined;
-      case 'mp3':
-      case 'wav':
-      case 'ogg':
-      case 'flac':
-        return Icons.audiotrack_outlined;
-      case 'doc':
-      case 'docx':
-        return Icons.description_outlined;
-      default:
-        return Icons.insert_drive_file_outlined;
-    }
-  }
-}
-
-String _formatFileSize(int bytes) {
-  if (bytes < 1024) return '$bytes B';
-  if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
 /// رابط صورة المستخدم (يتطلب ترخيص — يقع الاحتياط على الأحرف الأولى عند الفشل).

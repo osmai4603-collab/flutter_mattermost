@@ -227,10 +227,7 @@ class _RhsBody extends StatelessWidget {
       ),
       RhsPanel.mention => const MentionsPanel(),
       RhsPanel.pinned => SavedPinnedPanel(isPinned: true),
-      RhsPanel.flagged => _NoResultsBody(
-        title: l10n.no_resultsFlagged_postsTitle,
-        subtitle: l10n.no_resultsFlagged_postsSubtitle(l10n.postMenuFlag),
-      ),
+      RhsPanel.flagged => SavedPinnedPanel(isPinned: false),
       RhsPanel.channelFiles => const ChannelFilesPanel(),
       RhsPanel.channelInfo => const ChannelInfoPanel(),
       RhsPanel.channelMembers => ChannelMembersPanel(

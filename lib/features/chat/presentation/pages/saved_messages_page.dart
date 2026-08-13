@@ -37,9 +37,9 @@ class _SavedMessagesPageState extends State<SavedMessagesPage> {
           child: Row(
             children: [
               Icon(
-                Icons.bookmark_border,
+                Icons.bookmark, // Shaded icon as per spec
                 size: 20,
-                color: theme.centerChannelColor.withValues(alpha: 0.7),
+                color: theme.linkColor, // Colored as per spec
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -59,7 +59,7 @@ class _SavedMessagesPageState extends State<SavedMessagesPage> {
                         '($_count)',
                         style: TextStyle(
                           color: theme.centerChannelColor.withValues(alpha: 0.5),
-                          fontSize: 14,
+                          fontSize: 15,
                         ),
                       ),
                     ],

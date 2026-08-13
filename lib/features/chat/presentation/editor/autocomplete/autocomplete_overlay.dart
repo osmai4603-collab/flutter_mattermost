@@ -26,7 +26,6 @@ class AutocompleteOverlay extends StatefulWidget {
 }
 
 class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
-  
   @override
   void initState() {
     super.initState();
@@ -41,7 +40,9 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
   }
 
   String _subtitleFor(AutocompleteItem item, AppLocalizations l10n) {
-    if (item.subtitle != null && item.subtitle!.isNotEmpty) return item.subtitle!;
+    if (item.subtitle != null && item.subtitle!.isNotEmpty) {
+      return item.subtitle!;
+    }
     if (item.kind == AutocompleteKind.command) {
       final cmd = SlashCommandsRegistry.match(item.title.substring(1));
       if (cmd != null) return cmd.description(l10n);
@@ -66,10 +67,7 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
             height: 32,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .error
-                  .withValues(alpha: 0.1),
+              color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Icon(
@@ -94,9 +92,7 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: AppTheme.of(
-              context,
-            ).linkColor.withValues(alpha: 0.1),
+            color: AppTheme.of(context).linkColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
@@ -153,6 +149,9 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
       builder: (context, _) {
         if (!widget.controller.isOpen) return const SizedBox.shrink();
         final items = widget.controller.items;
+        final isEmojiGrid =
+            items.isNotEmpty &&
+            items.every((i) => i.kind == AutocompleteKind.emoji);
 
         return Material(
           elevation: 4,
@@ -160,7 +159,7 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           borderRadius: BorderRadius.circular(8),
           clipBehavior: Clip.antiAlias,
           child: Container(
-            width: 400,
+            width: 300,
             constraints: BoxConstraints(maxHeight: widget.height),
             decoration: BoxDecoration(
               border: Border.all(
@@ -187,29 +186,36 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
                     ),
                   )
                 else
-                  Flexible(
-                    child: ListView.builder(
-                      // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد.
-                      key: ValueKey('ac-${items.length}-${widget.controller.selectedIndex}'),
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      itemExtent: 48,
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        final item = items[index];
-                        final selected =
-                            index == widget.controller.selectedIndex;
-                        return _AutocompleteRow(
-                          item: item,
-                          selected: selected,
-                          subtitle: _subtitleFor(item, l10n),
-                          leading: _leadingFor(item),
-                          showAdminBadge:
-                              item.kind == AutocompleteKind.mention &&
-                              !item.special &&
-                              _isAdmin(item.roles),
-                        );
-                      },
-                    ),
+                  Expanded(
+                    child: isEmojiGrid
+                        ? _EmojiGrid(
+                            items: items,
+                            controller: widget.controller,
+                          )
+                        : ListView.builder(
+                            // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد.
+                            key: ValueKey(
+                              'ac-${items.length}-${widget.controller.selectedIndex}',
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            itemExtent: 48,
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final item = items[index];
+                              final selected =
+                                  index == widget.controller.selectedIndex;
+                              return _AutocompleteRow(
+                                item: item,
+                                selected: selected,
+                                subtitle: _subtitleFor(item, l10n),
+                                leading: _leadingFor(item),
+                                showAdminBadge:
+                                    item.kind == AutocompleteKind.mention &&
+                                    !item.special &&
+                                    _isAdmin(item.roles),
+                              );
+                            },
+                          ),
                   ),
               ],
             ),
@@ -222,6 +228,54 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
   bool _isAdmin(String? roles) =>
       roles != null &&
       (roles.contains('system_admin') || roles.contains('team_admin'));
+}
+
+/// شبكة الإيموجي — تُعرض بدل القائمة الرأسية عندما تكون كل النتائج إيموجي.
+class _EmojiGrid extends StatelessWidget {
+  final List<AutocompleteItem> items;
+  final AutocompleteController controller;
+
+  const _EmojiGrid({required this.items, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return GridView.builder(
+      // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد (مثل القائمة).
+      key: ValueKey('ac-${items.length}-${controller.selectedIndex}'),
+      padding: const EdgeInsets.all(8),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 4,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final selected = index == controller.selectedIndex;
+        return MouseRegion(
+          onEnter: (_) => controller.selectIndex(index),
+          child: InkWell(
+            onTap: () => controller.insertAt(index),
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              decoration: BoxDecoration(
+                color: selected
+                    ? theme.linkColor.withValues(alpha: 0.1)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              alignment: Alignment.center,
+              child: emojiWidget(
+                item.emojiUnicode ?? ':${item.emojiName}:',
+                size: 24,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 class _AutocompleteRow extends StatelessWidget {

@@ -72,10 +72,7 @@ class UnfollowThreadEvent extends ThreadsEvent {
 class MarkAllThreadsReadEvent extends ThreadsEvent {
   final String userId;
   final String teamId;
-  const MarkAllThreadsReadEvent({
-    required this.userId,
-    required this.teamId,
-  });
+  const MarkAllThreadsReadEvent({required this.userId, required this.teamId});
   @override
   List<Object?> get props => [userId, teamId];
 }
@@ -93,10 +90,7 @@ class ThreadsLoadedState extends ThreadsState {
   final List<ThreadEntity> threads;
   final bool unreadOnly;
 
-  const ThreadsLoadedState({
-    required this.threads,
-    this.unreadOnly = false,
-  });
+  const ThreadsLoadedState({required this.threads, this.unreadOnly = false});
 
   @override
   List<Object?> get props => [threads, unreadOnly];
@@ -138,7 +132,10 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     }
   }
 
-  void _onSetFilter(SetThreadsUnreadFilterEvent event, Emitter<ThreadsState> emit) {
+  void _onSetFilter(
+    SetThreadsUnreadFilterEvent event,
+    Emitter<ThreadsState> emit,
+  ) {
     final current = state;
     if (current is ThreadsLoadedState) {
       emit(current.copyWith(unreadOnly: event.unreadOnly));
@@ -268,10 +265,7 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     final current = state;
     if (current is! ThreadsLoadedState) return;
     try {
-      await _threadsRepository.markAllThreadsAsRead(
-        event.userId,
-        event.teamId,
-      );
+      await _threadsRepository.markAllThreadsAsRead(event.userId, event.teamId);
       emit(
         current.copyWith(
           threads: [

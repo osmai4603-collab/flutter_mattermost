@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/typing_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
@@ -252,7 +253,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   final WebSocketClientManager _webSocketManager;
   final TypingRemoteDataSource _typingDataSource;
   final SecureStorageService _secureStorage;
+  final ChannelBloc _channelBloc;
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _channelSubscription;
   Timer? _typingClearTimer;
 
   PostBloc(
@@ -260,6 +263,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     this._webSocketManager,
     this._typingDataSource,
     this._secureStorage,
+    this._channelBloc,
   ) : super(PostInitialState()) {
     on<LoadPostsForChannelEvent>(_onLoadPosts);
     on<LoadMorePostsEvent>(_onLoadMorePosts);
@@ -279,6 +283,19 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     on<_ClearTypingEvent>(_onClearTyping);
 
     _listenToWebSocketEvents();
+
+    // تحميل الرسائل فور اختيار قناة (أو عند أول تحميل للقنوات).
+    _channelSubscription = _channelBloc.stream.listen((channelState) {
+      if (channelState is ChannelsLoadedState &&
+          channelState.selectedChannel != null) {
+        final current = state;
+        final alreadyLoaded = current is PostsLoadedState &&
+            current.channelId == channelState.selectedChannel!.id;
+        if (!alreadyLoaded) {
+          add(LoadPostsForChannelEvent(channelState.selectedChannel!.id));
+        }
+      }
+    });
   }
 
   Future<String> _currentUserId() async =>
@@ -304,6 +321,10 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     LoadPostsForChannelEvent event,
     Emitter<PostsState> emit,
   ) async {
+    final current = state;
+    if (current is PostsLoadedState && current.channelId == event.channelId) {
+      return;
+    }
     emit(PostLoadingState(event.channelId));
     try {
       final posts = await _postRepository.getPostsForChannel(event.channelId);
@@ -680,6 +701,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   @override
   Future<void> close() async {
     _wsSubscription?.cancel();
+    _channelSubscription?.cancel();
     _typingClearTimer?.cancel();
     await super.close();
   }

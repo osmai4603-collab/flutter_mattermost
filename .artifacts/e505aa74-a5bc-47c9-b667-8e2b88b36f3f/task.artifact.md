@@ -1,8 +1,8 @@
-- `[ ]` Enhance `SavedPinnedPanel` in `saved_pinned_panel.dart`
-    - `[ ]` Track channel archive status in `_SavedPinnedPanelState`
-    - `[ ]` Update `_PostRow` to handle archived channel badge
-    - `[ ]` Update `_PostRow` to handle deleted/edited messages
-    - `[ ]` Enhance Quick Actions in `_PostRow`
-- `[ ]` Fix `RhsContainer` in `rhs_container.dart` to show `SavedPinnedPanel` for flagged messages
-- `[ ]` Refine `SavedMessagesPage` header styling
-- `[ ]` Verify implementation
+- `[x]` Enhance `SavedPinnedPanel` in `saved_pinned_panel.dart`
+    - `[x]` Track channel archive status in `_SavedPinnedPanelState`
+    - `[x]` Update `_PostRow` to handle archived channel badge
+    - `[x]` Update `_PostRow` to handle deleted/edited messages
+    - `[x]` Enhance Quick Actions in `_PostRow`
+- `[x]` Fix `RhsContainer` in `rhs_container.dart` to show `SavedPinnedPanel` for flagged messages
+- `[x]` Refine `SavedMessagesPage` header styling
+- `[x]` Verify implementation

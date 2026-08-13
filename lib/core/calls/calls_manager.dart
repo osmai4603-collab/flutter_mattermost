@@ -27,11 +27,9 @@ class CallsManager {
   RTCVideoRenderer get remoteRenderer => _remoteRenderer;
 
   CallsManager(
-    this._webSocketClientManager, {
-    RTCVideoRenderer? localRenderer,
-    RTCVideoRenderer? remoteRenderer,
-  }) : _localRenderer = localRenderer ?? RTCVideoRenderer(),
-       _remoteRenderer = remoteRenderer ?? RTCVideoRenderer() {
+    this._webSocketClientManager,
+  ) : _localRenderer = RTCVideoRenderer(),
+       _remoteRenderer = RTCVideoRenderer() {
     _wsSubscription = _webSocketClientManager.eventStream.listen(
       _onWebSocketEvent,
     );

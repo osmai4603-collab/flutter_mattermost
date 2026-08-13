@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/call_widget.dart';
@@ -76,13 +77,43 @@ class _ChannelPageState extends State<ChannelPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final channelState = context.watch<ChannelBloc>().state;
+    final isArchived = channelState is ChannelsLoadedState &&
+        (channelState.selectedChannel?.deleteAt ?? 0) > 0;
+
     return Column(
       children: [
         const ChannelHeader(),
         const IncomingCallBanner(),
         const CallWidget(),
         Expanded(child: PostList(scrollController: _listScrollController)),
-        MessageEditor(scrollController: _listScrollController),
+        if (isArchived)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            color: theme.centerChannelColor.withValues(alpha: 0.04),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.archive_outlined,
+                  size: 20,
+                  color: theme.centerChannelColor.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'You are viewing an archived channel. New messages cannot be posted.',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: theme.centerChannelColor.withValues(alpha: 0.6),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          MessageEditor(scrollController: _listScrollController),
       ],
     );
   }
