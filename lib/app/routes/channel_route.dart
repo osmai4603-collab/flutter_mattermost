@@ -8,6 +8,14 @@ abstract class ChatRoutes {
   static const String home = '/home';
   static const String team = '/:team';
   static const String channel = '/:team/channels/:channel';
+
+  /// رسالة مباشرة: /:team/messages/@username — يطابق رابط
+  /// sidebar_direct_channel.tsx في webapp.
+  static const String directMessage = '/:team/messages/@:username';
+
+  /// محادثة جماعية (GM): /:team/messages/:channel (اسم قناة GM هو معرف المجموعة).
+  static const String groupMessage = '/:team/messages/:channel';
+
   static const String globalThreads = '/:team/threads';
   static const String globalThreadsThread = '/:team/threads/:threadId';
   static const String savedMessages = '/:team/saved';
@@ -29,6 +37,20 @@ final List<RouteBase> _routes = [
   ),
   GoRoute(
     path: ChatRoutes.channel,
+    builder: (context, state) => ChannelPage(
+      teamName: state.pathParameters['team'],
+      channelName: state.pathParameters['channel'],
+    ),
+  ),
+  GoRoute(
+    path: ChatRoutes.directMessage,
+    builder: (context, state) => ChannelPage(
+      teamName: state.pathParameters['team'],
+      dmUsername: state.pathParameters['username'],
+    ),
+  ),
+  GoRoute(
+    path: ChatRoutes.groupMessage,
     builder: (context, state) => ChannelPage(
       teamName: state.pathParameters['team'],
       channelName: state.pathParameters['channel'],

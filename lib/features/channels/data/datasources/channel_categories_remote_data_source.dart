@@ -40,6 +40,8 @@ abstract class ChannelCategoriesRemoteDataSource {
     String? displayName,
     List<String>? channelIds,
     bool? muted,
+    String? sorting,
+    bool? collapsed,
   });
   Future<void> deleteChannelCategory(
     String userId,
@@ -175,6 +177,8 @@ class ChannelCategoriesRemoteDataSourceImpl
     String? displayName,
     List<String>? channelIds,
     bool? muted,
+    String? sorting,
+    bool? collapsed,
   }) async {
     final result = await _apiClient.put<ChannelCategoryModel>(
       UsersEndPoint.teamsChannelsCategories2(userId, teamId, categoryId),
@@ -182,6 +186,8 @@ class ChannelCategoriesRemoteDataSourceImpl
         if (displayName != null) 'display_name': displayName,
         if (channelIds != null) 'channel_ids': channelIds,
         if (muted != null) 'muted': muted,
+        if (sorting != null) 'sorting': sorting,
+        if (collapsed != null) 'collapsed': collapsed,
       },
       fromJson: (json) =>
           ChannelCategoryModel.fromMap(json as Map<String, dynamic>),

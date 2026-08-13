@@ -75,6 +75,30 @@ class ChannelUpdatedEvent extends TypedWebSocketEvent {
   });
 }
 
+/// انضمام مستخدم إلى قناة (user_added) — يحدّث عدد الأعضاء فورياً.
+class UserAddedEvent extends TypedWebSocketEvent {
+  final String userId;
+  final String channelId;
+
+  UserAddedEvent({
+    required this.userId,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
+/// مغادرة/إزالة مستخدم من قناة (user_removed) — يحدّث عدد الأعضاء فورياً.
+class UserRemovedEvent extends TypedWebSocketEvent {
+  final String userId;
+  final String channelId;
+
+  UserRemovedEvent({
+    required this.userId,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
 class UserPresenceEvent extends TypedWebSocketEvent {
   final String userId;
   final UserStatus status;
@@ -95,6 +119,54 @@ class UserTypingEvent extends TypedWebSocketEvent {
     required this.channelId,
     required super.seq,
   });
+}
+
+/// تغيّر حالة متابعة محادثة من جهاز آخر (thread_follow_changed).
+class ThreadFollowChangedEvent extends TypedWebSocketEvent {
+  final String teamId;
+  final String threadId;
+  final bool following;
+
+  ThreadFollowChangedEvent({
+    required this.teamId,
+    required this.threadId,
+    required this.following,
+    required super.seq,
+  });
+}
+
+/// تغيّر حالة قراءة محادثة (thread_read_changed).
+class ThreadReadChangedEvent extends TypedWebSocketEvent {
+  final String teamId;
+  final String threadId;
+  final String channelId;
+  final int timestamp;
+  final int unreadMentions;
+  final int unreadReplies;
+
+  ThreadReadChangedEvent({
+    required this.teamId,
+    required this.threadId,
+    required this.channelId,
+    required this.timestamp,
+    required this.unreadMentions,
+    required this.unreadReplies,
+    required super.seq,
+  });
+}
+
+/// مسودة جديدة/محدّثة من جهاز آخر (draft_created / draft_updated).
+class DraftUpsertedEvent extends TypedWebSocketEvent {
+  final Map<String, dynamic> draftJson;
+
+  DraftUpsertedEvent({required this.draftJson, required super.seq});
+}
+
+/// حذف مسودة من جهاز آخر (draft_deleted).
+class DraftDeletedEvent extends TypedWebSocketEvent {
+  final Map<String, dynamic> draftJson;
+
+  DraftDeletedEvent({required this.draftJson, required super.seq});
 }
 
 class CallStartedEvent extends TypedWebSocketEvent {
@@ -229,6 +301,9 @@ class WebSocketClientManager {
 
       if (eventName != null) {
         final data = (decoded['data'] as Map<String, dynamic>?) ?? {};
+        final broadcast =
+            (decoded['broadcast'] as Map<String, dynamic>?) ?? {};
+        final teamId = broadcast['team_id'] as String? ?? '';
 
         switch (eventName) {
           case 'posted':
@@ -319,6 +394,24 @@ class WebSocketClientManager {
               ),
             );
             break;
+          case 'user_added':
+            _typedEventStreamController.add(
+              UserAddedEvent(
+                userId: data['user_id'] as String? ?? '',
+                channelId: data['channel_id'] as String? ?? '',
+                seq: seq,
+              ),
+            );
+            break;
+          case 'user_removed':
+            _typedEventStreamController.add(
+              UserRemovedEvent(
+                userId: data['user_id'] as String? ?? '',
+                channelId: data['channel_id'] as String? ?? '',
+                seq: seq,
+              ),
+            );
+            break;
           case 'typing':
             _typedEventStreamController.add(
               UserTypingEvent(
@@ -327,6 +420,47 @@ class WebSocketClientManager {
                 seq: seq,
               ),
             );
+            break;
+          case 'thread_follow_changed':
+            _typedEventStreamController.add(
+              ThreadFollowChangedEvent(
+                teamId: teamId,
+                threadId: data['thread_id'] as String? ?? '',
+                following: data['state'] as bool? ?? false,
+                seq: seq,
+              ),
+            );
+            break;
+          case 'thread_read_changed':
+            _typedEventStreamController.add(
+              ThreadReadChangedEvent(
+                teamId: teamId,
+                threadId: data['thread_id'] as String? ?? '',
+                channelId: data['channel_id'] as String? ?? '',
+                timestamp: (data['timestamp'] as num?)?.toInt() ?? 0,
+                unreadMentions:
+                    (data['unread_mentions'] as num?)?.toInt() ?? 0,
+                unreadReplies: (data['unread_replies'] as num?)?.toInt() ?? 0,
+                seq: seq,
+              ),
+            );
+            break;
+          case 'draft_created':
+          case 'draft_updated':
+            final draftJson = _parseDraftJson(data);
+            if (draftJson != null) {
+              _typedEventStreamController.add(
+                DraftUpsertedEvent(draftJson: draftJson, seq: seq),
+              );
+            }
+            break;
+          case 'draft_deleted':
+            final deletedDraftJson = _parseDraftJson(data);
+            if (deletedDraftJson != null) {
+              _typedEventStreamController.add(
+                DraftDeletedEvent(draftJson: deletedDraftJson, seq: seq),
+              );
+            }
             break;
           case 'custom_com.mattermost.calls_call_started':
             _typedEventStreamController.add(
@@ -364,6 +498,19 @@ class WebSocketClientManager {
       'action': 'custom_com.mattermost.calls_$action',
       'seq': DateTime.now().millisecondsSinceEpoch,
       'data': data,
+    });
+  }
+
+  /// يخبر الخادم بأن هذه القناة هي القناة النشطة الآن — مطابق
+  /// `WebSocketClient.updateActiveChannel` في webapp (platform/client/src/websocket.ts).
+  /// يرسل حدث `presence` مع channel_id لكي يتلقى المستخدم حالات التواجد
+  /// (online/away/dnd) للمستخدمين الظاهرين في القناة النشطة فقط.
+  void updateActiveChannel(String channelId) {
+    if (channelId.isEmpty) return;
+    sendJson({
+      'action': 'presence',
+      'seq': DateTime.now().millisecondsSinceEpoch,
+      'data': {'channel_id': channelId},
     });
   }
 
@@ -408,5 +555,16 @@ class WebSocketClientManager {
 
   ChannelEntity _parseChannel(Map<String, dynamic> json) {
     return ChannelModel.fromMap(json).toEntity();
+  }
+
+  /// يستخرج JSON المسودة من حمولة حدث draft_* — مطابق هياكل webapp
+  /// (WebSocketMessages.PostDraft) حيث `data.draft` نص JSON.
+  Map<String, dynamic>? _parseDraftJson(Map<String, dynamic> data) {
+    final raw = data['draft'];
+    if (raw is String && raw.isNotEmpty) {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    }
+    if (raw is Map<String, dynamic>) return raw;
+    return null;
   }
 }

@@ -9,6 +9,8 @@ import 'package:flutter_mattermost/features/chat/data/repositories/threads_repos
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_history_cubit.dart';
 
 final GetIt getIt = GetIt.instance;
 
@@ -25,6 +27,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerLazySingleton<ThreadsBloc>(
     () => ThreadsBloc(getIt<ThreadsRepository>()),
+  );
+  getIt.registerLazySingleton<ChannelHistoryCubit>(
+    () => ChannelHistoryCubit(getIt<ChannelBloc>()),
   );
   getIt.registerLazySingleton<DraftStorageService>(() => DraftStorageService());
 }

@@ -9,16 +9,18 @@ import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplet
 import 'package:flutter_mattermost/features/chat/presentation/editor/commands/slash_commands_registry.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
 
-/// قائمة الإكمال التلقائي — تُعرض داخل [CompositedTransformFollower]
-/// فوق المحرر. تدعم تمييز العنصر المحدد وتمرير القائمة.
+/// قائمة الإكمال التلقائي — مربعة صغيرة تُعرض داخل [OverlayEntry] فوق المحرر.
+/// كل عنصر قابل للنقر: النقر يُدرج النص (اسم المستخدم/الأمر/...) في المحرر.
 class AutocompleteOverlay extends StatefulWidget {
   final AutocompleteController controller;
-  final double height;
+
+  /// حجم المربع (الطول = العرض).
+  final double size;
 
   const AutocompleteOverlay({
     super.key,
     required this.controller,
-    required this.height,
+    required this.size,
   });
 
   @override
@@ -63,12 +65,12 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
       case AutocompleteKind.mention:
         if (item.special) {
           return Container(
-            width: 32,
-            height: 32,
+            width: 34,
+            height: 34,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               Icons.campaign_outlined,
@@ -81,19 +83,19 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           avatarUrl: _avatarUrlForUser(item.userId),
           username: item.userId ?? '',
           status: item.status,
-          size: 28,
+          size: 32,
           showStatus: true,
         );
       case AutocompleteKind.channel:
         final isPrivate = item.channelType == 'P' || item.channelType == 'G';
         final isDirect = item.channelType == 'D';
         return Container(
-          width: 32,
-          height: 32,
+          width: 34,
+          height: 34,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: AppTheme.of(context).linkColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(
             isDirect
@@ -107,19 +109,19 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
         );
       case AutocompleteKind.command:
         return Container(
-          width: 32,
-          height: 32,
+          width: 34,
+          height: 34,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: AppTheme.of(
               context,
             ).centerChannelColor.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             '/',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: 19,
               fontWeight: FontWeight.w700,
               color: AppTheme.of(context).centerChannelColor,
             ),
@@ -132,11 +134,17 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           child: Center(
             child: emojiWidget(
               item.emojiUnicode ?? ':${item.emojiName}:',
-              size: 22,
+              size: 24,
             ),
           ),
         );
     }
+  }
+
+  /// النص المعروض أسفل العنصر (اسم المستخدم / الأمر / ...).
+  String _labelFor(AutocompleteItem item) {
+    if (item.kind == AutocompleteKind.emoji) return '';
+    return item.title;
   }
 
   @override
@@ -152,6 +160,7 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
         final isEmojiGrid =
             items.isNotEmpty &&
             items.every((i) => i.kind == AutocompleteKind.emoji);
+        final crossAxisCount = isEmojiGrid ? 4 : 3;
 
         return Material(
           elevation: 4,
@@ -159,24 +168,16 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           borderRadius: BorderRadius.circular(8),
           clipBehavior: Clip.antiAlias,
           child: Container(
-            width: 300,
-            constraints: BoxConstraints(maxHeight: widget.height),
+            width: widget.size,
+            height: widget.size,
             decoration: BoxDecoration(
               border: Border.all(
                 color: theme.centerChannelColor.withValues(alpha: 0.15),
               ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (items.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 14,
-                    ),
+            child: items.isEmpty
+                ? Center(
                     child: Text(
                       l10n.quickSwitcherNoResults,
                       style: TextStyle(
@@ -185,40 +186,38 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
                       ),
                     ),
                   )
-                else
-                  Expanded(
-                    child: isEmojiGrid
-                        ? _EmojiGrid(
-                            items: items,
-                            controller: widget.controller,
-                          )
-                        : ListView.builder(
-                            // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد.
-                            key: ValueKey(
-                              'ac-${items.length}-${widget.controller.selectedIndex}',
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            itemExtent: 48,
-                            itemCount: items.length,
-                            itemBuilder: (context, index) {
-                              final item = items[index];
-                              final selected =
-                                  index == widget.controller.selectedIndex;
-                              return _AutocompleteRow(
-                                item: item,
-                                selected: selected,
-                                subtitle: _subtitleFor(item, l10n),
-                                leading: _leadingFor(item),
-                                showAdminBadge:
-                                    item.kind == AutocompleteKind.mention &&
-                                    !item.special &&
-                                    _isAdmin(item.roles),
-                              );
-                            },
-                          ),
+                : GridView.builder(
+                    // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد.
+                    key: ValueKey(
+                      'ac-${items.length}-${widget.controller.selectedIndex}',
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 4,
+                      crossAxisSpacing: 4,
+                      childAspectRatio: isEmojiGrid ? 1 : 0.9,
+                    ),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      final selected =
+                          index == widget.controller.selectedIndex;
+                      return _AutocompleteCell(
+                        item: item,
+                        selected: selected,
+                        label: _labelFor(item),
+                        subtitle: _subtitleFor(item, l10n),
+                        leading: _leadingFor(item),
+                        showAdminBadge:
+                            item.kind == AutocompleteKind.mention &&
+                            !item.special &&
+                            _isAdmin(item.roles),
+                        onHover: () => widget.controller.selectIndex(index),
+                        onTap: () => widget.controller.insertAt(index),
+                      );
+                    },
                   ),
-              ],
-            ),
           ),
         );
       },
@@ -230,96 +229,71 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
       (roles.contains('system_admin') || roles.contains('team_admin'));
 }
 
-/// شبكة الإيموجي — تُعرض بدل القائمة الرأسية عندما تكون كل النتائج إيموجي.
-class _EmojiGrid extends StatelessWidget {
-  final List<AutocompleteItem> items;
-  final AutocompleteController controller;
-
-  const _EmojiGrid({required this.items, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    return GridView.builder(
-      // مفتاح شفاف يجبر إعادة بناء عند تغيّر الحجم/التحديد (مثل القائمة).
-      key: ValueKey('ac-${items.length}-${controller.selectedIndex}'),
-      padding: const EdgeInsets.all(8),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 4,
-        crossAxisSpacing: 4,
-      ),
-      itemCount: items.length,
-      itemBuilder: (context, index) {
-        final item = items[index];
-        final selected = index == controller.selectedIndex;
-        return MouseRegion(
-          onEnter: (_) => controller.selectIndex(index),
-          child: InkWell(
-            onTap: () => controller.insertAt(index),
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              decoration: BoxDecoration(
-                color: selected
-                    ? theme.linkColor.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              alignment: Alignment.center,
-              child: emojiWidget(
-                item.emojiUnicode ?? ':${item.emojiName}:',
-                size: 24,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _AutocompleteRow extends StatelessWidget {
+/// خلية مربعة قابلة للنقر داخل شبكة الإكمال التلقائي.
+class _AutocompleteCell extends StatelessWidget {
   final AutocompleteItem item;
   final bool selected;
+  final String label;
   final String subtitle;
   final Widget leading;
   final bool showAdminBadge;
+  final VoidCallback onHover;
+  final VoidCallback onTap;
 
-  const _AutocompleteRow({
+  const _AutocompleteCell({
     required this.item,
     required this.selected,
+    required this.label,
     required this.subtitle,
     required this.leading,
     required this.showAdminBadge,
+    required this.onHover,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      color: selected
-          ? theme.linkColor.withValues(alpha: 0.1)
-          : Colors.transparent,
-      child: Row(
-        children: [
-          leading,
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+    return MouseRegion(
+      onEnter: (_) => onHover(),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          decoration: BoxDecoration(
+            color: selected
+                ? theme.linkColor.withValues(alpha: 0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              leading,
+              if (item.kind == AutocompleteKind.emoji) ...[
+                const SizedBox(height: 2),
+                Text(
+                  ':${item.emojiName}:',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: theme.centerChannelColor.withValues(alpha: 0.5),
+                  ),
+                ),
+              ] else ...[
+                const SizedBox(height: 4),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
                       child: Text(
-                        item.title,
+                        label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: item.special
                               ? theme.errorTextColor
@@ -327,25 +301,13 @@ class _AutocompleteRow extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (showAdminBadge) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 1,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.linkColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          l10n.autocompleteRoleAdmin,
-                          style: TextStyle(
-                            fontSize: 9.5,
-                            fontWeight: FontWeight.w600,
-                            color: theme.linkColor,
-                          ),
-                        ),
+                    if (showAdminBadge &&
+                        selected) ...[
+                      const SizedBox(width: 2),
+                      Icon(
+                        Icons.verified,
+                        size: 10,
+                        color: theme.linkColor,
                       ),
                     ],
                   ],
@@ -356,20 +318,14 @@ class _AutocompleteRow extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: 11,
-                      color: theme.centerChannelColor.withValues(alpha: 0.55),
+                      fontSize: 9,
+                      color: theme.centerChannelColor.withValues(alpha: 0.5),
                     ),
                   ),
               ],
-            ),
+            ],
           ),
-          if (item.special)
-            Icon(
-              Icons.notifications_active_outlined,
-              size: 15,
-              color: theme.errorTextColor.withValues(alpha: 0.7),
-            ),
-        ],
+        ),
       ),
     );
   }

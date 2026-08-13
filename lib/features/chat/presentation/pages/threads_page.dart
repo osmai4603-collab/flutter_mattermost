@@ -1,15 +1,23 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/network/server_manager.dart';
+import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/move_thread_modal.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/thread_card.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 
 /// صفحة المحادثات (Global Threads) — مطابقة global_threading.tsx:
 /// رأس + تبويب الكل/غير المقروء + قائمة المحادثات،
@@ -29,6 +37,53 @@ class _ThreadsPageState extends State<ThreadsPage> {
   String? _teamId;
   String? _loadedTeamId;
   bool _unreadOnly = false;
+  StreamSubscription<TypedWebSocketEvent>? _socketSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenToSocketEvents();
+  }
+
+  /// ربط أحداث WebSocket الخاصة بالمحادثات (thread_follow_changed /
+  /// thread_read_changed) بشجرة البلوك لتحديث القائمة دون إعادة تحميل.
+  void _listenToSocketEvents() {
+    final ws = getIt<WebSocketClientManager>();
+    _socketSub = ws.eventStream.listen((event) {
+      if (!mounted) return;
+      final teamId = _teamId;
+      if (teamId == null) return;
+      if (event is ThreadFollowChangedEvent) {
+        if (event.teamId == teamId) {
+          context.read<ThreadsBloc>().add(
+            ThreadFollowChangedSocketEvent(
+              teamId: event.teamId,
+              threadId: event.threadId,
+              following: event.following,
+            ),
+          );
+        }
+      } else if (event is ThreadReadChangedEvent) {
+        if (event.teamId == teamId) {
+          context.read<ThreadsBloc>().add(
+            ThreadReadChangedSocketEvent(
+              teamId: event.teamId,
+              threadId: event.threadId,
+              lastViewedAt: event.timestamp,
+              unreadMentions: event.unreadMentions,
+              unreadReplies: event.unreadReplies,
+            ),
+          );
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _socketSub?.cancel();
+    super.dispose();
+  }
 
   @override
   void didChangeDependencies() {
@@ -48,7 +103,7 @@ class _ThreadsPageState extends State<ThreadsPage> {
       }
     }
     _userId ??= (await getIt<SecureStorageService>().getUserId()) ?? 'me';
-    if (!context.mounted) return;
+    if (!mounted) return;
     if (_teamId != null && _loadedTeamId != _teamId) {
       _loadedTeamId = _teamId;
       context.read<ThreadsBloc>().add(
@@ -76,13 +131,28 @@ class _ThreadsPageState extends State<ThreadsPage> {
     }
   }
 
+  /// جلب بروفايلات مؤلفي الرسائل الجذرية لعرض الأسماء بدلاً من المعرّفات.
+  void _loadRootPostProfiles(ThreadsLoadedState state) {
+    final ids = state.threads
+        .map((t) => t.rootPost.userId)
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList();
+    if (ids.isNotEmpty) {
+      context.read<UserProfileBloc>().add(LoadProfilesByIdsEvent(ids));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
     return BlocListener<ThreadsBloc, ThreadsState>(
-      listener: (context, state) => _autoOpenThread(),
+      listener: (context, state) {
+        _autoOpenThread();
+        if (state is ThreadsLoadedState) _loadRootPostProfiles(state);
+      },
       child: BlocBuilder<ThreadsBloc, ThreadsState>(
         builder: (context, state) {
           return Column(
@@ -233,63 +303,133 @@ class _ThreadsPageState extends State<ThreadsPage> {
         ),
       );
     }
-    return ListView(
-      children: [
-        for (final thread in threads)
-          ThreadCard(
-            thread: thread,
-            myUserId: _userId ?? 'me',
-            onTap: () {
+    final profiles = _profilesById();
+    return ListView.builder(
+      itemCount: threads.length,
+      itemBuilder: (context, index) {
+        final thread = threads[index];
+        return ThreadCard(
+          thread: thread,
+          myUserId: _userId ?? 'me',
+          rootPostUsername: _displayNameFor(profiles, thread.rootPost.userId),
+          onTap: () {
+            context.read<ThreadsBloc>().add(
+                  MarkThreadReadEvent(
+                    userId: _userId ?? 'me',
+                    teamId: _teamId ?? '',
+                    threadId: thread.rootPostId,
+                  ),
+                );
+            context
+                .read<RhsBloc>()
+                .add(OpenThreadEvent(thread.rootPostId, thread.channelId));
+            final teamName = _teamName();
+            context.go(
+              teamName != null
+                  ? '/$teamName/threads/${thread.rootPostId}'
+                  : '/threads/${thread.rootPostId}',
+            );
+          },
+          onChannelTap: () {
+            final teamName = _teamName();
+            if (teamName != null) {
+              context.go('/$teamName/channels/${thread.channelName}');
+            }
+          },
+          onToggleFollow: () {
+            if (thread.isFollowing) {
               context.read<ThreadsBloc>().add(
-                    MarkThreadReadEvent(
+                    UnfollowThreadEvent(
                       userId: _userId ?? 'me',
                       teamId: _teamId ?? '',
                       threadId: thread.rootPostId,
                     ),
                   );
-              context
-                  .read<RhsBloc>()
-                  .add(OpenThreadEvent(thread.rootPostId, thread.channelId));
-              final teamName = _teamName();
-              context.go(
-                teamName != null
-                    ? '/$teamName/threads/${thread.rootPostId}'
-                    : '/threads/${thread.rootPostId}',
-              );
-            },
-            onChannelTap: () {
-              final teamName = _teamName();
-              // We need channel name to navigate properly
-              // For now navigate to the thread and then to channel if we had channel name
-              // Actually, ThreadEntity has channelName, but navigation usually needs channel ID or name.
-              // In this app, it seems to use channel name in URL.
-              // We'll navigate to channel screen if we had the name correctly.
-              if (teamName != null) {
-                context.go('/$teamName/channels/${thread.channelName}');
-              }
-            },
-            onToggleFollow: () {
-              if (thread.isFollowing) {
-                context.read<ThreadsBloc>().add(
-                      UnfollowThreadEvent(
-                        userId: _userId ?? 'me',
-                        teamId: _teamId ?? '',
-                        threadId: thread.rootPostId,
-                      ),
-                    );
-              } else {
-                context.read<ThreadsBloc>().add(
-                      FollowThreadEvent(
-                        userId: _userId ?? 'me',
-                        teamId: _teamId ?? '',
-                        threadId: thread.rootPostId,
-                      ),
-                    );
-              }
-            },
-          ),
-      ],
+            } else {
+              context.read<ThreadsBloc>().add(
+                    FollowThreadEvent(
+                      userId: _userId ?? 'me',
+                      teamId: _teamId ?? '',
+                      threadId: thread.rootPostId,
+                    ),
+                  );
+            }
+          },
+          onMarkUnread: () {
+            context.read<ThreadsBloc>().add(
+                  SetThreadUnreadEvent(
+                    userId: _userId ?? 'me',
+                    teamId: _teamId ?? '',
+                    threadId: thread.rootPostId,
+                  ),
+                );
+          },
+          onCopyLink: () => _copyThreadLink(thread.rootPostId),
+          onMoveThread: _canMoveThread
+              ? () => _openMoveThreadModal(thread)
+              : null,
+        );
+      },
     );
+  }
+
+  bool get _canMoveThread {
+    // webapp يقيّد نقل المحادثات بالمشرفين/مدراء القنوات (move_threads permission).
+    final profileState = context.read<UserProfileBloc>().state;
+    if (profileState is UserProfileLoadedState) {
+      for (final p in profileState.profiles) {
+        if (p.id == _userId) return p.roles.contains('admin');
+      }
+    }
+    return false;
+  }
+
+  void _openMoveThreadModal(ThreadEntity thread) {
+    showMoveThreadModal(
+      context,
+      threadId: thread.rootPostId,
+      currentChannelId: thread.channelId,
+      onMove: (channelId, channelName) {
+        context.read<ThreadsBloc>().add(
+              MoveThreadEvent(
+                userId: _userId ?? 'me',
+                teamId: _teamId ?? '',
+                threadId: thread.rootPostId,
+                channelId: channelId,
+                channelName: channelName,
+              ),
+            );
+      },
+    );
+  }
+
+  void _copyThreadLink(String postId) {
+    final teamName = _teamName();
+    final serverUrl = getIt<ServerManager>().activeServerUrl;
+    final link = '$serverUrl/$teamName/pl/$postId';
+    Clipboard.setData(ClipboardData(text: link));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).threadingThreadMenuLinkCopied),
+        ),
+      );
+    }
+  }
+
+  Map<String, UserEntity> _profilesById() {
+    final profileState = context.read<UserProfileBloc>().state;
+    if (profileState is! UserProfileLoadedState) return const {};
+    return {for (final p in profileState.profiles) p.id: p};
+  }
+
+  String? _displayNameFor(Map<String, UserEntity> profiles, String userId) {
+    final profile = profiles[userId];
+    if (profile == null) return null;
+    if (profile.firstName.isNotEmpty || profile.lastName.isNotEmpty) {
+      return '${profile.firstName} ${profile.lastName}'.trim();
+    }
+    return profile.username.isNotEmpty ? profile.username : null;
   }
 
   String? _teamName() {

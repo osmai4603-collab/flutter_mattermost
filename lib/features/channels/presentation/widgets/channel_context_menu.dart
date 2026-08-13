@@ -5,7 +5,7 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
-import 'package:flutter_mattermost/core/network/api_client.dart';
+import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
@@ -41,10 +41,11 @@ List<MatterMenuItem> buildChannelMenuItems(
 
   // التعديل/الأرشفة لمنشئ القناة (creatorId)، وإن لم يوجد تُعتمد صلاحية
   // مدير القناة (channel_admin) من أدوار العضو.
-  final isCreator = channel.creatorId.isNotEmpty &&
-      channel.creatorId == currentUserId;
-  final isChannelAdmin =
-      (member?.roles ?? '').split(' ').contains('channel_admin');
+  final isCreator =
+      channel.creatorId.isNotEmpty && channel.creatorId == currentUserId;
+  final isChannelAdmin = (member?.roles ?? '')
+      .split(' ')
+      .contains('channel_admin');
   final canManage = isCreator || isChannelAdmin;
 
   final items = <MatterMenuItem>[
@@ -61,12 +62,12 @@ List<MatterMenuItem> buildChannelMenuItems(
             ? teamState.selectedTeam?.id ?? ''
             : '';
         context.read<ChannelBloc>().add(
-              ToggleFavoriteEvent(
-                channelId: channel.id,
-                userId: currentUserId,
-                teamId: teamId,
-              ),
-            );
+          ToggleFavoriteEvent(
+            channelId: channel.id,
+            userId: currentUserId,
+            teamId: teamId,
+          ),
+        );
       },
     ),
     MatterMenuItem(
@@ -88,11 +89,8 @@ List<MatterMenuItem> buildChannelMenuItems(
       ),
       onTap: () {
         context.read<ChannelBloc>().add(
-              ToggleMuteEvent(
-                channelId: channel.id,
-                userId: currentUserId,
-              ),
-            );
+          ToggleMuteEvent(channelId: channel.id, userId: currentUserId),
+        );
       },
     ),
     if (!isDirect && !isGroup)
@@ -109,12 +107,14 @@ List<MatterMenuItem> buildChannelMenuItems(
       ),
     MatterMenuItem.divider(),
     // ==== المشاركة والمعلومات ====
-    MatterMenuItem(
-      id: 'copy_link',
-      label: l10n.sidebar_leftSidebar_channel_menuCopyLink,
-      icon: const Icon(Icons.link, size: 18),
-      onTap: () => _copyLink(context, channel),
-    ),
+    // رسائل DM/GM لا تملك رابط قناة ضمن فريق — لا يُعرض بند نسخ الرابط لها.
+    if (!isDirect && !isGroup)
+      MatterMenuItem(
+        id: 'copy_link',
+        label: l10n.sidebar_leftSidebar_channel_menuCopyLink,
+        icon: const Icon(Icons.link, size: 18),
+        onTap: () => _copyLink(context, channel),
+      ),
     MatterMenuItem(
       id: 'view_info',
       label: l10n.channelHeaderViewInfo,
@@ -165,8 +165,7 @@ List<MatterMenuItem> _moveToItems(
 ) {
   final l10n = AppLocalizations.of(context);
   final customCategories =
-      loaded
-          ?.categories
+      loaded?.categories
           .where((c) => c.type == ChannelCategoryType.custom)
           .toList() ??
       const [];
@@ -186,8 +185,7 @@ List<MatterMenuItem> _moveToItems(
         id: 'move_${category.id}',
         label: category.displayName,
         icon: const Icon(Icons.folder_outlined, size: 18),
-        onTap: () =>
-            _moveTo(context, channel, category.id, loaded),
+        onTap: () => _moveTo(context, channel, category.id, loaded),
       ),
     MatterMenuItem.divider(),
     newCategoryItem,
@@ -250,13 +248,13 @@ void _moveTo(
       ? teamState.selectedTeam?.id ?? ''
       : '';
   context.read<ChannelBloc>().add(
-        MoveChannelToCategoryEvent(
-          channelId: channel.id,
-          targetCategoryId: targetCategoryId,
-          userId: loaded.userId,
-          teamId: teamId,
-        ),
-      );
+    MoveChannelToCategoryEvent(
+      channelId: channel.id,
+      targetCategoryId: targetCategoryId,
+      userId: loaded.userId,
+      teamId: teamId,
+    ),
+  );
 }
 
 /// نافذة «فئة جديدة» — تنشئ الفئة والقناة داخلها فوراً.
@@ -304,13 +302,13 @@ Future<void> _promptCreateCategory(
       ? teamState.selectedTeam?.id ?? ''
       : '';
   context.read<ChannelBloc>().add(
-        CreateCategoryEvent(
-          displayName: value,
-          userId: loaded.userId,
-          teamId: teamId,
-          channelIds: [channel.id],
-        ),
-      );
+    CreateCategoryEvent(
+      displayName: value,
+      userId: loaded.userId,
+      teamId: teamId,
+      channelIds: [channel.id],
+    ),
+  );
 }
 
 void _copyLink(BuildContext context, ChannelEntity channel) {
@@ -318,8 +316,13 @@ void _copyLink(BuildContext context, ChannelEntity channel) {
   final teamName = teamState is TeamsLoadedState
       ? teamState.selectedTeam?.name ?? ''
       : '';
-  final base = getIt<ApiClient>().dio.options.baseUrl;
-  final url = '$base/$teamName/channels/${channel.name}';
+  // dio.baseUrl يتضمن /api/v4 — نأخذ جذر الخادم فقط لبناء رابط الويب
+  // بالصيغة: {server}/{team}/channels/{channel}.
+  final serverRoot = getIt<ServerManager>().activeServerUrl.replaceAll(
+    RegExp(r'/api/v4/*$'),
+    '',
+  );
+  final url = '$serverRoot/$teamName/channels/${channel.name}';
   Clipboard.setData(ClipboardData(text: url));
 }
 
@@ -335,7 +338,7 @@ void _showChannelInfo(BuildContext context, ChannelEntity channel) {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _InfoRow(
-            label: 'Name:',
+            label: l10n.channel_info_rhsAbout_areaChannel_nameHeading,
             value: channel.displayName,
             theme: theme,
           ),
@@ -401,8 +404,8 @@ Future<void> _confirmLeave(BuildContext context, ChannelEntity channel) async {
     final state = context.read<ChannelBloc>().state;
     final userId = state is ChannelsLoadedState ? state.userId : '';
     context.read<ChannelBloc>().add(
-          LeaveChannelEvent(channelId: channel.id, userId: userId),
-        );
+      LeaveChannelEvent(channelId: channel.id, userId: userId),
+    );
   }
 }
 

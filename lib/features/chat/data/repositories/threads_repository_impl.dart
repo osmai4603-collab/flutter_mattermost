@@ -12,9 +12,6 @@ class ThreadsRepositoryImpl implements ThreadsRepository {
 
   ThreadsRepositoryImpl(this._remoteDataSource, this._secureStorage);
 
-  Future<String> _currentUserId() async =>
-      (await _secureStorage.getUserId()) ?? 'me';
-
   @override
   Future<List<ThreadEntity>> getThreadsForUser(
     String userId,
@@ -77,5 +74,25 @@ class ThreadsRepositoryImpl implements ThreadsRepository {
       userId,
       teamId,
     );
+  }
+
+  @override
+  Future<void> setThreadUnread(
+    String userId,
+    String teamId,
+    String threadId,
+    String postId,
+  ) async {
+    await _remoteDataSource.setThreadUnread(
+      userId,
+      teamId,
+      threadId,
+      postId,
+    );
+  }
+
+  @override
+  Future<void> moveThread(String threadId, String channelId) async {
+    await _remoteDataSource.moveThread(threadId, channelId);
   }
 }

@@ -31,4 +31,29 @@ class ThreadEntity {
   });
 
   bool get hasUnread => unreadReplies > 0 || unreadMentions > 0;
+
+  ThreadEntity copyWith({
+    String? channelId,
+    String? channelName,
+    PostEntity? rootPost,
+    int? replyCount,
+    int? lastReplyAt,
+    int? lastViewedAt,
+    bool? isFollowing,
+    int? unreadReplies,
+    int? unreadMentions,
+    List<UserEntity>? participants,
+  }) => ThreadEntity(
+    rootPostId: rootPostId,
+    channelId: channelId ?? this.channelId,
+    channelName: channelName ?? this.channelName,
+    rootPost: rootPost ?? this.rootPost,
+    replyCount: replyCount ?? this.replyCount,
+    lastReplyAt: lastReplyAt ?? this.lastReplyAt,
+    lastViewedAt: lastViewedAt ?? this.lastViewedAt,
+    isFollowing: isFollowing ?? this.isFollowing,
+    unreadReplies: unreadReplies ?? this.unreadReplies,
+    unreadMentions: unreadMentions ?? this.unreadMentions,
+    participants: participants ?? this.participants,
+  );
 }

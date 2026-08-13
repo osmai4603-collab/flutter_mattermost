@@ -11875,5 +11875,12 @@
   "filePreviewNext": "التالي",
   "filePreviewClose": "إغلاق",
   "filePreviewUnsupported": "نوع الملف هذا غير مدعوم: {extension}",
-  "post_commentCheckbox_also_send_to_channel": "أيضاً أرسل إلى القناة"
+  "post_commentCheckbox_also_send_to_channel": "أيضاً أرسل إلى القناة",
+  "global_headerBack": "رجوع",
+  "global_headerForward": "تقدُّم",
+  "channel_headerCopyHeaderText": "نسخ النص",
+  "timeRelativeJustNow": "الآن",
+  "timeRelativeMinutesAgo": "منذ {count} دقيقة",
+  "timeRelativeHoursAgo": "منذ {count} ساعة",
+  "timeRelativeDaysAgo": "منذ {count} يوم"
 }

@@ -2,34 +2,88 @@ import 'dart:async';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
+import 'package:flutter_mattermost/features/chat/domain/repositories/calls_rest_repository.dart';
+import 'package:flutter_mattermost/core/calls/audio_session_manager.dart';
+
+class CallParticipantState {
+  final String sessionId;
+  final String userId;
+  final bool isMuted;
+  final bool isVoiceActive;
+  final bool isHandRaised;
+  final bool isSharingScreen;
+  final RTCVideoRenderer? renderer;
+
+  const CallParticipantState({
+    required this.sessionId,
+    required this.userId,
+    this.isMuted = false,
+    this.isVoiceActive = false,
+    this.isHandRaised = false,
+    this.isSharingScreen = false,
+    this.renderer,
+  });
+
+  CallParticipantState copyWith({
+    bool? isMuted,
+    bool? isVoiceActive,
+    bool? isHandRaised,
+    bool? isSharingScreen,
+    RTCVideoRenderer? renderer,
+  }) {
+    return CallParticipantState(
+      sessionId: sessionId,
+      userId: userId,
+      isMuted: isMuted ?? this.isMuted,
+      isVoiceActive: isVoiceActive ?? this.isVoiceActive,
+      isHandRaised: isHandRaised ?? this.isHandRaised,
+      isSharingScreen: isSharingScreen ?? this.isSharingScreen,
+      renderer: renderer ?? this.renderer,
+    );
+  }
+}
 
 @lazySingleton
 class CallsManager {
   final WebSocketClientManager _webSocketClientManager;
+  final CallsRestRepository _callsRestRepository;
+  final AudioSessionManager _audioSessionManager;
+
   StreamSubscription? _wsSubscription;
 
   final StreamController<CallStartedEvent> _incomingCallsController =
       StreamController<CallStartedEvent>.broadcast();
 
+  final StreamController<Map<String, CallParticipantState>> _participantsController =
+      StreamController<Map<String, CallParticipantState>>.broadcast();
+
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
 
   late final RTCVideoRenderer _localRenderer;
-  late final RTCVideoRenderer _remoteRenderer;
+  final Map<String, RTCVideoRenderer> _remoteRenderers = {};
+  final Map<String, CallParticipantState> _participants = {};
 
   bool _isInitialized = false;
 
-  /// تدفق المكالمات الواردة — يبث حدث `CallStartedEvent` عند استقباله من WebSocket.
-  Stream<CallStartedEvent> get incomingCalls =>
-      _incomingCallsController.stream;
+  /// تدفق المكالمات الواردة
+  Stream<CallStartedEvent> get incomingCalls => _incomingCallsController.stream;
+
+  /// تدفق تحديث بيانات وتغييرات المشاركين بالمكالمة
+  Stream<Map<String, CallParticipantState>> get participantsStream =>
+      _participantsController.stream;
 
   RTCVideoRenderer get localRenderer => _localRenderer;
-  RTCVideoRenderer get remoteRenderer => _remoteRenderer;
+  Map<String, RTCVideoRenderer> get remoteRenderers => _remoteRenderers;
+  Map<String, CallParticipantState> get participants => _participants;
+
+  AudioSessionManager get audioSessionManager => _audioSessionManager;
 
   CallsManager(
     this._webSocketClientManager,
-  ) : _localRenderer = RTCVideoRenderer(),
-       _remoteRenderer = RTCVideoRenderer() {
+    this._callsRestRepository,
+    this._audioSessionManager,
+  ) : _localRenderer = RTCVideoRenderer() {
     _wsSubscription = _webSocketClientManager.eventStream.listen(
       _onWebSocketEvent,
     );
@@ -38,29 +92,28 @@ class CallsManager {
   Future<void> initialize() async {
     if (_isInitialized) return;
     await _localRenderer.initialize();
-    await _remoteRenderer.initialize();
+    await _audioSessionManager.initializeAudioSession();
     _isInitialized = true;
   }
 
   Future<void> dispose() async {
     _wsSubscription?.cancel();
     await _incomingCallsController.close();
+    await _participantsController.close();
     await _localRenderer.dispose();
-    await _remoteRenderer.dispose();
+    for (final r in _remoteRenderers.values) {
+      await r.dispose();
+    }
+    _remoteRenderers.clear();
     await endCall();
   }
 
   void _onWebSocketEvent(TypedWebSocketEvent event) {
     if (event is CallStartedEvent) {
-      _handleCallStarted(event);
+      _incomingCallsController.add(event);
     } else if (event is WebRTCSignalingEvent) {
       _handleSignalingEvent(event);
     }
-  }
-
-  Future<void> _handleCallStarted(CallStartedEvent event) async {
-    // إخطار الواجهة بوجود مكالمة واردة (عبر CallsBloc).
-    _incomingCallsController.add(event);
   }
 
   Future<void> _handleSignalingEvent(WebRTCSignalingEvent event) async {
@@ -98,13 +151,24 @@ class CallsManager {
   }
 
   Future<void> _createPeerConnection({bool video = false}) async {
-    final configuration = {
+    // جلب تكوينات الشبكة المحلية والملاحظات
+    Map<String, dynamic> iceConfiguration = {
       'iceServers': [
         {'url': 'stun:stun.l.google.com:19302'},
       ],
     };
 
-    _peerConnection = await createPeerConnection(configuration);
+    final configResult = await _callsRestRepository.getCallsConfig();
+    configResult.when(
+      success: (config) {
+        if (config.containsKey('ice_servers')) {
+          iceConfiguration = {'iceServers': config['ice_servers']};
+        }
+      },
+      failure: (_) {},
+    );
+
+    _peerConnection = await createPeerConnection(iceConfiguration);
 
     _peerConnection!.onIceCandidate = (RTCIceCandidate candidate) {
       _webSocketClientManager.sendCallSignal('ice_candidate', {
@@ -114,9 +178,29 @@ class CallsManager {
       });
     };
 
-    _peerConnection!.onTrack = (RTCTrackEvent event) {
-      if (event.track.kind == 'video' && event.streams.isNotEmpty) {
-        _remoteRenderer.srcObject = event.streams[0];
+    _peerConnection!.onIceConnectionState = (RTCIceConnectionState state) {
+      if (state == RTCIceConnectionState.RTCIceConnectionStateFailed ||
+          state == RTCIceConnectionState.RTCIceConnectionStateDisconnected) {
+        _restartIce();
+      }
+    };
+
+    _peerConnection!.onTrack = (RTCTrackEvent event) async {
+      if (event.streams.isNotEmpty) {
+        final stream = event.streams[0];
+        final streamId = stream.id;
+        if (!_remoteRenderers.containsKey(streamId)) {
+          final renderer = RTCVideoRenderer();
+          await renderer.initialize();
+          renderer.srcObject = stream;
+          _remoteRenderers[streamId] = renderer;
+          _participants[streamId] = CallParticipantState(
+            sessionId: streamId,
+            userId: streamId,
+            renderer: renderer,
+          );
+          _participantsController.add(_participants);
+        }
       }
     };
 
@@ -132,10 +216,25 @@ class CallsManager {
     });
   }
 
+  Future<void> _restartIce() async {
+    if (_peerConnection == null) return;
+    final offer = await _peerConnection!.createOffer({
+      'iceRestart': true,
+    });
+    await _peerConnection!.setLocalDescription(offer);
+    _webSocketClientManager.sendCallSignal('webrtc_offer', {
+      'sdp': offer.sdp,
+    });
+  }
+
   void toggleMute() {
     final audioTrack = _localStream?.getAudioTracks().firstOrNull;
     if (audioTrack != null) {
       audioTrack.enabled = !audioTrack.enabled;
+      _webSocketClientManager.sendCallSignal(
+        audioTrack.enabled ? 'unmute' : 'mute',
+        {},
+      );
     }
   }
 
@@ -144,6 +243,13 @@ class CallsManager {
     if (videoTrack != null) {
       videoTrack.enabled = !videoTrack.enabled;
     }
+  }
+
+  void raiseHand(bool raise) {
+    _webSocketClientManager.sendCallSignal(
+      raise ? 'raise_hand' : 'unraise_hand',
+      {},
+    );
   }
 
   Future<void> toggleScreenShare() async {
@@ -189,7 +295,12 @@ class CallsManager {
     _peerConnection = null;
 
     _localRenderer.srcObject = null;
-    _remoteRenderer.srcObject = null;
+    for (final r in _remoteRenderers.values) {
+      r.srcObject = null;
+      await r.dispose();
+    }
+    _remoteRenderers.clear();
+    _participants.clear();
 
     _webSocketClientManager.sendCallSignal('leave_call', {});
   }

@@ -1,6 +1,9 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
@@ -46,10 +49,13 @@ class _MessageEditorState extends State<MessageEditor> {
   String _rootId = '';
   bool _alsoSendToChannel = false;
 
-  final LayerLink _autocompleteLink = LayerLink();
-  final OverlayPortalController _autocompletePortal = OverlayPortalController();
-  final LayerLink _emojiLink = LayerLink();
-  final OverlayPortalController _emojiPortal = OverlayPortalController();
+  final GlobalKey _emojiButtonKey = GlobalKey();
+  final GlobalKey _editorAnchorKey = GlobalKey();
+  final GlobalKey _priorityButtonKey = GlobalKey();
+  final GlobalKey _scheduleButtonKey = GlobalKey();
+  final GlobalKey _burnButtonKey = GlobalKey();
+  OverlayEntry? _autocompleteEntry;
+  OverlayEntry? _emojiEntry;
 
   @override
   void initState() {
@@ -65,8 +71,16 @@ class _MessageEditorState extends State<MessageEditor> {
 
   @override
   void dispose() {
+    _removeOverlayEntries();
     _disposeComposer();
     super.dispose();
+  }
+
+  void _removeOverlayEntries() {
+    _autocompleteEntry?.remove();
+    _autocompleteEntry = null;
+    _emojiEntry?.remove();
+    _emojiEntry = null;
   }
 
   void _disposeComposer() {
@@ -117,6 +131,7 @@ class _MessageEditorState extends State<MessageEditor> {
           : KeyEventResult.ignored;
       composer.onSendMessage = _handleSend;
       composer.onTyping = _handleTyping;
+      composer.setCurrentChannelId(channelId);
       composer.onScrollToBottom = () {
         final sc = widget.scrollController;
         if (sc != null && sc.hasClients) sc.jumpTo(0);
@@ -158,8 +173,10 @@ class _MessageEditorState extends State<MessageEditor> {
     String channelId,
     String message,
     String? rootId,
-    List<String> fileIds,
-  ) async {
+    List<String> fileIds, {
+    Map<String, dynamic>? metadata,
+    int? scheduledAt,
+  }) async {
     final composer = _composer;
     if (composer == null || channelId.isEmpty) return;
     if (composer.isEditMode) {
@@ -174,6 +191,8 @@ class _MessageEditorState extends State<MessageEditor> {
           rootId: rootId,
           fileIds: fileIds,
           alsoSendToChannel: _alsoSendToChannel,
+          metadata: metadata,
+          scheduledAt: scheduledAt,
         ),
       );
       if (_alsoSendToChannel) {
@@ -220,21 +239,202 @@ class _MessageEditorState extends State<MessageEditor> {
   void _onComposerChanged() {
     final composer = _composer;
     if (composer == null) return;
-    if (composer.emojiPickerOpen && !_emojiPortal.isShowing) {
-      _emojiPortal.show();
-    } else if (!composer.emojiPickerOpen && _emojiPortal.isShowing) {
-      _emojiPortal.hide();
+    if (composer.emojiPickerOpen && _emojiEntry == null) {
+      _showEmojiOverlay();
+    } else if (!composer.emojiPickerOpen && _emojiEntry != null) {
+      _removeEmojiOverlay();
     }
+  }
+
+  /// قائمة اختيار أولوية الرسالة — مطابق post_priority.tsx (urgent/important/none).
+  void _showPriorityMenu(ComposerController composer) {
+    final theme = AppTheme.of(context);
+    final overlaySize = context.size ?? const Size(400, 600);
+    final overlayTopLeft = (context.findRenderObject() as RenderBox?)
+            ?.localToGlobal(Offset.zero) ??
+        Offset.zero;
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(
+          overlayTopLeft.dx + overlaySize.width - 160,
+          overlayTopLeft.dy,
+          160,
+          overlaySize.height,
+        ),
+        Rect.fromLTWH(0, 0, 160, 600),
+      ),
+      items: [
+        for (final option in const <(String, String)>[
+          (ComposerController.priorityUrgent, 'عاجلة'),
+          (ComposerController.priorityImportant, 'مهمة'),
+          ('', 'بدون أولوية'),
+        ])
+          PopupMenuItem<String>(
+            value: option.$1,
+            child: Row(
+              children: [
+                Icon(
+                  option.$1 == ComposerController.priorityUrgent
+                      ? Icons.bolt
+                      : option.$1 == ComposerController.priorityImportant
+                          ? Icons.flag
+                          : Icons.remove_circle_outline,
+                  size: 18,
+                  color: option.$1 == ComposerController.priorityUrgent
+                      ? const Color(0xFFCC3232)
+                      : option.$1 == ComposerController.priorityImportant
+                          ? const Color(0xFFE3A319)
+                          : theme.centerChannelColor.withValues(alpha: 0.5),
+                ),
+                const SizedBox(width: 10),
+                Text(option.$2),
+              ],
+            ),
+          ),
+      ],
+    ).then((value) {
+      if (value == null || !mounted) return;
+      if (value.isEmpty) {
+        composer.clearPriority();
+      } else {
+        composer.setPriority(value);
+      }
+    });
+  }
+
+  /// منتقي جدولة الإرسال (تاريخ + وقت) — مطابق scheduled_messages في webapp.
+  Future<void> _pickSchedule(ComposerController composer) async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(now),
+    );
+    if (time == null || !mounted) return;
+    final scheduled = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+    composer.setScheduledAt(scheduled.millisecondsSinceEpoch);
   }
 
   void _onAutocompleteChanged() {
     final autocomplete = _autocomplete;
     if (autocomplete == null) return;
-    if (autocomplete.isOpen && !_autocompletePortal.isShowing) {
-      _autocompletePortal.show();
-    } else if (!autocomplete.isOpen && _autocompletePortal.isShowing) {
-      _autocompletePortal.hide();
+    if (autocomplete.isOpen && _autocompleteEntry == null) {
+      _showAutocompleteOverlay();
+    } else if (!autocomplete.isOpen && _autocompleteEntry != null) {
+      _removeAutocompleteOverlay();
     }
+  }
+
+  // ─────────────────────────── الأغلفة المنبثقة (OverlayEntry) ───────────────────────────
+
+  void _removeAutocompleteOverlay() {
+    _autocompleteEntry?.remove();
+    _autocompleteEntry = null;
+  }
+
+  void _removeEmojiOverlay() {
+    _emojiEntry?.remove();
+    _emojiEntry = null;
+  }
+
+  /// نافذة [AutocompleteOverlay] المربعة فوق المحرر — تُفتح بجوار المحرر.
+  void _showAutocompleteOverlay() {
+    final autocomplete = _autocomplete;
+    if (autocomplete == null) return;
+
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject()! as RenderBox;
+    final anchorBox = _editorAnchorKey.currentContext?.findRenderObject() as RenderBox?;
+    if (anchorBox == null || !anchorBox.hasSize) return;
+
+    const overlaySize = 260.0;
+    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+    var dx = anchorPos.dx + 8;
+    if (dx + overlaySize > overlayBox.size.width - 8) {
+      dx = overlayBox.size.width - overlaySize - 8;
+    }
+    var dy = anchorPos.dy - overlaySize - 8;
+    if (dy < 8) {
+      dy = anchorPos.dy + anchorBox.size.height + 8;
+    }
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          Positioned(
+            left: dx,
+            top: dy,
+            width: overlaySize,
+            height: overlaySize,
+            child: AutocompleteOverlay(
+              controller: autocomplete,
+              size: overlaySize,
+            ),
+          ),
+        ],
+      ),
+    );
+    _autocompleteEntry = entry;
+    overlay.insert(entry);
+  }
+
+  /// نافذة [EmojiPickerOverlay] بجانب زر الإيموجي.
+  void _showEmojiOverlay() {
+    final composer = _composer;
+    if (composer == null) return;
+
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject()! as RenderBox;
+    final anchorBox = _emojiButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (anchorBox == null || !anchorBox.hasSize) return;
+
+    final screenSize = MediaQuery.sizeOf(context);
+    final cardWidth = math.min(360.0, screenSize.width - 32);
+    final cardHeight = math.min(430.0, screenSize.height - 140);
+    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+    var dx = anchorPos.dx + anchorBox.size.width - cardWidth;
+    if (dx < 8) dx = 8;
+    if (dx + cardWidth > overlayBox.size.width - 8) {
+      dx = overlayBox.size.width - cardWidth - 8;
+    }
+    var dy = anchorPos.dy - cardHeight - 10;
+    if (dy < 8) dy = anchorPos.dy + anchorBox.size.height + 10;
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Stack(
+        children: [
+          Positioned(
+            left: dx,
+            top: dy,
+            child: EmojiPickerOverlay(
+              width: cardWidth,
+              height: cardHeight,
+              onEmojiSelected: composer.insertEmoji,
+              onClose: composer.closeEmojiPicker,
+            ),
+          ),
+        ],
+      ),
+    );
+    _emojiEntry = entry;
+    overlay.insert(entry);
   }
 
   // ─────────────────────────────── الواجهة ───────────────────────────────
@@ -270,6 +470,7 @@ class _MessageEditorState extends State<MessageEditor> {
     final editor = ListenableBuilder(
       listenable: listenable,
       builder: (context, _) => Container(
+        key: _editorAnchorKey,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         color: theme.centerChannelBg,
         child: Column(
@@ -315,33 +516,17 @@ class _MessageEditorState extends State<MessageEditor> {
                         tooltip: l10n.editorAddAttachment,
                         onPressed: upload.canAddMore ? upload.pickFiles : null,
                       ),
-                      OverlayPortal(
-                        controller: _emojiPortal,
-                        overlayChildBuilder: (_) => CompositedTransformFollower(
-                          link: _emojiLink,
-                          showWhenUnlinked: false,
-                          targetAnchor: Alignment.topRight,
-                          followerAnchor: Alignment.bottomRight,
-                          offset: const Offset(0, -10),
-                          child: EmojiPickerOverlay(
-                            onEmojiSelected: composer.insertEmoji,
-                            onClose: composer.closeEmojiPicker,
+                      IconButton(
+                        key: _emojiButtonKey,
+                        icon: Icon(
+                          Icons.emoji_emotions_outlined,
+                          size: 22,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.6,
                           ),
                         ),
-                        child: CompositedTransformTarget(
-                          link: _emojiLink,
-                          child: IconButton(
-                            icon: Icon(
-                              Icons.emoji_emotions_outlined,
-                              size: 22,
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                            tooltip: l10n.editorAddEmoji,
-                            onPressed: composer.toggleEmojiPicker,
-                          ),
-                        ),
+                        tooltip: l10n.editorAddEmoji,
+                        onPressed: composer.toggleEmojiPicker,
                       ),
                       IconButton(
                         icon: Icon(
@@ -353,6 +538,43 @@ class _MessageEditorState extends State<MessageEditor> {
                         ),
                         tooltip: l10n.editorSlashCommands,
                         onPressed: composer.openSlashCommands,
+                      ),
+                      IconButton(
+                        key: _priorityButtonKey,
+                        icon: Icon(
+                          Icons.flag_outlined,
+                          size: 22,
+                          color: composer.priority.isNotEmpty
+                              ? theme.buttonBg
+                              : theme.centerChannelColor.withValues(alpha: 0.6),
+                        ),
+                        tooltip: 'أولوية الرسالة',
+                        onPressed: () => _showPriorityMenu(composer),
+                      ),
+                      IconButton(
+                        key: _scheduleButtonKey,
+                        icon: Icon(
+                          Icons.schedule,
+                          size: 22,
+                          color: composer.scheduledAt != null
+                              ? theme.buttonBg
+                              : theme.centerChannelColor.withValues(alpha: 0.6),
+                        ),
+                        tooltip: 'جدولة الإرسال',
+                        onPressed: () => _pickSchedule(composer),
+                      ),
+                      IconButton(
+                        key: _burnButtonKey,
+                        icon: Icon(
+                          Icons.local_fire_department_outlined,
+                          size: 22,
+                          color: composer.burnOnRead
+                              ? theme.buttonBg
+                              : theme.centerChannelColor.withValues(alpha: 0.6),
+                        ),
+                        tooltip: 'إحراق بعد القراءة',
+                        onPressed: () =>
+                            composer.setBurnOnRead(!composer.burnOnRead),
                       ),
                       Expanded(
                         child: composer.showPreview
@@ -430,6 +652,10 @@ class _MessageEditorState extends State<MessageEditor> {
                       ),
                     ],
                   ),
+                  _AdvancedOptionsBar(
+                    composer: composer,
+                    onSchedule: () => _pickSchedule(composer),
+                  ),
                   FormattingBar(
                     onFormat: composer.applyMarkdown,
                     showPreview: composer.showPreview,
@@ -448,23 +674,113 @@ class _MessageEditorState extends State<MessageEditor> {
 
     return FileUploadDropArea(
       controller: upload,
-      child: OverlayPortal(
-        controller: _autocompletePortal,
-        overlayChildBuilder: (_) {
-          final autocomplete = _autocomplete;
-          if (autocomplete == null) return const SizedBox.shrink();
-          return CompositedTransformFollower(
-            link: _autocompleteLink,
-            showWhenUnlinked: false,
-            targetAnchor: Alignment.topLeft,
-            followerAnchor: Alignment.bottomLeft,
-            offset: const Offset(8, -8),
-            child: AutocompleteOverlay(controller: autocomplete, height: 300),
-          );
-        },
-        child: CompositedTransformTarget(
-          link: _autocompleteLink,
-          child: editor,
+      child: editor,
+    );
+  }
+}
+
+/// شريط الخيارات المتقدمة: أولوية الرسالة + الجدولة + الإحراق بعد القراءة.
+/// مطابق post_priority.tsx + scheduled_messages في webapp.
+class _AdvancedOptionsBar extends StatelessWidget {
+  final ComposerController composer;
+  final VoidCallback onSchedule;
+
+  const _AdvancedOptionsBar({
+    required this.composer,
+    required this.onSchedule,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final priority = composer.priority;
+    final scheduledAt = composer.scheduledAt;
+    final burnOnRead = composer.burnOnRead;
+    if (priority.isEmpty && scheduledAt == null && !burnOnRead) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          if (priority.isNotEmpty)
+            _OptionChip(
+              icon: priority == ComposerController.priorityUrgent
+                  ? Icons.bolt
+                  : Icons.flag,
+              label: priority == ComposerController.priorityUrgent
+                  ? 'أولوية عاجلة'
+                  : 'أولوية مهمة',
+              color: priority == ComposerController.priorityUrgent
+                  ? const Color(0xFFCC3232)
+                  : const Color(0xFFE3A319),
+              onTap: composer.clearPriority,
+            ),
+          if (scheduledAt != null)
+            _OptionChip(
+              icon: Icons.schedule,
+              label: DateFormat('MMM d, HH:mm').format(
+                DateTime.fromMillisecondsSinceEpoch(scheduledAt),
+              ),
+              color: theme.linkColor,
+              onTap: () => composer.setScheduledAt(null),
+            ),
+          if (burnOnRead)
+            _OptionChip(
+              icon: Icons.local_fire_department,
+              label: 'إحراق بعد القراءة',
+              color: const Color(0xFFCC3232),
+              onTap: () => composer.setBurnOnRead(false),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _OptionChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: color.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: theme.centerChannelColor,
+              ),
+            ),
+          ],
         ),
       ),
     );

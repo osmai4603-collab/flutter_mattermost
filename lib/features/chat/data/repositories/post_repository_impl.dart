@@ -62,6 +62,8 @@ class PostRepositoryImpl implements PostRepository {
     String? rootId,
     List<String> fileIds = const [],
     bool alsoSendToChannel = false,
+    Map<String, dynamic>? metadata,
+    int? scheduledAt,
   }) async {
     try {
       final model = await _remoteDataSource.sendPost(
@@ -70,6 +72,8 @@ class PostRepositoryImpl implements PostRepository {
         rootId: rootId,
         fileIds: fileIds,
         alsoSendToChannel: alsoSendToChannel,
+        metadata: metadata,
+        scheduledAt: scheduledAt,
       );
       final entity = model.toEntity();
 
@@ -131,9 +135,14 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
-  Future<List<PostEntity>> searchPostsInTeam(String teamId, String term) async {
+  Future<List<PostEntity>> searchPostsInTeam(
+    String teamId,
+    String term, {
+    bool isOrSearch = false,
+  }) async {
     final models = await _remoteDataSource.searchPostsInTeam(teamId, {
       'terms': term,
+      if (isOrSearch) 'is_or_search': true,
     });
     return models.map((m) => m.toEntity()).toList();
   }
@@ -182,6 +191,22 @@ class PostRepositoryImpl implements PostRepository {
   @override
   Future<void> deletePost(String postId) =>
       _remoteDataSource.deletePost(postId);
+
+  @override
+  Future<List<PostEntity>> getPostEditHistory(String postId) async {
+    final models = await _remoteDataSource.getPostEditHistory(postId);
+    return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Future<PostEntity> restorePostVersion(
+    String postId,
+    String versionId,
+  ) async {
+    final model =
+        await _remoteDataSource.restorePostVersion(postId, versionId);
+    return model.toEntity();
+  }
 
   @override
   Future<Map<String, List<ReactionEntity>>> getReactionsForPosts(

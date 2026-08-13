@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
@@ -7,14 +5,23 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
 
+/// منتقي الإيموجي — يُعرض داخل [OverlayEntry] في [Card] بحجم ثابت:
+/// حقل بحث أعلى البطاقة + تبويبات حسب نوع الإيموجي + شبكة إيموجي.
+/// النقر على إيموجي يُدرجه في المحرر، وعند التمرير فوقه يظهر اسمه أسفل البطاقة.
 class EmojiPickerOverlay extends StatefulWidget {
   final Function(String) onEmojiSelected;
   final VoidCallback onClose;
+
+  /// الحجم الثابت للبطاقة (يحدده المتصل عبر [OverlayEntry]).
+  final double width;
+  final double height;
 
   const EmojiPickerOverlay({
     super.key,
     required this.onEmojiSelected,
     required this.onClose,
+    this.width = 360,
+    this.height = 430,
   });
 
   @override
@@ -57,33 +64,36 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-    final screenSize = MediaQuery.sizeOf(context);
-    final overlayWidth = math.min(400.0, screenSize.width - 32);
-    final overlayHeight = math.min(450.0, screenSize.height - 120);
 
-    return Card(
-      elevation: 8,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        width: overlayWidth,
-        height: overlayHeight,
-        color: theme.centerChannelBg,
-        child: Column(
-          children: [
-            _buildHeader(theme, l10n),
-            _buildSearchBar(theme, l10n),
-            _buildTabs(theme),
-            Expanded(
-              child: _searchQuery.isEmpty
-                  ? _buildEmojiGrid(theme)
-                  : _buildSearchResults(theme),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Card(
+          elevation: 8,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.antiAlias,
+          child: Container(
+            width: widget.width,
+            height: widget.height,
+            color: theme.centerChannelBg,
+            child: Column(
+              children: [
+                _buildHeader(theme, l10n),
+                _buildSearchBar(theme, l10n),
+                _buildTabs(theme),
+                Expanded(
+                  child: _searchQuery.isEmpty
+                      ? _buildEmojiGrid(theme)
+                      : _buildSearchResults(theme),
+                ),
+              ],
             ),
-            _buildFooter(theme),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 6),
+        _buildEmojiNameBar(theme),
+      ],
     );
   }
 
@@ -202,18 +212,16 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     );
   }
 
-  Widget _buildFooter(MattermostColors theme) {
+  /// شريط أسفل البطاقة يعرض اسم الإيموجي الذي يمرر عليه المؤشر.
+  Widget _buildEmojiNameBar(MattermostColors theme) {
     return Container(
-      height: 32,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      width: widget.width,
+      height: 28,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       alignment: Alignment.centerLeft,
       decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: theme.centerChannelColor.withValues(alpha: 0.1),
-          ),
-        ),
+        color: theme.centerChannelColor.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         _hoveredEmojiName,

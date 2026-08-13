@@ -8,21 +8,40 @@ import 'package:flutter_mattermost/core/network/api_result.dart';
 import 'package:flutter_mattermost/core/network/session_controller.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 
+enum ContentType {
+  applicationJson('application/json');
+
+  final String value;
+  const ContentType(this.value);
+}
+
+enum AcceptType {
+  applicationJson('application/json');
+
+  final String value;
+  const AcceptType(this.value);
+}
+
 @lazySingleton
 class ApiClient {
   late final Dio dio;
   final SecureStorageService _secureStorage;
   final SessionController _sessionController;
 
-  ApiClient(this._secureStorage, this._sessionController) {
+  ApiClient(
+    this._secureStorage,
+    this._sessionController, {
+    ContentType contentType = .applicationJson,
+    AcceptType acceptType = .applicationJson,
+  }) {
     dio = Dio(
       BaseOptions(
         baseUrl: AppConfig.defaultBaseUrl,
         connectTimeout: AppConfig.connectionTimeout,
         receiveTimeout: AppConfig.receiveTimeout,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Content-Type': contentType.value,
+          'Accept': acceptType.value,
         },
       ),
     );

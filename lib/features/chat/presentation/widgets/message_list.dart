@@ -40,31 +40,77 @@ class _PostListState extends State<PostList> {
   late final ScrollController _scrollController =
       widget.scrollController ?? ScrollController();
 
+  bool _atBottom = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
   @override
   void dispose() {
     if (widget.scrollController == null) {
       _scrollController.dispose();
+    } else {
+      _scrollController.removeListener(_onScroll);
     }
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    // القائمة معكوسة: offset 0 = الأسفل (أحدث الرسائل).
+    final atBottom = _scrollController.offset <= 24;
+    if (atBottom != _atBottom) {
+      setState(() => _atBottom = atBottom);
+    }
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<PostBloc, PostsState>(
       builder: (context, state) {
-        if (state is PostLoadingState) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (state is PostErrorState) {
-          return _ErrorView(message: state.message);
-        }
-        if (state is PostsLoadedState) {
-          return _PostListBody(
+        final body = switch (state) {
+          PostLoadingState() =>
+            const Center(child: CircularProgressIndicator()),
+          PostErrorState() => _ErrorView(message: state.message),
+          PostsLoadedState() => _PostListBody(
             state: state,
             scrollController: _scrollController,
-          );
-        }
-        return const SizedBox.shrink();
+          ),
+          _ => const SizedBox.shrink(),
+        };
+
+        return Stack(
+          children: [
+            body,
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: AnimatedOpacity(
+                opacity: _atBottom ? 0 : 1,
+                duration: const Duration(milliseconds: 200),
+                child: IgnorePointer(
+                  ignoring: _atBottom,
+                  child: _ScrollToBottomButton(
+                    label: 'أحدث الرسائل',
+                    onTap: _scrollToBottom,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
       },
     );
   }
@@ -98,6 +144,47 @@ class _ErrorView extends StatelessWidget {
             child: Text(l10n.postListRetry),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// زر "أحدث الرسائل" العائم — يظهر عند التمرير للأعلى ويعيد التمرير للأسفل؛
+/// مطابق New Messages button في webapp.
+class _ScrollToBottomButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ScrollToBottomButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(999),
+      color: theme.buttonBg,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.keyboard_arrow_down, size: 20, color: theme.buttonColor),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: theme.buttonColor,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -245,7 +332,10 @@ class _PostListBodyState extends State<_PostListBody> {
     // posts are sorted latest to oldest (reverse: true)
     for (int i = 0; i < state.posts.length; i++) {
       final post = state.posts[i];
-      final isNew = lastViewedAt > 0 && post.createAt > lastViewedAt && post.userId != myUserId;
+      final isNew =
+          lastViewedAt > 0 &&
+          post.createAt > lastViewedAt &&
+          post.userId != myUserId;
 
       final day = DateTime.fromMillisecondsSinceEpoch(post.createAt);
       final dayKey = DateTime(day.year, day.month, day.day);
@@ -254,7 +344,8 @@ class _PostListBodyState extends State<_PostListBody> {
       // Since it's reversed, we check if the NEXT post (which is older) was the last viewed one.
       if (!newMessagesLineShown && isNew) {
         // If this is the last post or the next one is older than lastViewedAt
-        final isLastNew = (i == state.posts.length - 1) ||
+        final isLastNew =
+            (i == state.posts.length - 1) ||
             (state.posts[i + 1].createAt <= lastViewedAt);
         if (isLastNew) {
           items.add(const _NewMessagesSeparator());
@@ -291,7 +382,6 @@ class _PostListBodyState extends State<_PostListBody> {
     if (state.typingUserIds.isNotEmpty) {
       items.add(_TypingRow(userIds: state.typingUserIds.toList()));
     }
-
 
     return ListView(
       controller: widget.scrollController,
@@ -459,14 +549,15 @@ class _PostItemState extends State<PostItem> {
 
     final username = widget.profile?.username ?? post.userId;
     final time = _formatTime(post.createAt);
-    final fullTime = DateFormat('EEEE, MMMM d, yyyy h:mm a').format(
-      DateTime.fromMillisecondsSinceEpoch(post.createAt).toLocal(),
-    );
+    final fullTime = DateFormat(
+      'EEEE, MMMM d, yyyy h:mm a',
+    ).format(DateTime.fromMillisecondsSinceEpoch(post.createAt).toLocal());
     final isMine =
         post.userId == 'current_user' || post.userId == widget.myUserId;
     final canDelete = isMine || post.pendingPostId.isNotEmpty;
     final avatarUrl = _avatarUrlFor(post.userId);
-    final isBot = widget.profile?.roles.contains('bot') == true ||
+    final isBot =
+        widget.profile?.roles.contains('bot') == true ||
         post.propsData['from_webhook'] == 'true';
 
     final status =
@@ -597,13 +688,23 @@ class _PostItemState extends State<PostItem> {
                         if (post.editAt > 0)
                           Padding(
                             padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              l10n.postEdited,
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontStyle: FontStyle.italic,
-                                color: theme.centerChannelColor.withValues(
-                                  alpha: 0.45,
+                            child: InkWell(
+                              onTap: () =>
+                                  context.read<RhsBloc>().add(
+                                    OpenEditHistoryEvent(post.id),
+                                  ),
+                              borderRadius: BorderRadius.circular(4),
+                              child: Text(
+                                l10n.postEdited,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontStyle: FontStyle.italic,
+                                  color: theme.centerChannelColor.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: theme.centerChannelColor
+                                      .withValues(alpha: 0.3),
                                 ),
                               ),
                             ),
@@ -612,16 +713,6 @@ class _PostItemState extends State<PostItem> {
                     ),
                   if (widget.filesList.isNotEmpty)
                     PostAttachmentPreview(files: widget.filesList),
-                  if ((widget.reactions.isNotEmpty || _hovered) &&
-                      post.deleteAt == 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 6),
-                      child: _ReactionsBar(
-                        postId: post.id,
-                        reactions: widget.reactions,
-                        myUserId: widget.myUserId,
-                      ),
-                    ),
                   if (widget.replyCount > 0)
                     InkWell(
                       onTap: () {
@@ -667,7 +758,6 @@ class _PostItemState extends State<PostItem> {
   }
 }
 
-
 class _PostActions extends StatelessWidget {
   final PostEntity post;
   final bool isFlagged;
@@ -711,71 +801,104 @@ class _PostActions extends StatelessWidget {
             context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
           },
         ),
-        MatterMenuScope(
-          openUp: true,
-          items: [
-            MatterMenuItem(
-              id: 'reply',
-              label: l10n.postMenuReply,
-              icon: const Icon(Icons.mode_comment_outlined, size: 18),
+        PopupMenuButton<String>(
+          itemBuilder: (_) => [
+            PopupMenuItem(
+              value: 'reply',
+              child: Row(
+                spacing: 8,
+                children: [
+                  const Icon(Icons.mode_comment_outlined, size: 18),
+                  Text(l10n.postMenuReply),
+                ],
+              ),
               onTap: () {
                 context.read<RhsBloc>().add(
                   OpenThreadEvent(post.id, post.channelId),
                 );
               },
             ),
-            MatterMenuItem(
-              id: 'copy',
-              label: l10n.postMenuCopy,
-              icon: const Icon(Icons.copy, size: 18),
+            PopupMenuItem(
+              value: 'copy',
+              child: Row(
+                children: [
+                  const Icon(Icons.copy, size: 18),
+                  Text(l10n.postMenuCopy),
+                ],
+              ),
               onTap: () => Clipboard.setData(ClipboardData(text: post.message)),
             ),
-            MatterMenuItem(
-              id: 'copy_link',
-              label: 'Copy Link',
-              icon: const Icon(Icons.link, size: 18),
+            PopupMenuItem(
+              value: 'copy_link',
+              // label: 'Copy Link',
+              child: Row(
+                spacing: 8,
+                children: [const Icon(Icons.link, size: 18), Text('Copy Link')],
+              ),
               onTap: () {
                 final serverUrl = getIt<ServerManager>().activeServerUrl;
                 final link = '$serverUrl/_redirect/pl/${post.id}';
                 Clipboard.setData(ClipboardData(text: link));
               },
             ),
-            MatterMenuItem(
-              id: 'flag',
-              label: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
-              icon: Icon(
-                isFlagged ? Icons.flag : Icons.flag_outlined,
-                size: 18,
+            PopupMenuItem(
+              value: 'flag',
+              // label: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(isFlagged ? Icons.flag : Icons.flag_outlined, size: 18),
+                  Text(isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag),
+                ],
               ),
               onTap: () {
                 context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
               },
             ),
-            MatterMenuItem(
-              id: 'pin',
-              label: isPinned ? l10n.postMenuUnpin : l10n.postMenuPin,
-              icon: Icon(
-                isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                size: 18,
+            PopupMenuItem(
+              value: 'pin',
+              // label: isPinned ? l10n.postMenuUnpin : l10n.postMenuPin,
+              child: Row(
+                spacing: 8,
+                children: [
+                  Icon(
+                    isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    size: 18,
+                  ),
+                  Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
+                ],
               ),
               onTap: () {
                 context.read<PostBloc>().add(TogglePinPostEvent(post.id));
               },
             ),
             if (canEdit)
-              MatterMenuItem(
-                id: 'edit',
-                label: l10n.postMenuEdit,
-                icon: const Icon(Icons.edit_outlined, size: 18),
+              PopupMenuItem(
+                value: 'edit',
+                // label: l10n.postMenuEdit,
+                child: Row(
+                  spacing: 8,
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 18),
+                    Text(l10n.postMenuEdit),
+                  ],
+                ),
                 onTap: () => _startComposerEdit(context),
               ),
             if (canDelete)
-              MatterMenuItem(
-                id: 'delete',
-                label: l10n.postMenuDelete,
-                icon: const Icon(Icons.delete_outline, size: 18),
-                danger: true,
-                separatorBefore: true,
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(Icons.delete_outline, size: 18),
+                    Text(
+                      l10n.postMenuDelete,
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ],
+                ),
+                // danger: true,
+                // separatorBefore: true,
                 onTap: () => _confirmDelete(context),
               ),
           ],

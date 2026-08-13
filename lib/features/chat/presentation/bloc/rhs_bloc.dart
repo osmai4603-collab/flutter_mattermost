@@ -42,6 +42,14 @@ class OpenThreadEvent extends RhsEvent {
 
 class CloseRhsEvent extends RhsEvent {}
 
+/// فتح سجل تعديلات رسالة في RHS — مطابق فتح post edit history في webapp.
+class OpenEditHistoryEvent extends RhsEvent {
+  final String postId;
+  const OpenEditHistoryEvent(this.postId);
+  @override
+  List<Object?> get props => [postId];
+}
+
 class SendThreadPostEvent extends RhsEvent {
   final String channelId;
   final String rootPostId;
@@ -161,6 +169,39 @@ class RhsThreadState extends RhsPanelState {
   ];
 }
 
+/// حالة سجل تعديلات رسالة في RHS — مطابق لوحة edit history في webapp.
+class RhsEditHistoryState extends RhsPanelState {
+  final String postId;
+  final List<PostEntity> versions;
+  final bool loading;
+  @override
+  final bool isExpanded;
+
+  const RhsEditHistoryState({
+    required this.postId,
+    this.versions = const [],
+    this.loading = false,
+    this.isExpanded = false,
+  });
+
+  @override
+  RhsPanel get panel => RhsPanel.editHistory;
+
+  RhsEditHistoryState copyWith({
+    List<PostEntity>? versions,
+    bool? loading,
+    bool? isExpanded,
+  }) => RhsEditHistoryState(
+    postId: postId,
+    versions: versions ?? this.versions,
+    loading: loading ?? this.loading,
+    isExpanded: isExpanded ?? this.isExpanded,
+  );
+
+  @override
+  List<Object?> get props => [postId, versions, loading, isExpanded];
+}
+
 /// حالة بحث/قوائم (mentions, flagged, pinned, files, search).
 class RhsListState extends RhsPanelState {
   final RhsPanel panel;
@@ -229,6 +270,7 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
 
   RhsBloc(this._postRepository, this._channelBloc) : super(RhsClosedState()) {
     on<OpenThreadEvent>(_onOpenThread);
+    on<OpenEditHistoryEvent>(_onOpenEditHistory);
     on<CloseRhsEvent>(_onClose);
     on<SendThreadPostEvent>(_onSendThreadPost);
     on<ThreadRealtimeUpdatedEvent>(_onRealtimeUpdated);
@@ -302,6 +344,23 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
   void _onClose(CloseRhsEvent event, Emitter<RhsState> emit) {
     _previousPanels.clear();
     emit(RhsClosedState());
+  }
+
+  /// يُستدعى من زر "Edited" أسفل الرسالة — يفتح سجل النسخ في RHS.
+  Future<void> _onOpenEditHistory(
+    OpenEditHistoryEvent event,
+    Emitter<RhsState> emit,
+  ) async {
+    _pushPrevious(RhsPanel.editHistory);
+    emit(RhsEditHistoryState(postId: event.postId, loading: true));
+    try {
+      final versions = await _postRepository.getPostEditHistory(event.postId);
+      emit(RhsEditHistoryState(postId: event.postId, versions: versions));
+    } catch (_) {
+      if (state is RhsEditHistoryState) {
+        emit((state as RhsEditHistoryState).copyWith(loading: false));
+      }
+    }
   }
 
   void _showMentions(ShowMentionsEvent event, Emitter<RhsState> emit) {

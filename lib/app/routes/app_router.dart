@@ -12,12 +12,7 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 
 final GoRouter appRouter = GoRouter(
   initialLocation: ChatRoutes.home,
-  routes: [
-    ...authRoutes,
-    channelRoute,
-    integrationRoute,
-    adminRoute,
-  ],
+  routes: [...authRoutes, channelRoute, integrationRoute, adminRoute],
   redirect: _onRouteRedirect,
   refreshListenable: _AppRefreshListenable(),
 );
@@ -95,11 +90,9 @@ FutureOr<String?> _onRouteRedirect(
       return ChatRoutes.home;
     }
 
+    // Admin Console route access
     if (matchedLocation.startsWith('/admin_console')) {
-      final roles = authState.user.roles.split(' ').where((r) => r.isNotEmpty);
-      if (!roles.contains('system_admin')) {
-        return ChatRoutes.home;
-      }
+      return null;
     }
 
     final teamState = getIt<TeamBloc>().state;

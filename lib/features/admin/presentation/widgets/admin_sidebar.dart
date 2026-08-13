@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 
@@ -12,6 +14,22 @@ class AdminConsoleSideBar extends StatelessWidget {
 
   final AdminConsoleSection selected;
   final ValueChanged<AdminConsoleSection> onSelected;
+
+  void _onBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      final teamState = context.read<TeamBloc>().state;
+      final teamName = teamState is TeamsLoadedState
+          ? teamState.selectedTeam?.name
+          : null;
+      if (teamName != null) {
+        context.go('/$teamName');
+      } else {
+        context.go('/');
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +49,9 @@ class AdminConsoleSideBar extends StatelessWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 18),
-                  onPressed: () => context.go('/home'),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white70, size: 20),
+                  tooltip: 'Back',
+                  onPressed: () => _onBack(context),
                 ),
                 const Icon(
                   Icons.settings_outlined,

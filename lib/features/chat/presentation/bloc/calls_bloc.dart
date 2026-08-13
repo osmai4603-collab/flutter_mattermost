@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/calls/calls_manager.dart';
+import 'package:flutter_mattermost/core/calls/audio_session_manager.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 
 // Events
@@ -33,6 +34,15 @@ class ToggleMuteEvent extends CallsEvent {}
 class ToggleVideoEvent extends CallsEvent {}
 
 class ToggleShareScreenEvent extends CallsEvent {}
+
+class ToggleRaiseHandEvent extends CallsEvent {}
+
+class SwitchAudioOutputEvent extends CallsEvent {
+  final AudioOutputDevice device;
+  const SwitchAudioOutputEvent(this.device);
+  @override
+  List<Object?> get props => [device];
+}
 
 class IncomingCallEvent extends CallsEvent {
   final String callId;
@@ -72,28 +82,50 @@ class CallConnectedState extends CallsState {
   final bool isMuted;
   final bool isVideoOn;
   final bool isSharingScreen;
+  final bool isHandRaised;
+  final AudioOutputDevice audioDevice;
+  final Map<String, CallParticipantState> participants;
+
   const CallConnectedState({
     required this.callId,
     required this.channelId,
     this.isMuted = false,
     this.isVideoOn = false,
     this.isSharingScreen = false,
+    this.isHandRaised = false,
+    this.audioDevice = AudioOutputDevice.speaker,
+    this.participants = const {},
   });
   
   CallConnectedState copyWith({
     bool? isMuted,
     bool? isVideoOn,
     bool? isSharingScreen,
+    bool? isHandRaised,
+    AudioOutputDevice? audioDevice,
+    Map<String, CallParticipantState>? participants,
   }) => CallConnectedState(
     callId: callId,
     channelId: channelId,
     isMuted: isMuted ?? this.isMuted,
     isVideoOn: isVideoOn ?? this.isVideoOn,
     isSharingScreen: isSharingScreen ?? this.isSharingScreen,
+    isHandRaised: isHandRaised ?? this.isHandRaised,
+    audioDevice: audioDevice ?? this.audioDevice,
+    participants: participants ?? this.participants,
   );
 
   @override
-  List<Object?> get props => [callId, channelId, isMuted, isVideoOn, isSharingScreen];
+  List<Object?> get props => [
+        callId,
+        channelId,
+        isMuted,
+        isVideoOn,
+        isSharingScreen,
+        isHandRaised,
+        audioDevice,
+        participants,
+      ];
 }
 
 class CallReconnectingState extends CallsState {
@@ -114,13 +146,24 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
     on<ToggleMuteEvent>(_onToggleMute);
     on<ToggleVideoEvent>(_onToggleVideo);
     on<ToggleShareScreenEvent>(_onToggleShareScreen);
+    on<ToggleRaiseHandEvent>(_onToggleRaiseHand);
+    on<SwitchAudioOutputEvent>(_onSwitchAudioOutput);
     on<IncomingCallEvent>(_onIncomingCall);
     on<RejectCallEvent>(_onRejectCall);
+    
     _callsManager.incomingCalls.listen(_onIncomingCallFromServer);
+    _callsManager.participantsStream.listen(_onParticipantsUpdated);
   }
 
   void _onIncomingCallFromServer(CallStartedEvent event) {
     add(IncomingCallEvent(callId: event.callId, channelId: event.channelId));
+  }
+
+  void _onParticipantsUpdated(Map<String, CallParticipantState> participants) {
+    if (state is CallConnectedState) {
+      final current = state as CallConnectedState;
+      emit(current.copyWith(participants: participants));
+    }
   }
 
   void _onStartCall(StartCallEvent event, Emitter<CallsState> emit) async {
@@ -130,6 +173,7 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
         callId: 'call_${DateTime.now().millisecondsSinceEpoch}',
         channelId: event.channelId,
         isVideoOn: event.video,
+        audioDevice: _callsManager.audioSessionManager.currentDevice,
       ));
     } catch (_) {
       emit(CallIdleState());
@@ -137,12 +181,15 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
   }
 
   void _onJoinCall(JoinCallEvent event, Emitter<CallsState> emit) async {
-    // We need channelId, assuming we get it from state or event
     final current = state;
     if (current is! CallRingingState) return;
     try {
       await _callsManager.startCall(current.channelId);
-      emit(CallConnectedState(callId: event.callId, channelId: current.channelId));
+      emit(CallConnectedState(
+        callId: event.callId,
+        channelId: current.channelId,
+        audioDevice: _callsManager.audioSessionManager.currentDevice,
+      ));
     } catch (_) {
       emit(CallIdleState());
     }
@@ -177,6 +224,26 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
       final current = state as CallConnectedState;
       await _callsManager.toggleScreenShare();
       emit(current.copyWith(isSharingScreen: !current.isSharingScreen));
+    }
+  }
+
+  void _onToggleRaiseHand(ToggleRaiseHandEvent event, Emitter<CallsState> emit) {
+    if (state is CallConnectedState) {
+      final current = state as CallConnectedState;
+      final newHandState = !current.isHandRaised;
+      _callsManager.raiseHand(newHandState);
+      emit(current.copyWith(isHandRaised: newHandState));
+    }
+  }
+
+  void _onSwitchAudioOutput(
+    SwitchAudioOutputEvent event,
+    Emitter<CallsState> emit,
+  ) async {
+    if (state is CallConnectedState) {
+      final current = state as CallConnectedState;
+      await _callsManager.audioSessionManager.setAudioOutput(event.device);
+      emit(current.copyWith(audioDevice: event.device));
     }
   }
 

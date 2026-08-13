@@ -1,5 +1,6 @@
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/features/channels/data/datasources/channel_bookmarks_remote_data_source.dart';
 import 'package:flutter_mattermost/features/channels/data/datasources/channel_categories_remote_data_source.dart';
@@ -184,6 +185,8 @@ class ChannelRepositoryImpl implements ChannelRepository {
     String? displayName,
     List<String>? channelIds,
     bool? muted,
+    CategorySorting? sorting,
+    bool? collapsed,
   }) async {
     final model = await _categoriesDataSource.updateChannelCategory(
       userId,
@@ -192,6 +195,8 @@ class ChannelRepositoryImpl implements ChannelRepository {
       displayName: displayName,
       channelIds: channelIds,
       muted: muted,
+      sorting: sorting?.value,
+      collapsed: collapsed,
     );
     return model.toEntity();
   }
@@ -305,4 +310,16 @@ class ChannelRepositoryImpl implements ChannelRepository {
     final bookmarks = await _bookmarksDataSource.getChannelBookmarks(channelId);
     return bookmarks.map((b) => b.toEntity()).toList();
   }
+
+  @override
+  Future<List<String>> getGroupMessageMembersCommonTeams(String channelId) =>
+      _remoteDataSource.getGroupMessageMembersCommonTeams(channelId);
+
+  @override
+  Future<void> viewMyChannel(String channelId) =>
+      _remoteDataSource.viewMyChannel(channelId);
+
+  @override
+  Future<void> readMultipleChannels(List<String> channelIds) =>
+      _remoteDataSource.readMultipleChannels(channelIds);
 }

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
@@ -34,6 +35,37 @@ class _MentionsPanelState extends State<MentionsPanel> {
   final Set<String> _requestedUserIds = {};
   final Set<String> _requestedChannelIds = {};
   Map<String, String> _channelNames = {};
+  List<String> _mentionKeys = const [];
+
+  /// مفاتيح الإشارة — مطابقة getCurrentUserMentionKeys في webapp:
+  /// مفاتيح مخصصة (notify_props.mention_keys) + الاسم الأول إن كان مفعّلاً
+  /// (notify_props.first_name == 'true') + @username دائماً، وأخيراً تستبعد
+  /// التنبيهات العامة @channel/@all/@here كما تفعل showMentions.
+  static List<String> mentionKeysFrom(UserEntity user) {
+    final keys = <String>[];
+    final notifyProps = user.notifyProps;
+    final rawKeys = notifyProps['mention_keys'] as String? ?? '';
+    for (final key in rawKeys.split(',')) {
+      final trimmed = key.trim();
+      if (trimmed.isNotEmpty) keys.add(trimmed);
+    }
+    if (notifyProps['first_name'] == 'true' && user.firstName.isNotEmpty) {
+      keys.add(user.firstName);
+    }
+    if (notifyProps['channel'] == 'true') {
+      keys.addAll(const ['@channel', '@all', '@here']);
+    }
+    final usernameKey = '@${user.username}';
+    if (!keys.contains(usernameKey)) keys.add(usernameKey);
+    return keys
+        .where((k) => k != '@channel' && k != '@all' && k != '@here')
+        .toList();
+  }
+
+  /// استعلام البحث — مطابق showMentions في webapp:
+  /// يجمع المفاتيح ويفصلها بمسافات ويرسل is_or_search=true.
+  static String queryFromKeys(List<String> keys) =>
+      '${keys.join(' ').trim()} ';
 
   Future<List<PostEntity>> _fetch() {
     final teamState = context.read<TeamBloc>().state;
@@ -41,11 +73,15 @@ class _MentionsPanelState extends State<MentionsPanel> {
         ? teamState.selectedTeam?.id ?? teamState.teams.firstOrNull?.id
         : null;
     final authState = context.read<AuthBloc>().state;
-    final username = authState is AuthenticatedState
-        ? authState.user.username
-        : '';
-    if (teamId == null || username.isEmpty) return Future.value(const []);
-    return getIt<PostRepository>().searchPostsInTeam(teamId, '@$username');
+    if (authState is! AuthenticatedState) return Future.value(const []);
+    final user = authState.user;
+    _mentionKeys = mentionKeysFrom(user);
+    final query = queryFromKeys(_mentionKeys);
+    if (teamId == null || query.trim().isEmpty) {
+      return Future.value(const []);
+    }
+    return getIt<PostRepository>()
+        .searchPostsInTeam(teamId, query, isOrSearch: true);
   }
 
   void _loadProfiles(List<PostEntity> posts) {
@@ -190,6 +226,7 @@ class _MentionsPanelState extends State<MentionsPanel> {
           profile: profiles[post.userId],
           status: statuses?.statusOf(post.userId),
           channelName: _channelNames[post.channelId],
+          mentionKeys: _mentionKeys,
           onTap: () => _navigateToPost(post),
         ),
       );
@@ -229,6 +266,7 @@ class _MentionRow extends StatelessWidget {
   final UserEntity? profile;
   final UserStatus? status;
   final String? channelName;
+  final List<String> mentionKeys;
   final VoidCallback onTap;
 
   const _MentionRow({
@@ -236,6 +274,7 @@ class _MentionRow extends StatelessWidget {
     required this.profile,
     required this.status,
     required this.channelName,
+    required this.mentionKeys,
     required this.onTap,
   });
 
@@ -312,13 +351,15 @@ class _MentionRow extends StatelessWidget {
                   const SizedBox(height: 2),
                   RichText(
                     text: TextSpan(
-                      children: emojiAwareSpans(
+                      children: mentionHighlightSpans(
                         post.message,
                         TextStyle(
                           color: theme.centerChannelColor,
                           fontSize: 13,
                           height: 1.4,
                         ),
+                        mentionKeys,
+                        theme: theme,
                       ),
                     ),
                   ),
@@ -368,4 +409,37 @@ class _MentionsEmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// بناء spans مع وعي بالإيموجي وتظليل مخصص للإشارات (Mention Highlighting) —
+/// مطابق لتظليل الكلمات المشَار إليها في webapp (خلفية mentionHighlightBg).
+List<InlineSpan> mentionHighlightSpans(
+  String text,
+  TextStyle style,
+  List<String> keys,
+  {required MattermostColors theme,
+  }) {
+  if (keys.isEmpty) return emojiAwareSpans(text, style);
+  final pattern = RegExp(
+    keys.map((k) => '(?:@?${RegExp.escape(k)})').join('|'),
+    caseSensitive: false,
+  );
+  final highlightStyle = style.copyWith(
+    backgroundColor: theme.mentionHighlightBg,
+    color: theme.mentionHighlightLink,
+    fontWeight: FontWeight.w700,
+  );
+  final spans = <InlineSpan>[];
+  var last = 0;
+  for (final match in pattern.allMatches(text)) {
+    if (match.start > last) {
+      spans.addAll(emojiAwareSpans(text.substring(last, match.start), style));
+    }
+    spans.add(TextSpan(text: match.group(0), style: highlightStyle));
+    last = match.end;
+  }
+  if (last < text.length) {
+    spans.addAll(emojiAwareSpans(text.substring(last), style));
+  }
+  return spans;
 }

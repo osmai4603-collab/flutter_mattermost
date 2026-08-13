@@ -46613,4 +46613,31 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get post_commentCheckbox_also_send_to_channel =>
       'أيضاً أرسل إلى القناة';
+
+  @override
+  String get global_headerBack => 'رجوع';
+
+  @override
+  String get global_headerForward => 'تقدُّم';
+
+  @override
+  String get channel_headerCopyHeaderText => 'نسخ النص';
+
+  @override
+  String get timeRelativeJustNow => 'الآن';
+
+  @override
+  String timeRelativeMinutesAgo(Object count) {
+    return 'منذ $count دقيقة';
+  }
+
+  @override
+  String timeRelativeHoursAgo(Object count) {
+    return 'منذ $count ساعة';
+  }
+
+  @override
+  String timeRelativeDaysAgo(Object count) {
+    return 'منذ $count يوم';
+  }
 }

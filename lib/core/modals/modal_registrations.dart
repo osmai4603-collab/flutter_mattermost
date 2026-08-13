@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/features/app/presentation/pages/app_settings_page.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/direct_channels_modal.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/keyboard_shortcuts_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/create_new_channel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -64,6 +65,10 @@ void registerMattermostModals() {
   ModalRegistry.register(
     ModalIdentifiers.moreDirectChannels,
     (context, args) => const DirectChannelsModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.keyboardShortcuts,
+    (context, args) => const KeyboardShortcutsModal(),
   );
 }
 

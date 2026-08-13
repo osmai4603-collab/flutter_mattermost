@@ -10,6 +10,7 @@ import 'package:flutter_mattermost/core/modals/modal_registrations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_history_cubit.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
@@ -48,6 +49,7 @@ class MattermostApp extends StatelessWidget {
         ),
         BlocProvider(create: (_) => getIt<TeamBloc>()),
         BlocProvider(create: (_) => getIt<ChannelBloc>()),
+        BlocProvider(create: (_) => getIt<ChannelHistoryCubit>()),
         BlocProvider(create: (_) => getIt<PostBloc>()),
         BlocProvider(create: (_) => getIt<LhsBloc>()),
         BlocProvider(create: (_) => getIt<RhsBloc>()),

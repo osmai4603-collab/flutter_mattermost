@@ -32,4 +32,13 @@ abstract class ThreadsRepository {
     String userId,
     String teamId,
   );
+
+  Future<void> setThreadUnread(
+    String userId,
+    String teamId,
+    String threadId,
+    String postId,
+  );
+
+  Future<void> moveThread(String threadId, String channelId);
 }

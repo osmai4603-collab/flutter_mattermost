@@ -43,8 +43,8 @@ class ProductMenuButton extends StatelessWidget {
           MatterMenuItem.divider(),
           MatterMenuItem(
             id: 'system_console',
-            label: 'System Console',
-            icon: const Icon(Icons.terminal_rounded, size: 18),
+            label: 'Admin Console',
+            icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
             onTap: () => context.go(AdminConsoleRoutes.root),
           ),
           MatterMenuItem(

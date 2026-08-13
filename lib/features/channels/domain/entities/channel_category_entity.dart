@@ -12,6 +12,10 @@ class ChannelCategoryEntity extends Entity {
   final CategorySorting sorting;
   final int sortOrder;
   final bool muted;
+
+  /// حالة طي الفئة في الشريط الجانبي — تُحفظ على الخادم (مطابق
+  /// `collapsed` في واجهة الفئات) وتُقرأ عند إعادة التحميل.
+  final bool collapsed;
   final Map<String, dynamic> propsData;
 
   const ChannelCategoryEntity({
@@ -24,6 +28,7 @@ class ChannelCategoryEntity extends Entity {
     this.sorting = CategorySorting.recent,
     this.sortOrder = 0,
     this.muted = false,
+    this.collapsed = false,
     this.propsData = const {},
   });
 
@@ -38,6 +43,7 @@ class ChannelCategoryEntity extends Entity {
         sorting,
         sortOrder,
         muted,
+        collapsed,
         propsData,
       ];
 
@@ -52,6 +58,7 @@ class ChannelCategoryEntity extends Entity {
     CategorySorting? sorting,
     int? sortOrder,
     bool? muted,
+    bool? collapsed,
     Map<String, dynamic>? propsData,
   }) {
     return ChannelCategoryEntity(
@@ -64,6 +71,7 @@ class ChannelCategoryEntity extends Entity {
       sorting: sorting ?? this.sorting,
       sortOrder: sortOrder ?? this.sortOrder,
       muted: muted ?? this.muted,
+      collapsed: collapsed ?? this.collapsed,
       propsData: propsData ?? this.propsData,
     );
   }

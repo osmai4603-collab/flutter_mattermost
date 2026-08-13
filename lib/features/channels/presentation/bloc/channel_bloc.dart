@@ -2,12 +2,14 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 
 // Events
@@ -127,12 +129,7 @@ class MoveChannelToCategoryEvent extends ChannelEvent {
     required this.teamId,
   });
   @override
-  List<Object?> get props => [
-    channelId,
-    targetCategoryId,
-    userId,
-    teamId,
-  ];
+  List<Object?> get props => [channelId, targetCategoryId, userId, teamId];
 }
 
 /// إعادة تسمية فئة — يطابق PUT /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
@@ -206,6 +203,65 @@ class LeaveChannelEvent extends ChannelEvent {
   List<Object?> get props => [channelId, userId];
 }
 
+/// تغيير ترتيب قنوات الفئة (أبجدي/أحدث/يدوي) — يُحفظ على الخادم عبر
+/// updateChannelCategory(sorting:) ويطابق setCategorySorting في webapp.
+class SetCategorySortingEvent extends ChannelEvent {
+  final String categoryId;
+  final CategorySorting sorting;
+  final String userId;
+  final String teamId;
+  const SetCategorySortingEvent({
+    required this.categoryId,
+    required this.sorting,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [categoryId, sorting, userId, teamId];
+}
+
+/// طي/فك طي فئة — يحدّث الحالة محلياً ويحفظ `collapsed` على الخادم
+/// (مطابق setCategoryCollapsed في webapp عبر PATCH الفئة).
+class SetCategoryCollapsedEvent extends ChannelEvent {
+  final String categoryId;
+  final bool collapsed;
+  final String userId;
+  final String teamId;
+  const SetCategoryCollapsedEvent({
+    required this.categoryId,
+    required this.collapsed,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [categoryId, collapsed, userId, teamId];
+}
+
+/// تعليم قناة كمقروءة — يمسح عدادات غير المقروء محلياً ثم view على الخادم.
+class MarkChannelAsReadEvent extends ChannelEvent {
+  final String channelId;
+  const MarkChannelAsReadEvent(this.channelId);
+  @override
+  List<Object?> get props => [channelId];
+}
+
+/// تعليم عدة قنوات كمقروءة (فئة كاملة أو كل القنوات).
+class MarkChannelsAsReadEvent extends ChannelEvent {
+  final List<String> channelIds;
+  const MarkChannelsAsReadEvent(this.channelIds);
+  @override
+  List<Object?> get props => [channelIds];
+}
+
+/// تعليم قناة كغير مقروءة — حالة محلية تبقى حتى تُقرأ القناة فعلياً
+/// (المطابق لـ markMostRecentPostInChannelAsUnread في webapp).
+class MarkChannelAsUnreadEvent extends ChannelEvent {
+  final String channelId;
+  const MarkChannelAsUnreadEvent(this.channelId);
+  @override
+  List<Object?> get props => [channelId];
+}
+
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -226,6 +282,10 @@ class ChannelsLoadedState extends ChannelState {
   final String userId;
   final Map<String, ChannelMemberEntity> members;
 
+  /// إحصاءات القنوات (الأعضاء/الضيوف/المثبتات) — تُحدَّث حياً عبر
+  /// أحداث WebSocket (user_added/user_removed) بدون إعادة طلب API.
+  final Map<String, ChannelStats> channelStats;
+
   const ChannelsLoadedState({
     required this.teamId,
     required this.channels,
@@ -234,6 +294,7 @@ class ChannelsLoadedState extends ChannelState {
     this.selectedChannel,
     this.userId = '',
     this.members = const {},
+    this.channelStats = const {},
   });
 
   ChannelEntity? channelById(String id) {
@@ -254,14 +315,18 @@ class ChannelsLoadedState extends ChannelState {
     selectedChannel,
     userId,
     members,
+    channelStats,
   ];
 }
 
 class ChannelErrorState extends ChannelState {
   final String message;
-  const ChannelErrorState(this.message);
+
+  /// معرف الفريق الذي فشل تحميل قنواته — للسماح بإعادة المحاولة.
+  final String? teamId;
+  const ChannelErrorState(this.message, {this.teamId});
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, teamId];
 }
 
 @LazySingleton()
@@ -269,6 +334,11 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   final ChannelRepository _channelRepository;
   final WebSocketClientManager _webSocketManager;
   StreamSubscription? _wsSubscription;
+
+  /// بث رسائل فشل العمليات التفاؤلية لعرضها في الواجهة (SnackBar).
+  final StreamController<String> _failures =
+      StreamController<String>.broadcast();
+  Stream<String> get failures => _failures.stream;
 
   ChannelBloc(this._channelRepository, this._webSocketManager)
     : super(ChannelInitialState()) {
@@ -288,12 +358,79 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     on<DeleteCategoryEvent>(_onDeleteCategory);
     on<CreateCategoryEvent>(_onCreateCategory);
     on<LeaveChannelEvent>(_onLeaveChannel);
+    on<SetCategorySortingEvent>(_onSetCategorySorting);
+    on<SetCategoryCollapsedEvent>(_onSetCategoryCollapsed);
+    on<MarkChannelAsReadEvent>(_onMarkChannelAsRead);
+    on<MarkChannelsAsReadEvent>(_onMarkChannelsAsRead);
+    on<MarkChannelAsUnreadEvent>(_onMarkChannelAsUnread);
 
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
       if (event is ChannelUpdatedEvent) {
         add(RealtimeChannelChangedEvent());
+      } else if (event is UserAddedEvent) {
+        _applyMembershipChange(event.channelId, 1);
+      } else if (event is UserRemovedEvent) {
+        _applyMembershipChange(event.channelId, -1);
       }
     });
+  }
+
+  /// كاش إحصاءات القنوات لتجنّب إعادة طلب getChannelStats لنفس القناة.
+  final Map<String, ChannelStats> _statsCache = {};
+
+  /// تحديث عدد أعضاء القناة حياً من أحداث WebSocket دون إعادة طلب API.
+  void _applyMembershipChange(String channelId, int delta) {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final existing = current.channelStats[channelId];
+    if (existing == null) return;
+    final updated = Map<String, ChannelStats>.of(current.channelStats);
+    updated[channelId] = ChannelStats(
+      channelId: channelId,
+      memberCount: (existing.memberCount + delta).clamp(0, 1 << 31),
+      guestsCount: existing.guestsCount,
+      pinnedPostsCount: existing.pinnedPostsCount,
+    );
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: current.categories,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+        channelStats: updated,
+      ),
+    );
+  }
+
+  /// جلب إحصاءات قناة (مرة واحدة لكل قناة) وإضافتها للحالة الحالية.
+  Future<void> _refreshChannelStats(String channelId) async {
+    if (channelId.isEmpty) return;
+    if (_statsCache.containsKey(channelId)) return;
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    try {
+      final stats = await _channelRepository.getChannelStats(channelId);
+      _statsCache[channelId] = stats;
+      final latest = state;
+      if (latest is! ChannelsLoadedState) return;
+      emit(
+        ChannelsLoadedState(
+          teamId: latest.teamId,
+          channels: latest.channels,
+          categories: latest.categories,
+          unreadCounts: latest.unreadCounts,
+          selectedChannel: latest.selectedChannel,
+          userId: latest.userId,
+          members: latest.members,
+          channelStats: {...latest.channelStats, channelId: stats},
+        ),
+      );
+    } catch (_) {
+      // فشل جلب الإحصاءات لا يُفشل عرض القناة.
+    }
   }
 
   Future<void> _onLoadChannels(
@@ -325,7 +462,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       }
 
       final unread = await _fetchUnread(event.teamId, channels);
-      mergeUnreadCache(unread);
 
       var userId = event.userId ?? '';
       var members = <String, ChannelMemberEntity>{};
@@ -341,19 +477,34 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         // بعض الخوادم لا تعيد الأعضاء — تُترك الخريطة فارغة.
       }
 
+      // الحفاظ على القناة المختارة سابقاً إن كانت ما زالت موجودة في القائمة.
+      final previous = state;
+      final previousSelected = previous is ChannelsLoadedState
+          ? previous.selectedChannel
+          : null;
+      final selectedChannel =
+          (previousSelected != null &&
+              channels.any((c) => c.id == previousSelected.id))
+          ? previousSelected
+          : channels.isNotEmpty
+          ? channels.first
+          : null;
+
       emit(
         ChannelsLoadedState(
           teamId: event.teamId,
           channels: channels,
           categories: categories,
           unreadCounts: unread,
-          selectedChannel: channels.isNotEmpty ? channels.first : null,
+          selectedChannel: selectedChannel,
           userId: userId,
           members: members,
         ),
       );
+      // إحصاءات القناة المختارة (الأعضاء/الضيوف/المثبتات) في الخلفية.
+      unawaited(_refreshChannelStats(selectedChannel?.id ?? ''));
     } catch (e) {
-      emit(ChannelErrorState(e.toString()));
+      emit(ChannelErrorState(e.toString(), teamId: event.teamId));
     }
   }
 
@@ -361,17 +512,29 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     String teamId,
     List<ChannelEntity> channels,
   ) async {
+    Map<String, ChannelUnreadCounts> unread;
     try {
-      return await _channelRepository.getUnreadCountsForTeam(
+      unread = await _channelRepository.getUnreadCountsForTeam(
         teamId,
         channels: channels,
       );
+      _unreadCacheByTeam[teamId] = Map.of(unread);
     } catch (_) {
-      return Map.of(unreadCache);
+      // عند الفشل نعود للكاش المخزّن لنفس الفريق فقط (وليس لفريق آخر).
+      final cached = _unreadCacheByTeam[teamId];
+      unread = cached != null ? Map.of(cached) : const {};
     }
+    // تُدمج حالات «غير مقروء» المحلية (Mark as Unread) فوق بيانات الخادم.
+    if (_unreadOverrides.isNotEmpty) {
+      unread = Map.of(unread)..addAll(_unreadOverrides);
+    }
+    return unread;
   }
 
-  void _onSelectChannel(SelectChannelEvent event, Emitter<ChannelState> emit) {
+  Future<void> _onSelectChannel(
+    SelectChannelEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
     final current = state;
     if (current is ChannelsLoadedState &&
         current.selectedChannel?.id != event.channel.id) {
@@ -384,8 +547,16 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           selectedChannel: event.channel,
           userId: current.userId,
           members: current.members,
+          channelStats: current.channelStats,
         ),
       );
+      // إحصاءات القناة الجديدة (الأعضاء/الضيوف/المثبتات) في الخلفية.
+      unawaited(_refreshChannelStats(event.channel.id));
+      // إبلاغ السيرفر بالقناة النشطة فوراً (مطابق updateActiveChannel في
+      // channel_view.tsx) — يشترك في حالات تواجد المستخدمين الظاهرين فقط.
+      _webSocketManager.updateActiveChannel(event.channel.id);
+      // تعليم القناة كمقروءة تلقائياً عند فتحها (مطابق view على الخادم).
+      add(MarkChannelAsReadEvent(event.channel.id));
     }
   }
 
@@ -464,7 +635,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           event.teamId,
         );
         final unread = await _fetchUnread(event.teamId, channels);
-        mergeUnreadCache(unread);
         emit(
           ChannelsLoadedState(
             teamId: event.teamId,
@@ -478,7 +648,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         );
       }
     } catch (e) {
-      emit(ChannelErrorState(e.toString()));
+      emit(ChannelErrorState(e.toString(), teamId: event.teamId));
     }
   }
 
@@ -493,7 +663,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       try {
         final channels = await _channelRepository.getChannelsForTeam(teamId);
         final unread = await _fetchUnread(teamId, channels);
-        mergeUnreadCache(unread);
         final currentId = current.selectedChannel?.id;
         emit(
           ChannelsLoadedState(
@@ -536,13 +705,15 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     );
   }
 
-  // أرشفة القناة: إزالة محلية فورية ثم DELETE /channels/{id} على الخادم.
+  // أرشفة القناة: إزالة محلية فورية ثم DELETE /channels/{id} على الخادم،
+  // مع استرجاع الحالة عند فشل الخادم وإشعار المستخدم.
   Future<void> _onArchiveChannel(
     ArchiveChannelEvent event,
     Emitter<ChannelState> emit,
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
     emit(
       ChannelsLoadedState(
         teamId: current.teamId,
@@ -569,7 +740,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     try {
       await _channelRepository.deleteChannel(event.channel.id);
     } catch (_) {
-      // يبقى الحذف محلياً عند فشل الخادم.
+      emit(previous);
+      _failures.add('تعذَّر أرشفة القناة — تم التراجع عن التغيير.');
     }
   }
 
@@ -584,7 +756,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         current.teamId,
         channels: current.channels,
       );
-      mergeUnreadCache(unread);
+      _unreadCacheByTeam[current.teamId] = Map.of(unread);
       emit(
         ChannelsLoadedState(
           teamId: current.teamId,
@@ -725,16 +897,17 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
 
     final updatedCategories = current.categories
         .map(
           (c) => c.copyWith(
             channelIds: c.id == event.targetCategoryId
-                ? [...c.channelIds.where((id) => id != event.channelId),
-                    event.channelId]
-                : c.channelIds
-                      .where((id) => id != event.channelId)
-                      .toList(),
+                ? [
+                    ...c.channelIds.where((id) => id != event.channelId),
+                    event.channelId,
+                  ]
+                : c.channelIds.where((id) => id != event.channelId).toList(),
           ),
         )
         .toList();
@@ -758,7 +931,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         updatedCategories,
       );
     } catch (_) {
-      // يبقى التغيير محلياً عند فشل الحفظ — لا حاجة للتراجع الفوري.
+      // فشل الحفظ على الخادم — نستعيد الفئات السابقة ونُشعر المستخدم.
+      emit(previous);
+      _failures.add('تعذَّر نقل القناة — تم التراجع عن التغيير.');
     }
   }
 
@@ -769,6 +944,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
     final updated = current.categories
         .map(
           (c) => c.id == event.categoryId
@@ -795,7 +971,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         displayName: event.newName,
       );
     } catch (_) {
-      // يبقى الاسم الجديد محلياً عند فشل الحفظ.
+      emit(previous);
+      _failures.add('تعذَّر إعادة تسمية الفئة — تم التراجع عن التغيير.');
     }
   }
 
@@ -806,11 +983,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
     final updated = current.categories
         .map(
-          (c) => c.id == event.categoryId
-              ? c.copyWith(muted: event.muted)
-              : c,
+          (c) => c.id == event.categoryId ? c.copyWith(muted: event.muted) : c,
         )
         .toList();
     emit(
@@ -832,7 +1008,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         muted: event.muted,
       );
     } catch (_) {
-      // يبقى الكتم جديد محلياً عند فشل الحفظ.
+      emit(previous);
+      _failures.add('تعذَّر تحديث كتم الفئة — تم التراجع عن التغيير.');
     }
   }
 
@@ -843,6 +1020,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
     final removed = current.categories
         .where((c) => c.id == event.categoryId)
         .firstOrNull;
@@ -857,7 +1035,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       updated = remaining
           .map(
             (c) => c.id == target.id
-                ? c.copyWith(channelIds: [...c.channelIds, ...removed.channelIds])
+                ? c.copyWith(
+                    channelIds: [...c.channelIds, ...removed.channelIds],
+                  )
                 : c,
           )
           .toList();
@@ -881,7 +1061,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         event.categoryId,
       );
     } catch (_) {
-      // يبقى الحذف محلياً عند فشل الخادم.
+      emit(previous);
+      _failures.add('تعذَّر حذف الفئة — تم التراجع عن التغيير.');
     }
   }
 
@@ -922,6 +1103,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
+    final previous = current;
     emit(
       ChannelsLoadedState(
         teamId: current.teamId,
@@ -947,29 +1129,191 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       ),
     );
     try {
-      await _channelRepository.leaveChannel(
-        event.channelId,
+      await _channelRepository.leaveChannel(event.channelId, event.userId);
+    } catch (_) {
+      emit(previous);
+      _failures.add('تعذَّر مغادرة القناة — تم التراجع عن التغيير.');
+    }
+  }
+
+  // تغيير ترتيب القنوات داخل فئة: تحديث محلي فوري ثم حفظ sorting على الخادم.
+  Future<void> _onSetCategorySorting(
+    SetCategorySortingEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final previous = current;
+    final updated = current.categories
+        .map(
+          (c) => c.id == event.categoryId ? c.copyWith(sorting: event.sorting) : c,
+        )
+        .toList();
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updated,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.updateChannelCategory(
         event.userId,
+        event.teamId,
+        event.categoryId,
+        sorting: event.sorting,
       );
     } catch (_) {
-      // يبقى الحذف محلياً عند فشل الخادم.
+      emit(previous);
+      _failures.add('تعذَّر تغيير ترتيب الفئة — تم التراجع عن التغيير.');
     }
   }
 
-  // ذاكرة مؤقتة لعناصر غير المقروءة بين عمليات إعادة التحميل.
-  static final Map<String, ChannelUnreadCounts> unreadCache = {};
-
-  static void mergeUnreadCache(Map<String, ChannelUnreadCounts> unread) {
-    if (unread.isNotEmpty) {
-      unreadCache
-        ..clear()
-        ..addAll(unread);
+  // طي/فك طي فئة: تحديث محلي فوري ثم حفظ collapsed على الخادم.
+  Future<void> _onSetCategoryCollapsed(
+    SetCategoryCollapsedEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final previous = current;
+    final updated = current.categories
+        .map(
+          (c) => c.id == event.categoryId
+              ? c.copyWith(collapsed: event.collapsed)
+              : c,
+        )
+        .toList();
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updated,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.updateChannelCategory(
+        event.userId,
+        event.teamId,
+        event.categoryId,
+        collapsed: event.collapsed,
+      );
+    } catch (_) {
+      emit(previous);
+      _failures.add('تعذَّر حفظ حالة طي الفئة — تم التراجع عن التغيير.');
     }
   }
+
+  // تعليم قناة كمقروءة: مسح محلي فوري ثم view على الخادم.
+  Future<void> _onMarkChannelAsRead(
+    MarkChannelAsReadEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final previous = current;
+    _unreadOverrides.remove(event.channelId);
+    final unread = Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
+      ..remove(event.channelId);
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: current.categories,
+        unreadCounts: unread,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.viewMyChannel(event.channelId);
+    } catch (_) {
+      emit(previous);
+      _failures.add('تعذَّر تعليم القناة كمقروءة — تم التراجع عن التغيير.');
+    }
+  }
+
+  // تعليم عدة قنوات كمقروءة (فئة كاملة أو كل القنوات).
+  Future<void> _onMarkChannelsAsRead(
+    MarkChannelsAsReadEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final previous = current;
+    for (final id in event.channelIds) {
+      _unreadOverrides.remove(id);
+    }
+    final unread = Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
+      ..removeWhere((id, _) => event.channelIds.contains(id));
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: current.categories,
+        unreadCounts: unread,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.readMultipleChannels(event.channelIds);
+    } catch (_) {
+      emit(previous);
+      _failures.add('تعذَّر تعليم القنوات كمقروءة — تم التراجع عن التغيير.');
+    }
+  }
+
+  // تعليم قناة كغير مقروءة: حالة محلية تدمج فوق بيانات الخادم حتى القراءة.
+  void _onMarkChannelAsUnread(
+    MarkChannelAsUnreadEvent event,
+    Emitter<ChannelState> emit,
+  ) {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    _unreadOverrides[event.channelId] = const ChannelUnreadCounts(
+      messages: 1,
+      mentions: 0,
+    );
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: current.categories,
+        unreadCounts: Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
+          ..[event.channelId] = const ChannelUnreadCounts(
+            messages: 1,
+            mentions: 0,
+          ),
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+  }
+
+  // ذاكرة مؤقتة لعناصر غير المقروءة لكل فريق بين عمليات إعادة التحميل —
+  // كاش مثيلي مقيَّد بالفريق حتى لا تتسرب بيانات فريق إلى آخر.
+  final Map<String, Map<String, ChannelUnreadCounts>> _unreadCacheByTeam = {};
+
+  // حالات «غير مقروء» المحلية (Mark as Unread) — تدمج فوق عدادات الخادم
+  // وتمسح عند تعليم القناة كمقروءة.
+  final Map<String, ChannelUnreadCounts> _unreadOverrides = {};
 
   @override
   Future<void> close() {
     _wsSubscription?.cancel();
+    _failures.close();
     return super.close();
   }
 }

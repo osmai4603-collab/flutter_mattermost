@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
+import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
@@ -13,15 +15,52 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/channels/presentation/widgets/sidebar_channel_row.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 
+/// نوع القناة المجرورة — مطابق DraggingStateTypes (DM/CHANNEL) في webapp:
+/// يُستخدم لمنع الإفلات غير المسموح به (DM لا تُفلت في فئة القنوات والعكس).
+enum DraggingChannelType {
+  /// رسالة مباشرة أو محادثة جماعية (D/G).
+  directMessage,
+
+  /// قناة عامة أو خاصة (O/P).
+  channel,
+}
+
 /// كائن يُرافَق أثناء السحب (LongPressDraggable) لنقل قناة بين الفئات.
 class SidebarCategoryDragData {
   final String channelId;
   final String fromCategoryId;
+  final DraggingChannelType channelType;
 
   const SidebarCategoryDragData({
     required this.channelId,
     required this.fromCategoryId,
+    this.channelType = DraggingChannelType.channel,
   });
+}
+
+/// يقرر إن كان الإفلات على فئة [targetType] مرفوضاً لنوع السحب [draggedType] —
+/// مطابق isDropDisabled في sidebar_category.tsx:
+/// - الفئة المُدارة (managed): رفض دائم.
+/// - فئة الرسائل المباشرة: رفض عند سحب قناة عادية/خاصة.
+/// - فئة القنوات: رفض عند سحب DM/GM.
+bool isSidebarDropDisabled(
+  ChannelCategoryType? targetType,
+  DraggingChannelType draggedType,
+) {
+  switch (targetType) {
+    case ChannelCategoryType.managed:
+      return true;
+    case ChannelCategoryType.directMessages:
+      return draggedType == DraggingChannelType.channel;
+    case ChannelCategoryType.channels:
+      return draggedType == DraggingChannelType.directMessage;
+    case null:
+      // الفئة الافتراضية (غير المهرّسة) تُعامل كفئة القنوات.
+      return draggedType == DraggingChannelType.directMessage;
+    case ChannelCategoryType.favorites:
+    case ChannelCategoryType.custom:
+      return false;
+  }
 }
 
 /// فئة قابلة للطي — مطابق sidebar_category.tsx في webapp:
@@ -42,6 +81,12 @@ class SidebarCategory extends StatelessWidget {
   final String userId;
   final String teamId;
 
+  /// قنوات مكتومة (نصوصها تُعتَّم) — مطابق .muted في SidebarLink.
+  final Set<String> mutedChannelIds;
+
+  /// باني مفاتيح الصفوف — لقياس موضعها في مؤشرات غير المقروءة.
+  final Key Function(ChannelEntity)? rowKeyBuilder;
+
   /// استدعاء عند إفلات قناة على هذه الفئة — يُمكّن السحب والإفلات.
   final void Function(String channelId, String fromCategoryId)? onMoveChannel;
 
@@ -53,10 +98,12 @@ class SidebarCategory extends StatelessWidget {
     required this.unreadCounts,
     required this.selectedChannelId,
     required this.onChannelTap,
+    required this.userId,
+    required this.teamId,
     this.showNewDirectButton = false,
     this.category,
-    this.userId = '',
-    this.teamId = '',
+    this.mutedChannelIds = const {},
+    this.rowKeyBuilder,
     this.onMoveChannel,
   });
 
@@ -67,28 +114,61 @@ class SidebarCategory extends StatelessWidget {
 
     return BlocBuilder<LhsBloc, LhsState>(
       builder: (context, lhsState) {
-        final collapsed = lhsState is LhsSearchState &&
+        final lhsCollapsed =
+            lhsState is LhsSearchState &&
             lhsState.collapsedCategories.contains(categoryId);
-        final sorted = [...channels]
-          ..sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt));
+        // حالة الطي: محلية (LhsBloc) أو محفوظة على الخادم (entity.collapsed).
+        final collapsed = lhsCollapsed || (category?.collapsed ?? false);
+        // القنوات مسبقة الفرز حسب ترتيب الفئة (تُفرز في channelSectionsFor
+        // مرة واحدة لكل اشتقاق حالة، وليس في كل build هنا).
 
         return DragTarget<SidebarCategoryDragData>(
           onWillAcceptWithDetails: (details) {
-            return details.data.fromCategoryId != categoryId;
+            if (details.data.fromCategoryId == categoryId) return false;
+            // منع الإفلات غير المسموح به (مطابق isDropDisabled في webapp).
+            return !isSidebarDropDisabled(
+              category?.type,
+              details.data.channelType,
+            );
           },
           onAcceptWithDetails: (details) {
-            onMoveChannel?.call(details.data.channelId, details.data.fromCategoryId);
+            onMoveChannel?.call(
+              details.data.channelId,
+              details.data.fromCategoryId,
+            );
           },
           builder: (context, candidateData, rejectedData) {
-            final isDropTarget = onMoveChannel != null && candidateData.isNotEmpty;
+            final isDropTarget =
+                onMoveChannel != null &&
+                candidateData.isNotEmpty &&
+                !isSidebarDropDisabled(
+                  category?.type,
+                  candidateData.first?.channelType ??
+                      DraggingChannelType.channel,
+                );
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 InkWell(
-                  onTap: () => context
-                      .read<LhsBloc>()
-                      .add(ToggleCategoryCollapsedEvent(categoryId)),
+                  onTap: () {
+                    context.read<LhsBloc>().add(
+                      ToggleCategoryCollapsedEvent(categoryId),
+                    );
+                    // حفظ حالة الطي على الخادم للفئات الحقيقية.
+                    if (category != null &&
+                        userId.isNotEmpty &&
+                        teamId.isNotEmpty) {
+                      context.read<ChannelBloc>().add(
+                        SetCategoryCollapsedEvent(
+                          categoryId: categoryId,
+                          collapsed: !collapsed,
+                          userId: userId,
+                          teamId: teamId,
+                        ),
+                      );
+                    }
+                  },
                   child: Container(
                     height: DesignTokens.sidebarCategoryHeaderHeight,
                     padding: const EdgeInsets.only(left: 16, right: 12),
@@ -130,6 +210,7 @@ class SidebarCategory extends StatelessWidget {
                             category: category!,
                             userId: userId,
                             teamId: teamId,
+                            unreadCounts: unreadCounts,
                           ),
                       ],
                     ),
@@ -152,7 +233,7 @@ class SidebarCategory extends StatelessWidget {
                               : null,
                           child: Column(
                             children: [
-                              for (final channel in sorted)
+                              for (final channel in channels)
                                 _buildRow(channel, theme),
                             ],
                           ),
@@ -171,15 +252,22 @@ class SidebarCategory extends StatelessWidget {
       channel: channel,
       unread: unreadCounts[channel.id],
       isSelected: channel.id == selectedChannelId,
+      isMuted: mutedChannelIds.contains(channel.id),
       onTap: () => onChannelTap(channel),
+      rowKey: rowKeyBuilder?.call(channel),
     );
 
     if (onMoveChannel == null) return row;
 
+    final isDirect =
+        channel.type == ChannelType.direct || channel.type == ChannelType.group;
     return LongPressDraggable<SidebarCategoryDragData>(
       data: SidebarCategoryDragData(
         channelId: channel.id,
         fromCategoryId: categoryId,
+        channelType: isDirect
+            ? DraggingChannelType.directMessage
+            : DraggingChannelType.channel,
       ),
       feedback: Material(
         color: Colors.transparent,
@@ -242,13 +330,16 @@ class _CategoryIconButton extends StatelessWidget {
 }
 
 /// قائمة فئة — مطابق sidebar_category_menu في webapp:
-/// إنشاء فئة جديدة، إعادة تسمية، كتم/إلغاء كتم، حذف (للفئات المخصصة فقط).
+/// تعليم كمقروءة، كتم/إلغاء كتم (لكل الفئات عدا الرسائل المباشرة)،
+/// إعادة تسمية وحذف (للمخصصة فقط)، ترتيب القنوات (أبجدي/أحدث/يدوي)،
+/// وإنشاء فئة جديدة.
 class _CategoryMenu extends StatelessWidget {
   final AppLocalizations l10n;
   final MattermostColors theme;
   final ChannelCategoryEntity category;
   final String userId;
   final String teamId;
+  final Map<String, ChannelUnreadCounts> unreadCounts;
 
   const _CategoryMenu({
     required this.l10n,
@@ -256,22 +347,70 @@ class _CategoryMenu extends StatelessWidget {
     required this.category,
     required this.userId,
     required this.teamId,
+    required this.unreadCounts,
   });
 
   bool get _isCustom => category.type == ChannelCategoryType.custom;
 
+  /// عدد القنوات غير المقروءة في هذه الفئة (لعنصر «تعليم كمقروءة»).
+  int get _unreadCount => category.channelIds
+      .where((id) => unreadCounts[id]?.hasUnreads ?? false)
+      .length;
+
   @override
   Widget build(BuildContext context) {
+    final isDirectMessages =
+        category.type == ChannelCategoryType.directMessages;
+
     final items = <MatterMenuItem>[
-      MatterMenuItem(
-        id: 'create',
-        label: l10n.sidebar_leftSidebar_category_menuCreateCategory,
-        icon: const Icon(Icons.create_new_folder_outlined, size: 18),
-        onTap: () => _showCreateDialog(context),
-      ),
+      if (_unreadCount > 0) ...[
+        MatterMenuItem(
+          id: 'mark_read',
+          label:
+              '${l10n.sidebar_leftSidebar_category_menuViewCategory} ($_unreadCount)',
+          icon: const Icon(Icons.done_all, size: 18),
+          onTap: () {
+            context.read<ChannelBloc>().add(
+              MarkChannelsAsReadEvent(
+                category.channelIds
+                    .where((id) => unreadCounts[id]?.hasUnreads ?? false)
+                    .toList(),
+              ),
+            );
+          },
+        ),
+        MatterMenuItem.divider(),
+      ],
     ];
 
-    if (_isCustom || category.type == ChannelCategoryType.favorites) {
+    if (!isDirectMessages) {
+      items.add(
+        MatterMenuItem(
+          id: 'mute',
+          label: category.muted
+              ? l10n.sidebar_leftSidebar_category_menuUnmuteCategory
+              : l10n.sidebar_leftSidebar_category_menuMuteCategory,
+          icon: Icon(
+            category.muted
+                ? Icons.notifications_off
+                : Icons.notifications_off_outlined,
+            size: 18,
+          ),
+          onTap: () {
+            context.read<ChannelBloc>().add(
+              ToggleMuteCategoryEvent(
+                categoryId: category.id,
+                muted: !category.muted,
+                userId: userId,
+                teamId: teamId,
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_isCustom) {
       items.addAll([
         MatterMenuItem(
           id: 'rename',
@@ -279,32 +418,6 @@ class _CategoryMenu extends StatelessWidget {
           icon: const Icon(Icons.edit_outlined, size: 18),
           onTap: () => _showRenameDialog(context),
         ),
-      ]);
-    }
-
-    if (_isCustom) {
-      items.addAll([
-        MatterMenuItem(
-          id: 'mute',
-          label: category.muted
-              ? l10n.sidebar_leftSidebar_category_menuUnmuteCategory
-              : l10n.sidebar_leftSidebar_category_menuMuteCategory,
-          icon: Icon(
-            category.muted ? Icons.notifications_off : Icons.notifications_off_outlined,
-            size: 18,
-          ),
-          onTap: () {
-            context.read<ChannelBloc>().add(
-                  ToggleMuteCategoryEvent(
-                    categoryId: category.id,
-                    muted: !category.muted,
-                    userId: userId,
-                    teamId: teamId,
-                  ),
-                );
-          },
-        ),
-        MatterMenuItem.divider(),
         MatterMenuItem(
           id: 'delete',
           label: l10n.sidebar_leftSidebar_category_menuDeleteCategory,
@@ -314,6 +427,44 @@ class _CategoryMenu extends StatelessWidget {
         ),
       ]);
     }
+
+    // عنصر «ترتيب القنوات» — قائمة فرعية مطابقة sortChannelsMenuItem في webapp.
+    final sortSubmenu = <MatterMenuItem>[
+      _sortItem(
+        context,
+        id: 'sort_alpha',
+        label: l10n.userSettingsSidebarSortAlpha,
+        sorting: CategorySorting.alpha,
+      ),
+      _sortItem(
+        context,
+        id: 'sort_recent',
+        label: l10n.sidebarSortedByRecencyLabel,
+        sorting: CategorySorting.recent,
+      ),
+      _sortItem(
+        context,
+        id: 'sort_manual',
+        label: l10n.sidebarSortedManually,
+        sorting: CategorySorting.manual,
+      ),
+    ];
+    items.addAll([
+      MatterMenuItem.divider(),
+      MatterMenuItem(
+        id: 'sort',
+        label: l10n.sidebarSort,
+        icon: const Icon(Icons.sort, size: 18),
+        submenu: sortSubmenu,
+      ),
+      MatterMenuItem.divider(),
+      MatterMenuItem(
+        id: 'create',
+        label: l10n.sidebar_leftSidebar_category_menuCreateCategory,
+        icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+        onTap: () => _showCreateDialog(context),
+      ),
+    ]);
 
     return MatterMenuScope(
       items: items,
@@ -328,7 +479,37 @@ class _CategoryMenu extends StatelessWidget {
     );
   }
 
+  MatterMenuItem _sortItem(
+    BuildContext context, {
+    required String id,
+    required String label,
+    required CategorySorting sorting,
+  }) {
+    final checked = category.sorting == sorting;
+    return MatterMenuItem(
+      id: id,
+      label: label,
+      icon: Icon(
+        checked ? Icons.check : Icons.radio_button_unchecked,
+        size: 18,
+        color: checked ? theme.linkColor : null,
+      ),
+      onTap: () {
+        context.read<ChannelBloc>().add(
+          SetCategorySortingEvent(
+            categoryId: category.id,
+            sorting: sorting,
+            userId: userId,
+            teamId: teamId,
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _showCreateDialog(BuildContext context) async {
+    // التقاط الـ Bloc قبل await حتى لا يُستخدم context قديم بعد انتظار النافذة.
+    final channelBloc = context.read<ChannelBloc>();
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
@@ -361,17 +542,14 @@ class _CategoryMenu extends StatelessWidget {
     final value = name?.trim() ?? '';
     if (!context.mounted) return;
     if (value.isNotEmpty) {
-      context.read<ChannelBloc>().add(
-            CreateCategoryEvent(
-              displayName: value,
-              userId: userId,
-              teamId: teamId,
-            ),
-          );
+      channelBloc.add(
+        CreateCategoryEvent(displayName: value, userId: userId, teamId: teamId),
+      );
     }
   }
 
   Future<void> _showRenameDialog(BuildContext context) async {
+    final channelBloc = context.read<ChannelBloc>();
     final controller = TextEditingController(text: category.displayName);
     final name = await showDialog<String>(
       context: context,
@@ -404,18 +582,19 @@ class _CategoryMenu extends StatelessWidget {
     final value = name?.trim() ?? '';
     if (!context.mounted) return;
     if (value.isNotEmpty && value != category.displayName) {
-      context.read<ChannelBloc>().add(
-            RenameCategoryEvent(
-              categoryId: category.id,
-              newName: value,
-              userId: userId,
-              teamId: teamId,
-            ),
-          );
+      channelBloc.add(
+        RenameCategoryEvent(
+          categoryId: category.id,
+          newName: value,
+          userId: userId,
+          teamId: teamId,
+        ),
+      );
     }
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
+    final channelBloc = context.read<ChannelBloc>();
     final help = l10n
         .delete_category_modalHelpText(category.displayName)
         .replaceAll(RegExp(r'<[^>]+>'), '');
@@ -441,13 +620,13 @@ class _CategoryMenu extends StatelessWidget {
     );
     if (!context.mounted) return;
     if (confirmed == true) {
-      context.read<ChannelBloc>().add(
-            DeleteCategoryEvent(
-              categoryId: category.id,
-              userId: userId,
-              teamId: teamId,
-            ),
-          );
+      channelBloc.add(
+        DeleteCategoryEvent(
+          categoryId: category.id,
+          userId: userId,
+          teamId: teamId,
+        ),
+      );
     }
   }
 }

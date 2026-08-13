@@ -13,17 +13,25 @@ import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_m
 class ThreadCard extends StatelessWidget {
   final ThreadEntity thread;
   final String myUserId;
+  final String? rootPostUsername;
   final VoidCallback onTap;
   final VoidCallback onChannelTap;
   final VoidCallback onToggleFollow;
+  final VoidCallback? onMarkUnread;
+  final VoidCallback? onCopyLink;
+  final VoidCallback? onMoveThread;
 
   const ThreadCard({
     super.key,
     required this.thread,
     required this.myUserId,
+    this.rootPostUsername,
     required this.onTap,
     required this.onChannelTap,
     required this.onToggleFollow,
+    this.onMarkUnread,
+    this.onCopyLink,
+    this.onMoveThread,
   });
 
   @override
@@ -62,12 +70,18 @@ class ThreadCard extends StatelessWidget {
                 Expanded(
                   child: Row(
                     children: [
-                      Text(
-                        post.userId, // Should ideally be username, but ThreadEntity.rootPost has userId
-                        style: TextStyle(
-                          color: theme.centerChannelColor,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          rootPostUsername != null && rootPostUsername!.isNotEmpty
+                              ? rootPostUsername!
+                              : post.userId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: theme.centerChannelColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -101,6 +115,13 @@ class ThreadCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                ),
+                _ThreadOverflowMenu(
+                  thread: thread,
+                  onToggleFollow: onToggleFollow,
+                  onMarkUnread: onMarkUnread,
+                  onCopyLink: onCopyLink,
+                  onMoveThread: onMoveThread,
                 ),
               ],
             ),
@@ -179,6 +200,141 @@ class ThreadCard extends StatelessWidget {
   String _avatarUrlFor(String userId) {
     final serverUrl = getIt<ServerManager>().activeServerUrl;
     return '$serverUrl/api/v4/users/$userId/image';
+  }
+}
+
+/// القائمة السياقية للبطاقة — مطابقة thread_menu في webapp:
+/// متابعة/إلغاء متابعة، تحديد كغير مقروء، نسخ الرابط، نقل المحادثة.
+class _ThreadOverflowMenu extends StatelessWidget {
+  final ThreadEntity thread;
+  final VoidCallback onToggleFollow;
+  final VoidCallback? onMarkUnread;
+  final VoidCallback? onCopyLink;
+  final VoidCallback? onMoveThread;
+
+  const _ThreadOverflowMenu({
+    required this.thread,
+    required this.onToggleFollow,
+    this.onMarkUnread,
+    this.onCopyLink,
+    this.onMoveThread,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    final items = <PopupMenuEntry<String>>[
+      PopupMenuItem<String>(
+        value: 'follow',
+        child: ListTile(
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            thread.isFollowing
+                ? Icons.notifications_active_outlined
+                : Icons.notifications_none,
+            size: 18,
+            color: theme.centerChannelColor.withValues(alpha: 0.7),
+          ),
+          title: Text(
+            thread.isFollowing
+                ? l10n.threadingFollowing
+                : l10n.threadingNotFollowing,
+            style: TextStyle(
+              color: theme.centerChannelColor,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+      if (onMarkUnread != null)
+        PopupMenuItem<String>(
+          value: 'unread',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.mark_chat_unread_outlined,
+              size: 18,
+              color: theme.centerChannelColor.withValues(alpha: 0.7),
+            ),
+            title: Text(
+              l10n.threadingThreadMenuMarkUnread,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      if (onCopyLink != null)
+        PopupMenuItem<String>(
+          value: 'copy',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.link,
+              size: 18,
+              color: theme.centerChannelColor.withValues(alpha: 0.7),
+            ),
+            title: Text(
+              l10n.threadingThreadMenuCopy,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+      if (onMoveThread != null) const PopupMenuDivider(),
+      if (onMoveThread != null)
+        PopupMenuItem<String>(
+          value: 'move',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              Icons.drive_file_move_outlined,
+              size: 18,
+              color: theme.centerChannelColor.withValues(alpha: 0.7),
+            ),
+            title: Text(
+              l10n.move_thread_modalTitle,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
+    ];
+
+    return PopupMenuButton<String>(
+      tooltip: '',
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 200),
+      icon: Icon(
+        Icons.more_vert,
+        size: 18,
+        color: theme.centerChannelColor.withValues(alpha: 0.6),
+      ),
+      onSelected: (value) {
+        switch (value) {
+          case 'follow':
+            onToggleFollow();
+          case 'unread':
+            onMarkUnread?.call();
+          case 'copy':
+            onCopyLink?.call();
+          case 'move':
+            onMoveThread?.call();
+        }
+      },
+      itemBuilder: (context) => items,
+    );
   }
 }
 

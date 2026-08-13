@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/channel_global_search_nav.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/history_navigation_buttons.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/product_menu_button.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/right_icon_button.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/user_account_menu_button.dart';
@@ -25,53 +26,63 @@ class ChannelGlobalHeader extends StatelessWidget {
       height: DesignTokens.globalHeaderHeight,
       padding: const EdgeInsets.only(left: 8, right: 4),
       color: theme.sidebarTeamBarBg,
-      child: Row(
-        children: [
-          ProductMenuButton(l10n: l10n),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 3,
-            child: Align(child: ChannelGlobalSearchNav(l10n: l10n)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 1,
-            child: Row(
-              spacing: 8,
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                RightIconButton(
-                  icon: Icons.alternate_email,
-                  tooltip: l10n.sidebar_right_menuRecentMentions,
-                  toggled: false,
-                  onTap: () {
-                    context.read<RhsBloc>().add(ShowMentionsEvent());
-                  },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // في النوافذ الضيقة (< 768px مطابق ميديا كويري webapp) يختفي
+          // شريط البحث العام ليفسح المجال للعناصر الأساسية.
+          final showSearch = constraints.maxWidth >= 768;
+          return Row(
+            children: [
+              ProductMenuButton(l10n: l10n),
+              const HistoryNavigationButtons(),
+              const SizedBox(width: 12),
+              if (showSearch) ...[
+                Expanded(
+                  flex: 3,
+                  child: Align(child: ChannelGlobalSearchNav(l10n: l10n)),
                 ),
-                RightIconButton(
-                  icon: Icons.bookmark_border,
-                  tooltip: 'Saved messages',
-                  toggled: false,
-                  onTap: () {
-                    context.read<RhsBloc>().add(ShowFlaggedPostsEvent());
-                  },
-                ),
-                RightIconButton(
-                  icon: Icons.settings_outlined,
-                  tooltip: l10n.global_headerProductSettings,
-                  toggled: false,
-                  onTap: () {
-                    ModalRegistry.open(
-                      context,
-                      id: ModalIdentifiers.appSettings,
-                    );
-                  },
-                ),
-                const UserAccountMenuButton(),
+                const SizedBox(width: 8),
               ],
-            ),
-          ),
-        ],
+              Expanded(
+                flex: showSearch ? 1 : 0,
+                child: Row(
+                  spacing: 8,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    RightIconButton(
+                      icon: Icons.alternate_email,
+                      tooltip: l10n.sidebar_right_menuRecentMentions,
+                      toggled: false,
+                      onTap: () {
+                        context.read<RhsBloc>().add(ShowMentionsEvent());
+                      },
+                    ),
+                    RightIconButton(
+                      icon: Icons.bookmark_border,
+                      tooltip: 'Saved messages',
+                      toggled: false,
+                      onTap: () {
+                        context.read<RhsBloc>().add(ShowFlaggedPostsEvent());
+                      },
+                    ),
+                    RightIconButton(
+                      icon: Icons.settings_outlined,
+                      tooltip: l10n.global_headerProductSettings,
+                      toggled: false,
+                      onTap: () {
+                        ModalRegistry.open(
+                          context,
+                          id: ModalIdentifiers.appSettings,
+                        );
+                      },
+                    ),
+                    const UserAccountMenuButton(),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

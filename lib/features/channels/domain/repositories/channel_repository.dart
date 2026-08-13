@@ -1,3 +1,4 @@
+import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_bookmark_entity.dart';
@@ -52,7 +53,8 @@ abstract class ChannelRepository {
     String? type,
   });
 
-  /// تحديث فئة واحدة (إعادة تسمية/نقل قنوات/كتم) — يطابق PUT /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
+  /// تحديث فئة واحدة (إعادة تسمية/نقل قنوات/كتم/ترتيب/طي) — يطابق
+  /// PUT /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
   Future<ChannelCategoryEntity> updateChannelCategory(
     String userId,
     String teamId,
@@ -60,6 +62,8 @@ abstract class ChannelRepository {
     String? displayName,
     List<String>? channelIds,
     bool? muted,
+    CategorySorting? sorting,
+    bool? collapsed,
   });
 
   /// حذف فئة — يطابق DELETE /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
@@ -123,6 +127,11 @@ abstract class ChannelRepository {
   Future<List<String>> getChannelCategoryOrder(String teamId, String userId);
   Future<List<ChannelBookmarkEntity>> getChannelBookmarks(String channelId);
 
+  /// الفرق المشتركة بين أعضاء محادثة مباشرة/جماعية — مطابق
+  /// GET /channels/{channel_id}/common_teams في webapp. تُستخدم لفحص
+  /// Restricted DM: إذا كانت القائمة فارغة فلا يشارك الطرفان أي فريق.
+  Future<List<String>> getGroupMessageMembersCommonTeams(String channelId);
+
   /// كل عضويات المستخدم في فريق واحد (استدعاء واحد).
   Future<List<ChannelMemberEntity>> getMyChannelMembersInTeam(String teamId);
 
@@ -131,4 +140,10 @@ abstract class ChannelRepository {
     String teamId, {
     required List<ChannelEntity> channels,
   });
+
+  /// تعليم قناة كمقروءة — يطابق view /users/{userId}/channels/{channelId}/view.
+  Future<void> viewMyChannel(String channelId);
+
+  /// تعليم عدة قنوات كمقروءة دفعة واحدة (تستخدمها «تعليم الفئة كمقروءة»).
+  Future<void> readMultipleChannels(List<String> channelIds);
 }

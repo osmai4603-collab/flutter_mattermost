@@ -95,7 +95,9 @@ class LhsSearchState extends LhsState {
 
 @LazySingleton()
 class LhsBloc extends Bloc<LhsEvent, LhsState> {
-  LhsBloc() : super(LhsInitialState()) {
+  // الحالة الابتدائية LhsSearchState مباشرة حتى لا تلجأ الواجهة إلى
+  // fallback فارغ يخفي البحث/الطي عند أي حالة أخرى.
+  LhsBloc() : super(const LhsSearchState()) {
     on<ToggleLhsSearchEvent>(_onToggleSearch);
     on<UpdateLhsSearchQueryEvent>(_onUpdateQuery);
     on<ClearLhsSearchEvent>(_onClear);

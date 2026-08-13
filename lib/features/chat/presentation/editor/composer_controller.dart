@@ -57,8 +57,10 @@ class ComposerController extends ChangeNotifier {
     String channelId,
     String message,
     String? rootId,
-    List<String> fileIds,
-  )?
+    List<String> fileIds, {
+    Map<String, dynamic>? metadata,
+    int? scheduledAt,
+  })?
   onSendMessage;
   void Function()? onScrollToBottom;
   void Function()? onRequestFocus;
@@ -83,6 +85,75 @@ class ComposerController extends ChangeNotifier {
   String _serverError = '';
   bool _showPreview = false;
   bool _emojiPickerOpen = false;
+
+  // ─────────────────── أولوية الرسالة / الجدولة / الإحراق بعد القراءة ───────────────────
+  // مطابقة post_priority.tsx + scheduled_messages في webapp:
+  // - priority تُذكر لكل قناة (تُمسح عند تغيير القناة وتُحفظ أثناء الجلسة).
+  // - scheduledAt يرسل الرسالة إلى الخادم مع scheduled_at.
+  // - burnOnRead يفجّر الرسالة بعد قراءتها (خاصية مميزة لهذا التطبيق).
+  static const String priorityUrgent = 'urgent';
+  static const String priorityImportant = 'important';
+
+  final Map<String, String> _channelPriority = {};
+  String _currentChannelId = '';
+  int? _scheduledAt;
+  bool _burnOnRead = false;
+
+  String get priority =>
+      _channelPriority[_currentChannelId] ?? '';
+
+  String? get metadataPriorityValue {
+    final value = priority;
+    if (value.isEmpty) return null;
+    return value;
+  }
+
+  int? get scheduledAt => _scheduledAt;
+  bool get burnOnRead => _burnOnRead;
+
+  bool get hasAdvancedOptions =>
+      priority.isNotEmpty || _scheduledAt != null || _burnOnRead;
+
+  /// تعيين قناة المحرر الحالية — تُهمل أولوية القناة السابقة (نظير webapp).
+  void setCurrentChannelId(String channelId) {
+    _currentChannelId = channelId;
+  }
+
+  void setPriority(String value) {
+    _channelPriority[_currentChannelId] = value;
+    notifyListeners();
+  }
+
+  void clearPriority() {
+    _channelPriority.remove(_currentChannelId);
+    notifyListeners();
+  }
+
+  void setScheduledAt(int? value) {
+    _scheduledAt = value;
+    notifyListeners();
+  }
+
+  void setBurnOnRead(bool value) {
+    _burnOnRead = value;
+    notifyListeners();
+  }
+
+  /// تجميع خيارات الإرسال المتقدمة في metadata للخادم —
+  /// مطابق buildPostBody في webapp (priority داخل metadata.priority).
+  Map<String, dynamic>? buildMetadata() {
+    Map<String, dynamic>? metadata;
+    final priorityValue = metadataPriorityValue;
+    if (priorityValue != null) {
+      metadata = {
+        'priority': {'priority': priorityValue},
+      };
+    }
+    if (_burnOnRead) {
+      (metadata ??= {})['burn_on_read'] = {'enabled': true};
+    }
+    return metadata;
+  }
 
   final List<String> _messageHistory = [];
   int _historyIndex = 0;
@@ -143,6 +214,7 @@ class ComposerController extends ChangeNotifier {
     _lastChannelSwitchAt = DateTime.now().millisecondsSinceEpoch;
     _historyIndex = _messageHistory.length;
     clearServerError();
+    setCurrentChannelId(draft.channelId);
     onRequestFocus?.call();
   }
 
@@ -512,6 +584,8 @@ class ComposerController extends ChangeNotifier {
         message,
         _isEditMode ? null : draft.rootId,
         fileIds,
+        metadata: _isEditMode ? null : buildMetadata(),
+        scheduledAt: _isEditMode ? null : _scheduledAt,
       );
 
       // نجاح: تنظيف المسودة + حفظ في سجل الرسائل + التمرير للأسفل.

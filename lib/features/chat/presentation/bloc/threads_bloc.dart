@@ -77,6 +77,75 @@ class MarkAllThreadsReadEvent extends ThreadsEvent {
   List<Object?> get props => [userId, teamId];
 }
 
+class SetThreadUnreadEvent extends ThreadsEvent {
+  final String userId;
+  final String teamId;
+  final String threadId;
+  const SetThreadUnreadEvent({
+    required this.userId,
+    required this.teamId,
+    required this.threadId,
+  });
+  @override
+  List<Object?> get props => [userId, teamId, threadId];
+}
+
+class MoveThreadEvent extends ThreadsEvent {
+  final String userId;
+  final String teamId;
+  final String threadId;
+  final String channelId;
+  final String channelName;
+  const MoveThreadEvent({
+    required this.userId,
+    required this.teamId,
+    required this.threadId,
+    required this.channelId,
+    required this.channelName,
+  });
+  @override
+  List<Object?> get props => [userId, teamId, threadId, channelId, channelName];
+}
+
+/// تحديث لحظي من WebSocket عند تغيير حالة المتابعة من جهاز آخر
+/// (thread_follow_changed).
+class ThreadFollowChangedSocketEvent extends ThreadsEvent {
+  final String teamId;
+  final String threadId;
+  final bool following;
+  const ThreadFollowChangedSocketEvent({
+    required this.teamId,
+    required this.threadId,
+    required this.following,
+  });
+  @override
+  List<Object?> get props => [teamId, threadId, following];
+}
+
+/// تحديث لحظي من WebSocket عند تغيير حالة القراءة (thread_read_changed).
+class ThreadReadChangedSocketEvent extends ThreadsEvent {
+  final String teamId;
+  final String threadId;
+  final int lastViewedAt;
+  final int unreadMentions;
+  final int unreadReplies;
+  const ThreadReadChangedSocketEvent({
+    required this.teamId,
+    required this.threadId,
+    required this.lastViewedAt,
+    required this.unreadMentions,
+    required this.unreadReplies,
+  });
+  @override
+  List<Object?> get props => [
+    teamId,
+    threadId,
+    lastViewedAt,
+    unreadMentions,
+    unreadReplies,
+  ];
+}
+
 /// حالات صفحة المحادثات.
 abstract class ThreadsState extends Equatable {
   const ThreadsState();
@@ -113,6 +182,10 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     on<FollowThreadEvent>(_onFollow);
     on<UnfollowThreadEvent>(_onUnfollow);
     on<MarkAllThreadsReadEvent>(_onMarkAllRead);
+    on<SetThreadUnreadEvent>(_onSetUnread);
+    on<MoveThreadEvent>(_onMove);
+    on<ThreadFollowChangedSocketEvent>(_onSocketFollowChanged);
+    on<ThreadReadChangedSocketEvent>(_onSocketReadChanged);
   }
 
   Future<void> _onLoad(
@@ -287,6 +360,108 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
         ),
       );
     } catch (_) {}
+  }
+
+  Future<void> _onSetUnread(
+    SetThreadUnreadEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      // webapp يستخدم آخر رد في المحادثة؛ ThreadEntity لا يحمله هنا
+      // لذا نستخدم جذر المحادثة كمعرّف رسالة.
+      await _threadsRepository.setThreadUnread(
+        event.userId,
+        event.teamId,
+        event.threadId,
+        event.threadId,
+      );
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              if (t.rootPostId == event.threadId)
+                t.copyWith(
+                  unreadReplies: t.unreadReplies < 1 ? 1 : t.unreadReplies,
+                  lastViewedAt: DateTime.now().millisecondsSinceEpoch,
+                )
+              else
+                t,
+          ],
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _onMove(
+    MoveThreadEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      await _threadsRepository.moveThread(event.threadId, event.channelId);
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              if (t.rootPostId == event.threadId)
+                t.copyWith(
+                  channelId: event.channelId,
+                  channelName: event.channelName,
+                )
+              else
+                t,
+          ],
+        ),
+      );
+    } catch (_) {}
+  }
+
+  /// thread_follow_changed من WebSocket — تحديث القائمة محلياً
+  /// دون إعادة تحميل كاملة من الخادم.
+  void _onSocketFollowChanged(
+    ThreadFollowChangedSocketEvent event,
+    Emitter<ThreadsState> emit,
+  ) {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    emit(
+      current.copyWith(
+        threads: [
+          for (final t in current.threads)
+            if (t.rootPostId == event.threadId)
+              t.copyWith(isFollowing: event.following)
+            else
+              t,
+        ],
+      ),
+    );
+  }
+
+  /// thread_read_changed من WebSocket — تحديث عدادات القراءة محلياً.
+  void _onSocketReadChanged(
+    ThreadReadChangedSocketEvent event,
+    Emitter<ThreadsState> emit,
+  ) {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    emit(
+      current.copyWith(
+        threads: [
+          for (final t in current.threads)
+            if (t.rootPostId == event.threadId)
+              t.copyWith(
+                lastViewedAt: event.lastViewedAt,
+                unreadMentions: event.unreadMentions,
+                unreadReplies: event.unreadReplies,
+              )
+            else
+              t,
+        ],
+      ),
+    );
   }
 }
 

@@ -6,7 +6,6 @@ import 'package:flutter_mattermost/core/network/api_client.dart';
 import 'package:flutter_mattermost/core/network/api_result.dart';
 
 import 'package:flutter_mattermost/core/endpoints/endpoints.dart';
-
 abstract class ThreadsRemoteDataSource {
   Future<Map<String, dynamic>> getThreadsForUser(
     String teamId, {
@@ -48,6 +47,7 @@ abstract class ThreadsRemoteDataSource {
     String threadId,
     String postId,
   );
+  Future<void> moveThread(String threadId, String channelId);
 }
 
 @LazySingleton(as: ThreadsRemoteDataSource)
@@ -169,6 +169,16 @@ class ThreadsRemoteDataSourceImpl implements ThreadsRemoteDataSource {
   ) async {
     await _apiClient.put<void>(
       UsersEndPoint.teamsThreadsSetUnread(userId, teamId, threadId, postId),
+      fromJson: (_) {},
+    );
+  }
+
+  @override
+  Future<void> moveThread(String threadId, String channelId) async {
+    // مطابق Client4.moveThread في webapp: POST /posts/{post_id}/move
+    await _apiClient.post<void>(
+      PostsEndPoint.move(threadId),
+      data: {'channel_id': channelId},
       fromJson: (_) {},
     );
   }

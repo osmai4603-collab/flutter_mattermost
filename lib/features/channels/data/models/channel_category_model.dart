@@ -13,6 +13,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
     super.sorting,
     super.sortOrder,
     super.muted,
+    super.collapsed,
     super.propsData,
   });
 
@@ -27,6 +28,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
       sorting: CategorySorting.fromValue(data['sorting'] ?? 'recent'),
       sortOrder: (data['sort_order'] ?? 0).toInt(),
       muted: data['muted'] ?? false,
+      collapsed: data['collapsed'] ?? false,
       propsData: Map<String, dynamic>.from(data['props'] ?? const {}),
     );
   }
@@ -42,6 +44,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
       sorting: entity.sorting,
       sortOrder: entity.sortOrder,
       muted: entity.muted,
+      collapsed: entity.collapsed,
       propsData: entity.propsData,
     );
   }
@@ -57,6 +60,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
       'sorting': sorting.value,
       'sort_order': sortOrder,
       'muted': muted,
+      'collapsed': collapsed,
       'props': propsData,
     };
   }
@@ -72,6 +76,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
     CategorySorting? sorting,
     int? sortOrder,
     bool? muted,
+    bool? collapsed,
     Map<String, dynamic>? propsData,
   }) {
     return ChannelCategoryModel(
@@ -84,6 +89,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
       sorting: sorting ?? this.sorting,
       sortOrder: sortOrder ?? this.sortOrder,
       muted: muted ?? this.muted,
+      collapsed: collapsed ?? this.collapsed,
       propsData: propsData ?? this.propsData,
     );
   }
@@ -99,6 +105,7 @@ final class ChannelCategoryModel extends ChannelCategoryEntity {
       sorting: sorting,
       sortOrder: sortOrder,
       muted: muted,
+      collapsed: collapsed,
       propsData: propsData,
     );
   }

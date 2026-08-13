@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
@@ -36,6 +37,11 @@ class RealtimeUserStatusEvent extends UserStatusEvent {
   List<Object?> get props => [userId, status];
 }
 
+/// حدث داخلي يُطلق من المؤقت الدوري لتحديث الحالات المخزنة.
+class _PollStatusesEvent extends UserStatusEvent {
+  const _PollStatusesEvent();
+}
+
 // States
 abstract class UserStatusState extends Equatable {
   const UserStatusState();
@@ -61,23 +67,64 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
   final UserRepository _userRepository;
   final WebSocketClientManager _webSocketManager;
 
+  /// معرفات المستخدمين المطلوب تتبع حالتهم — يُحدَّث من أحداث التحميل.
+  final Set<String> _trackedUserIds = {};
+
+  /// تحديث دوري للحالة كل دقيقة — نظير status polling في webapp
+  /// (يعوّض الأحداث المفقودة من الـ WebSocket).
+  static const Duration pollInterval = Duration(seconds: 60);
+  Timer? _pollTimer;
+
   UserStatusBloc(this._userRepository, this._webSocketManager)
     : super(UserStatusInitialState()) {
     on<LoadUserStatusesEvent>(_onLoadStatuses);
     on<SetMyUserStatusEvent>(_onSetMyStatus);
     on<RealtimeUserStatusEvent>(_onRealtimeStatus);
+    on<_PollStatusesEvent>(_onPollStatuses);
 
     _webSocketManager.eventStream.listen((event) {
       if (event is UserPresenceEvent) {
         add(RealtimeUserStatusEvent(event.userId, event.status));
       }
     });
+
+    _pollTimer = Timer.periodic(pollInterval, (_) => _pollStatuses());
+  }
+
+  @override
+  Future<void> close() {
+    _pollTimer?.cancel();
+    return super.close();
+  }
+
+  void _pollStatuses() {
+    if (_trackedUserIds.isEmpty) return;
+    add(const _PollStatusesEvent());
+  }
+
+  Future<void> _onPollStatuses(
+    _PollStatusesEvent event,
+    Emitter<UserStatusState> emit,
+  ) async {
+    final ids = _trackedUserIds.toList();
+    try {
+      final statuses = await _userRepository.getStatusesByIds(ids);
+      final current = state is UserStatusesLoadedState
+          ? (state as UserStatusesLoadedState).statuses
+          : const <String, UserStatus>{};
+      final merged = {...current};
+      for (final s in statuses) {
+        merged[s.userId] = s.status;
+      }
+      emit(UserStatusesLoadedState(merged));
+    } catch (_) {}
   }
 
   Future<void> _onLoadStatuses(
     LoadUserStatusesEvent event,
     Emitter<UserStatusState> emit,
   ) async {
+    _trackedUserIds.addAll(event.userIds);
     if (event.userIds.isEmpty) return;
     final current = state is UserStatusesLoadedState
         ? (state as UserStatusesLoadedState).statuses

@@ -48,6 +48,8 @@ class SendPostEvent extends PostEvent {
   final String? rootId;
   final List<String> fileIds;
   final bool alsoSendToChannel;
+  final Map<String, dynamic>? metadata;
+  final int? scheduledAt;
 
   const SendPostEvent({
     required this.channelId,
@@ -55,9 +57,12 @@ class SendPostEvent extends PostEvent {
     this.rootId,
     this.fileIds = const [],
     this.alsoSendToChannel = false,
+    this.metadata,
+    this.scheduledAt,
   });
   @override
-  List<Object?> get props => [channelId, message, rootId, fileIds, alsoSendToChannel];
+  List<Object?> get props =>
+      [channelId, message, rootId, fileIds, alsoSendToChannel];
 }
 
 class RealtimePostReceivedEvent extends PostEvent {
@@ -452,6 +457,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         rootId: event.rootId,
         fileIds: event.fileIds,
         alsoSendToChannel: event.alsoSendToChannel,
+        metadata: event.metadata,
+        scheduledAt: event.scheduledAt,
       );
       final current = state;
       if (current is PostsLoadedState && current.channelId == event.channelId) {

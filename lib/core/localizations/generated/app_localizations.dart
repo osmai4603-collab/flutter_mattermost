@@ -72742,6 +72742,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Also send to channel'**
   String get post_commentCheckbox_also_send_to_channel;
+
+  /// No description provided for @global_headerBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get global_headerBack;
+
+  /// No description provided for @global_headerForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get global_headerForward;
+
+  /// No description provided for @channel_headerCopyHeaderText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get channel_headerCopyHeaderText;
+
+  /// No description provided for @timeRelativeJustNow.
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get timeRelativeJustNow;
+
+  /// No description provided for @timeRelativeMinutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} minutes ago'**
+  String timeRelativeMinutesAgo(Object count);
+
+  /// No description provided for @timeRelativeHoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} hours ago'**
+  String timeRelativeHoursAgo(Object count);
+
+  /// No description provided for @timeRelativeDaysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} days ago'**
+  String timeRelativeDaysAgo(Object count);
 }
 
 class _AppLocalizationsDelegate

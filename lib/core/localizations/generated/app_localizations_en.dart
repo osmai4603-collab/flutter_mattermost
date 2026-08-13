@@ -46666,4 +46666,31 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get post_commentCheckbox_also_send_to_channel =>
       'Also send to channel';
+
+  @override
+  String get global_headerBack => 'Back';
+
+  @override
+  String get global_headerForward => 'Forward';
+
+  @override
+  String get channel_headerCopyHeaderText => 'Copy text';
+
+  @override
+  String get timeRelativeJustNow => 'just now';
+
+  @override
+  String timeRelativeMinutesAgo(Object count) {
+    return '$count minutes ago';
+  }
+
+  @override
+  String timeRelativeHoursAgo(Object count) {
+    return '$count hours ago';
+  }
+
+  @override
+  String timeRelativeDaysAgo(Object count) {
+    return '$count days ago';
+  }
 }

@@ -11875,5 +11875,12 @@
   "filePreviewNext": "Next",
   "filePreviewClose": "Close",
   "filePreviewUnsupported": "This file type is not supported: {extension}",
-  "post_commentCheckbox_also_send_to_channel": "Also send to channel"
+  "post_commentCheckbox_also_send_to_channel": "Also send to channel",
+  "global_headerBack": "Back",
+  "global_headerForward": "Forward",
+  "channel_headerCopyHeaderText": "Copy text",
+  "timeRelativeJustNow": "just now",
+  "timeRelativeMinutesAgo": "{count} minutes ago",
+  "timeRelativeHoursAgo": "{count} hours ago",
+  "timeRelativeDaysAgo": "{count} days ago"
 }

@@ -8,6 +8,7 @@ import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_files_
 import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_info_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_members_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/mentions_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/post_edit_history_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/saved_pinned_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/search_results_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/thread_panel_body.dart';
@@ -233,10 +234,7 @@ class _RhsBody extends StatelessWidget {
       RhsPanel.channelMembers => ChannelMembersPanel(
         channelId: (state as RhsChannelState).channelId,
       ),
-      RhsPanel.editHistory => _NoResultsBody(
-        title: l10n.search_headerTitle_editHistory,
-        subtitle: l10n.rhsNoResultsEditHistory,
-      ),
+      RhsPanel.editHistory => const PostEditHistoryPanel(),
       RhsPanel.plugin => _NoResultsBody(
         title: l10n.rhsPluginPanelTitle,
         subtitle: l10n.rhsNoResultsPlugin,
