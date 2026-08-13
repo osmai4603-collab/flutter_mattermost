@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
@@ -42,6 +44,7 @@ class _MessageEditorState extends State<MessageEditor> {
   String _channelId = '';
   String _teamId = '';
   String _rootId = '';
+  bool _alsoSendToChannel = false;
 
   final LayerLink _autocompleteLink = LayerLink();
   final OverlayPortalController _autocompletePortal = OverlayPortalController();
@@ -106,6 +109,7 @@ class _MessageEditorState extends State<MessageEditor> {
       final composer = ComposerController(
         draft: draft,
         uploadController: uploadController,
+        draftStorage: getIt<DraftStorageService>(),
       );
       composer.focusNode.onKeyEvent = (node, event) =>
           composer.handleKeyEvent(event)
@@ -169,8 +173,12 @@ class _MessageEditorState extends State<MessageEditor> {
           message: message,
           rootId: rootId,
           fileIds: fileIds,
+          alsoSendToChannel: _alsoSendToChannel,
         ),
       );
+      if (_alsoSendToChannel) {
+        setState(() => _alsoSendToChannel = false);
+      }
     }
   }
 
@@ -270,6 +278,11 @@ class _MessageEditorState extends State<MessageEditor> {
           children: [
             if (composer.isEditMode) _EditBanner(composer: composer),
             if (errorText.isNotEmpty) _ErrorStrip(text: errorText),
+            if (_rootId.isNotEmpty)
+              _AlsoSendToChannelCheckbox(
+                value: _alsoSendToChannel,
+                onChanged: (val) => setState(() => _alsoSendToChannel = val ?? false),
+              ),
             AttachmentPreview(
               draft: composer.draft,
               onRemove: upload.removeFile,
@@ -304,6 +317,43 @@ class _MessageEditorState extends State<MessageEditor> {
                     tooltip: l10n.editorAddAttachment,
                     onPressed: upload.canAddMore ? upload.pickFiles : null,
                   ),
+                  OverlayPortal(
+                    controller: _emojiPortal,
+                    overlayChildBuilder: (_) => CompositedTransformFollower(
+                      link: _emojiLink,
+                      showWhenUnlinked: false,
+                      targetAnchor: Alignment.topRight,
+                      followerAnchor: Alignment.bottomRight,
+                      offset: const Offset(0, -8),
+                      child: EmojiPickerOverlay(
+                        onEmojiSelected: composer.insertEmoji,
+                        onClose: composer.closeEmojiPicker,
+                      ),
+                    ),
+                    child: CompositedTransformTarget(
+                      link: _emojiLink,
+                      child: IconButton(
+                        icon: Icon(
+                          Icons.emoji_emotions_outlined,
+                          size: 22,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                        tooltip: l10n.editorAddEmoji,
+                        onPressed: composer.toggleEmojiPicker,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.flash_on_outlined,
+                      size: 22,
+                      color: theme.centerChannelColor.withValues(alpha: 0.6),
+                    ),
+                    tooltip: l10n.editorSlashCommands,
+                    onPressed: composer.openSlashCommands,
+                  ),
                   Expanded(
                     child: composer.showPreview
                         ? _PreviewPane(composer: composer)
@@ -336,35 +386,29 @@ class _MessageEditorState extends State<MessageEditor> {
                               isDense: true,
                               contentPadding: const EdgeInsets.symmetric(
                                 vertical: 10,
+                                horizontal: 8,
                               ),
                             ),
                           ),
                   ),
-                  OverlayPortal(
-                    controller: _emojiPortal,
-                    overlayChildBuilder: (_) => CompositedTransformFollower(
-                      link: _emojiLink,
-                      showWhenUnlinked: false,
-                      targetAnchor: Alignment.topRight,
-                      followerAnchor: Alignment.bottomRight,
-                      offset: const Offset(0, -8),
-                      child: EmojiPickerOverlay(
-                        onEmojiSelected: composer.insertEmoji,
-                        onClose: composer.closeEmojiPicker,
-                      ),
+                  TextButton(
+                    onPressed: () {
+                      final teamId = _teamId;
+                      if (teamId.isNotEmpty) {
+                        context.go('/$teamId/drafts');
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: CompositedTransformTarget(
-                      link: _emojiLink,
-                      child: IconButton(
-                        icon: Icon(
-                          Icons.emoji_emotions_outlined,
-                          size: 22,
-                          color: theme.centerChannelColor.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        tooltip: l10n.editorAddEmoji,
-                        onPressed: composer.toggleEmojiPicker,
+                    child: Text(
+                      l10n.editorDrafts,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: theme.centerChannelColor.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -504,6 +548,53 @@ class _PreviewPane extends StatelessWidget {
           text: composer.draft.message,
           style: TextStyle(color: theme.centerChannelColor, fontSize: 14),
         ),
+      ),
+    );
+  }
+}
+
+class _AlsoSendToChannelCheckbox extends StatelessWidget {
+  final bool value;
+  final ValueChanged<bool?> onChanged;
+
+  const _AlsoSendToChannelCheckbox({required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    // TODO: Use l10n.post_commentCheckbox_also_send_to_channel once regenerated
+    const label = 'Also send to channel';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            height: 24,
+            width: 24,
+            child: Checkbox(
+              value: value,
+              onChanged: onChanged,
+              activeColor: theme.linkColor,
+              side: BorderSide(
+                color: theme.centerChannelColor.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: () => onChanged(!value),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.centerChannelColor.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

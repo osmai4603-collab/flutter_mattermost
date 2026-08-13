@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/utils/time_format.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
 
@@ -182,7 +183,7 @@ class ThreadCard extends StatelessWidget {
 }
 
 class _ParticipantsList extends StatelessWidget {
-  final List<dynamic> participants;
+  final List<UserEntity> participants;
 
   const _ParticipantsList({required this.participants});
 
@@ -206,10 +207,10 @@ class _ParticipantsList extends StatelessWidget {
                     color: AppTheme.of(context).centerChannelBg,
                     width: 2,
                   ),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
                 ),
                 child: ProfilePicture(
-                  username: toShow[i].id,
+                  username: toShow[i].username,
                   avatarUrl: _avatarUrlFor(toShow[i].id),
                   size: 20,
                 ),
@@ -225,7 +226,7 @@ class _ParticipantsList extends StatelessWidget {
                   color: AppTheme.of(context).centerChannelColor.withValues(
                         alpha: 0.1,
                       ),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
                 ),
                 child: Center(
                   child: Text(

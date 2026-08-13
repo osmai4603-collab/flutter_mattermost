@@ -26480,6 +26480,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get search_itemJump => 'انتقال';
 
   @override
+  String get search_invalidDateModifierHint =>
+      'يجب أن يكون التاريخ بصيغة YYYY-MM-DD، مثال: before:2026-01-15.';
+
+  @override
+  String get search_recentTitle => 'عمليات البحث الأخيرة';
+
+  @override
   String search_itemThread(Object channel) {
     return 'خيط في $channel';
   }
@@ -46172,6 +46179,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editorAddEmoji => 'إضافة رمز تعبيري';
 
   @override
+  String get editorSlashCommands => 'أوامر السلاش';
+
+  @override
+  String get editorDrafts => 'المسودات';
+
+  @override
   String get editorEditCancel => 'إلغاء التعديل';
 
   @override
@@ -46596,4 +46609,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String filePreviewUnsupported(Object extension) {
     return 'نوع الملف هذا غير مدعوم: $extension';
   }
+
+  @override
+  String get post_commentCheckbox_also_send_to_channel =>
+      'أيضاً أرسل إلى القناة';
 }

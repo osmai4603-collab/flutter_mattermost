@@ -112,6 +112,7 @@ class _PostListBody extends StatefulWidget {
 
 class _PostListBodyState extends State<_PostListBody> {
   Set<String> _loadedUserIds = const {};
+  final GlobalKey _focusKey = GlobalKey();
 
   @override
   void didChangeDependencies() {
@@ -128,6 +129,23 @@ class _PostListBodyState extends State<_PostListBody> {
         );
         context.read<UserStatusBloc>().add(LoadUserStatusesEvent(ids.toList()));
       }
+    }
+  }
+
+  @override
+  void didUpdateWidget(_PostListBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.state.focusPostId != null &&
+        widget.state.focusPostId != oldWidget.state.focusPostId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_focusKey.currentContext != null) {
+          Scrollable.ensureVisible(
+            _focusKey.currentContext!,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     }
   }
 
@@ -183,18 +201,23 @@ class _PostListBodyState extends State<_PostListBody> {
         items.add(_DateSeparator(date: day));
         previousDay = dayKey;
       }
+      final isFocused = post.id == state.focusPostId;
+      final item = PostItem(
+        key: isFocused ? _focusKey : null,
+        post: post,
+        profile: post.userId == 'current_user' ? null : byId[post.userId],
+        myUserId: myUserId,
+        isFlagged: state.isFlagged(post.id),
+        isPinned: state.isPinned(post.id),
+        reactions: state.reactionsFor(post.id),
+        filesList: state.filesFor(post.id),
+        replyCount: post.rootId.isEmpty ? state.replyCountFor(post.id) : 0,
+        isReply: post.rootId.isNotEmpty,
+      );
       items.add(
-        PostItem(
-          post: post,
-          profile: post.userId == 'current_user' ? null : byId[post.userId],
-          myUserId: myUserId,
-          isFlagged: state.isFlagged(post.id),
-          isPinned: state.isPinned(post.id),
-          reactions: state.reactionsFor(post.id),
-          filesList: state.filesFor(post.id),
-          replyCount: post.rootId.isEmpty ? state.replyCountFor(post.id) : 0,
-          isReply: post.rootId.isNotEmpty,
-        ),
+        isFocused
+            ? _FocusFlash(key: ValueKey('flash_${post.id}'), child: item)
+            : item,
       );
     }
 
@@ -710,7 +733,7 @@ class _PostActions extends StatelessWidget {
     );
     controller.dispose();
     final value = newMessage?.trim() ?? '';
-    if (value.isNotEmpty && value != post.message) {
+    if (value.isNotEmpty && value != post.message && context.mounted) {
       context.read<PostBloc>().add(EditPostEvent(post.id, value));
     }
   }
@@ -734,7 +757,7 @@ class _PostActions extends StatelessWidget {
         ],
       ),
     );
-    if (confirmed == true) {
+    if (confirmed == true && context.mounted) {
       context.read<PostBloc>().add(DeletePostEvent(post.id));
     }
   }
@@ -1023,4 +1046,52 @@ String _formatFileSize(int bytes) {
 String _avatarUrlFor(String userId) {
   final serverUrl = getIt<ServerManager>().activeServerUrl;
   return '$serverUrl/api/v4/users/$userId/image';
+}
+
+/// وميض خلفية للرسالة المستهدفة عند الانتقال إليها من نتائج البحث
+/// (webapp: focusPost + flash background يتلاشى خلال ثانيتين).
+class _FocusFlash extends StatefulWidget {
+  final Widget child;
+  const _FocusFlash({super.key, required this.child});
+
+  @override
+  State<_FocusFlash> createState() => _FocusFlashState();
+}
+
+class _FocusFlashState extends State<_FocusFlash>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  )..forward();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final highlight = AppTheme.of(context).mentionHighlightBgMixed;
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final content = child!;
+        if (t >= 1) return content;
+        // احتفاظ قصير بقوة الإبراز ثم انحسار (webapp highlight-post).
+        final phase = (t / 0.12).clamp(0.0, 1.0);
+        final fade = (1 - Curves.easeOut.transform((t - 0.12) / 0.88)).clamp(
+          0.0,
+          1.0,
+        );
+        return Container(
+          color: highlight.withValues(alpha: 0.55 * phase * fade),
+          child: content,
+        );
+      },
+      child: widget.child,
+    );
+  }
 }

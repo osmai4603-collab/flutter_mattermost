@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
+import 'package:go_router/go_router.dart';
+
 
 class AdminConsoleSideBar extends StatelessWidget {
   const AdminConsoleSideBar({
@@ -26,15 +28,19 @@ class AdminConsoleSideBar extends StatelessWidget {
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white12)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 18),
+                  onPressed: () => context.go('/home'),
+                ),
+                const Icon(
                   Icons.settings_outlined,
                   color: Colors.blueAccent,
                   size: 18,
                 ),
-                SizedBox(width: 8),
-                Text(
+                const SizedBox(width: 8),
+                const Text(
                   'Admin Console',
                   style: TextStyle(
                     color: Colors.white,

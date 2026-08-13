@@ -68,7 +68,8 @@ class AutocompleteController extends ChangeNotifier {
       type = AutocompleteType.command;
     } else if (token.startsWith('@') && token.length <= 60) {
       type = AutocompleteType.mention;
-    } else if (token.startsWith('#') && token.length <= 60) {
+    } else if ((token.startsWith('#') || token.startsWith('~')) &&
+        token.length <= 60) {
       type = AutocompleteType.channel;
     } else if (token.startsWith(':') &&
         !token.startsWith('::') &&

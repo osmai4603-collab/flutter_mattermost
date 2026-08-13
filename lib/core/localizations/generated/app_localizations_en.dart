@@ -26523,6 +26523,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get search_itemJump => 'Jump';
 
   @override
+  String get search_invalidDateModifierHint =>
+      'Dates must be in the YYYY-MM-DD format, for example before:2026-01-15.';
+
+  @override
+  String get search_recentTitle => 'Recent searches';
+
+  @override
   String search_itemThread(Object channel) {
     return 'Thread in $channel';
   }
@@ -46223,6 +46230,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorAddEmoji => 'Add emoji';
 
   @override
+  String get editorSlashCommands => 'Slash Commands';
+
+  @override
+  String get editorDrafts => 'Drafts';
+
+  @override
   String get editorEditCancel => 'Cancel editing';
 
   @override
@@ -46649,4 +46662,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String filePreviewUnsupported(Object extension) {
     return 'This file type is not supported: $extension';
   }
+
+  @override
+  String get post_commentCheckbox_also_send_to_channel =>
+      'Also send to channel';
 }

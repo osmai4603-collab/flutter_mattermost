@@ -12,6 +12,7 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
@@ -25,8 +26,14 @@ import 'package:intl/intl.dart';
 class SavedPinnedPanel extends StatefulWidget {
   final bool isPinned;
   final String? channelId;
+  final void Function(int count)? onLoad;
 
-  const SavedPinnedPanel({super.key, this.isPinned = false, this.channelId});
+  const SavedPinnedPanel({
+    super.key,
+    this.isPinned = false,
+    this.channelId,
+    this.onLoad,
+  });
 
   @override
   State<SavedPinnedPanel> createState() => _SavedPinnedPanelState();
@@ -124,8 +131,11 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
       }
     }
     if (channel == null) return;
+
     context.read<ChannelBloc>().add(SelectChannelEvent(channel));
-    context.read<PostBloc>().add(LoadPostsForChannelEvent(channel.id));
+    // استخدام LoadPostsAroundEvent للانتقال للسياق الأصلي وتظليل الرسالة.
+    context.read<PostBloc>().add(LoadPostsAroundEvent(channel.id, post.id));
+
     final teamState = context.read<TeamBloc>().state;
     final teamName = teamState is TeamsLoadedState
         ? teamState.selectedTeam?.name
@@ -164,6 +174,9 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
           return const Center(child: CircularProgressIndicator());
         }
         final posts = snapshot.data ?? const <PostEntity>[];
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          widget.onLoad?.call(posts.length);
+        });
         _loadProfiles(posts);
         _resolveChannelNames(posts);
         if (posts.isEmpty) {
@@ -249,7 +262,7 @@ class _DaySeparator extends StatelessWidget {
   }
 }
 
-/// عنصر منشور — أفاتار + اسم/وقت/قناة + نص + زر إزالة.
+/// عنصر منشور — بطاقة تفاعلية تحتوي على أفاتار/اسم/وقت + القناة + نص + أفعال سريعة.
 class _PostRow extends StatelessWidget {
   final PostEntity post;
   final UserEntity? profile;
@@ -274,101 +287,195 @@ class _PostRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
     final time = DateFormat('h:mm a').format(
       DateTime.fromMillisecondsSinceEpoch(post.createAt),
     );
-    final displayName = profile != null &&
-            profile!.firstName.isNotEmpty
+    final displayName = profile != null && profile!.firstName.isNotEmpty
         ? '${profile!.firstName} ${profile!.lastName}'.trim()
         : profile?.username ?? '@unknown';
 
-    return InkWell(
-      onTap: onTap,
-      hoverColor: theme.centerChannelColor.withValues(alpha: 0.04),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: ProfilePicture.md(
-                username: profile?.username ?? '',
-                avatarUrl: null,
-                status: status,
-                showStatus: true,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.centerChannelBg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: theme.centerChannelColor.withValues(alpha: 0.08),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // شريط المصدر (Channel Badge)
+              if (channelName != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.tag,
+                        size: 14,
+                        color: theme.linkColor,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        channelName!,
+                        style: TextStyle(
+                          color: theme.linkColor,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.centerChannelColor,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+                  ProfilePicture.sm(
+                    username: profile?.username ?? '',
+                    avatarUrl: null,
+                    status: status,
+                    showStatus: true,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: theme.centerChannelColor,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              time,
+                              style: TextStyle(
+                                color: theme.centerChannelColor
+                                    .withValues(alpha: 0.3),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          color: theme.centerChannelColor.withValues(alpha: 0.3),
-                          fontSize: 11,
-                        ),
-                      ),
-                      if (channelName != null) ...[
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                            channelName!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: theme.centerChannelColor.withValues(alpha: 0.3),
-                              fontSize: 11,
+                        const SizedBox(height: 4),
+                        RichText(
+                          text: TextSpan(
+                            children: emojiAwareSpans(
+                              post.message,
+                              TextStyle(
+                                color: theme.centerChannelColor,
+                                fontSize: 13,
+                                height: 1.4,
+                              ),
                             ),
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      Icons.bookmark, // أيقونة مظللة كما في المواصفات
+                      size: 20,
+                      color: theme.linkColor,
+                    ),
+                    tooltip: removeTooltip,
+                    onPressed: onRemove,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              // شريط الإجراءات السريعة
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      _QuickAction(
+                        icon: Icons.add_reaction_outlined,
+                        onTap: () {},
+                      ),
+                      _QuickAction(
+                        icon: Icons.reply_outlined,
+                        onTap: () {
+                          context
+                              .read<RhsBloc>()
+                              .add(OpenThreadEvent(post.id, post.channelId));
+                        },
+                      ),
+                      _QuickAction(
+                        icon: Icons.share_outlined,
+                        onTap: () {},
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 2),
-                  RichText(
-                    text: TextSpan(
-                      children: emojiAwareSpans(
-                        post.message,
-                        TextStyle(
-                          color: theme.centerChannelColor,
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
+                  TextButton.icon(
+                    onPressed: onTap,
+                    icon: const Icon(Icons.open_in_new, size: 14),
+                    label: Text(
+                      l10n.search_itemJump, // زر الانتقال للسياق الأصلي
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 4),
-            IconButton(
-              icon: Icon(
-                removeIcon,
-                size: 18,
-                color: theme.centerChannelColor.withValues(alpha: 0.5),
-              ),
-              tooltip: removeTooltip,
-              onPressed: onRemove,
-            ),
-          ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickAction extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _QuickAction({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(
+          icon,
+          size: 18,
+          color: theme.centerChannelColor.withValues(alpha: 0.5),
         ),
       ),
     );
@@ -411,10 +518,16 @@ class _EmptyBody extends StatelessWidget {
     final theme = AppTheme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(
+              Icons.bookmark_border,
+              size: 64,
+              color: theme.centerChannelColor.withValues(alpha: 0.1),
+            ),
+            const SizedBox(height: 16),
             Text(
               title,
               textAlign: TextAlign.center,

@@ -151,6 +151,27 @@ class _ChannelSidebarBody extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
+                _GlobalSectionLink(
+                  icon: Icons.forum_outlined,
+                  label: l10n.globalThreadsSidebarLink,
+                  onTap: () {
+                    final teamName = _teamName(context);
+                    if (teamName != null) {
+                      context.go('/$teamName/threads');
+                    }
+                  },
+                ),
+                _GlobalSectionLink(
+                  icon: Icons.bookmark_border,
+                  label: l10n.sidebar_right_menuFlagged,
+                  onTap: () {
+                    final teamName = _teamName(context);
+                    if (teamName != null) {
+                      context.go('/$teamName/saved');
+                    }
+                  },
+                ),
+                const SizedBox(height: 8),
                 for (final (categoryId, title, list) in sections)
                   if (list.isNotEmpty)
                     _buildCategory(
@@ -199,6 +220,50 @@ class _ChannelSidebarBody extends StatelessWidget {
       teamId: teamId ?? '',
       onMoveChannel: (channelId, fromId) =>
           _moveChannel(context, channelId, fromId, categoryId),
+    );
+  }
+}
+
+class _GlobalSectionLink extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _GlobalSectionLink({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        height: 32,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: theme.sidebarText.withValues(alpha: 0.64),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: theme.sidebarText.withValues(alpha: 0.8),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

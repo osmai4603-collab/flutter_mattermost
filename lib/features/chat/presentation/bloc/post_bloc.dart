@@ -32,20 +32,31 @@ class LoadMorePostsEvent extends PostEvent {
   List<Object?> get props => [channelId, oldestPostId];
 }
 
+/// تحميل منشورات حول رسالة محددة + تحديدها للتسليط عليها (webapp jumpToPost).
+class LoadPostsAroundEvent extends PostEvent {
+  final String channelId;
+  final String postId;
+  const LoadPostsAroundEvent(this.channelId, this.postId);
+  @override
+  List<Object?> get props => [channelId, postId];
+}
+
 class SendPostEvent extends PostEvent {
   final String channelId;
   final String message;
   final String? rootId;
   final List<String> fileIds;
+  final bool alsoSendToChannel;
 
   const SendPostEvent({
     required this.channelId,
     required this.message,
     this.rootId,
     this.fileIds = const [],
+    this.alsoSendToChannel = false,
   });
   @override
-  List<Object?> get props => [channelId, message, rootId, fileIds];
+  List<Object?> get props => [channelId, message, rootId, fileIds, alsoSendToChannel];
 }
 
 class RealtimePostReceivedEvent extends PostEvent {
@@ -155,6 +166,7 @@ class PostsLoadedState extends PostsState {
   final Map<String, List<ReactionEntity>> reactions;
   final Map<String, List<FileInfoEntity>> files;
   final Set<String> pinnedIds;
+  final String? focusPostId;
 
   const PostsLoadedState({
     required this.channelId,
@@ -165,6 +177,7 @@ class PostsLoadedState extends PostsState {
     this.reactions = const {},
     this.files = const {},
     this.pinnedIds = const {},
+    this.focusPostId,
   });
 
   /// الرسائل الرئيسية (غير المتصلة) بترتيب الأحدث إلى الأقدم.
@@ -199,6 +212,7 @@ class PostsLoadedState extends PostsState {
     Map<String, List<ReactionEntity>>? reactions,
     Map<String, List<FileInfoEntity>>? files,
     Set<String>? pinnedIds,
+    String? focusPostId,
   }) => PostsLoadedState(
     channelId: channelId,
     posts: posts ?? this.posts,
@@ -208,6 +222,7 @@ class PostsLoadedState extends PostsState {
     reactions: reactions ?? this.reactions,
     files: files ?? this.files,
     pinnedIds: pinnedIds ?? this.pinnedIds,
+    focusPostId: focusPostId ?? this.focusPostId,
   );
 
   @override
@@ -220,6 +235,7 @@ class PostsLoadedState extends PostsState {
     reactions,
     files,
     pinnedIds,
+    focusPostId,
   ];
 }
 
@@ -247,6 +263,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   ) : super(PostInitialState()) {
     on<LoadPostsForChannelEvent>(_onLoadPosts);
     on<LoadMorePostsEvent>(_onLoadMorePosts);
+    on<LoadPostsAroundEvent>(_onLoadPostsAround);
     on<SendPostEvent>(_onSendPost);
     on<RealtimePostReceivedEvent>(_onRealtimePostReceived);
     on<RealtimePostUpdatedEvent>(_onRealtimePostUpdated);
@@ -376,6 +393,33 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     } catch (_) {}
   }
 
+  Future<void> _onLoadPostsAround(
+    LoadPostsAroundEvent event,
+    Emitter<PostsState> emit,
+  ) async {
+    emit(PostLoadingState(event.channelId));
+    try {
+      final posts = await _postRepository.getPostsAround(
+        event.channelId,
+        event.postId,
+      );
+      final sorted = [...posts]
+        ..sort((a, b) => b.createAt.compareTo(a.createAt));
+      emit(
+        PostsLoadedState(
+          channelId: event.channelId,
+          posts: sorted,
+          hasMore: sorted.length >= PAGE_SIZE,
+          focusPostId: event.postId,
+        ),
+      );
+      _loadFlagged(emit);
+      _loadChannelExtras(emit);
+    } catch (e) {
+      emit(PostErrorState(e.toString()));
+    }
+  }
+
   Future<void> _onSendPost(
     SendPostEvent event,
     Emitter<PostsState> emit,
@@ -386,6 +430,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         event.message,
         rootId: event.rootId,
         fileIds: event.fileIds,
+        alsoSendToChannel: event.alsoSendToChannel,
       );
       final current = state;
       if (current is PostsLoadedState && current.channelId == event.channelId) {

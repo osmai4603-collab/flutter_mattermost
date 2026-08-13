@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/app/routes/admin_console_route.dart';
+import 'package:flutter_mattermost/app/routes/integration_route.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
@@ -114,6 +115,16 @@ class _MainMenu extends StatelessWidget {
                 onTap: () {},
               ),
               MatterMenuItem.divider(),
+              MatterMenuItem(
+                id: 'integrations',
+                label: l10n.navbar_dropdownIntegrations,
+                icon: const Icon(Icons.extension_outlined, size: 18),
+                onTap: () {
+                  if (team != null) {
+                    context.go(IntegrationRoutes.root.replaceAll(':team', team.name));
+                  }
+                },
+              ),
               MatterMenuItem(
                 id: 'system_console',
                 label: l10n.sidebar_right_menuConsole,

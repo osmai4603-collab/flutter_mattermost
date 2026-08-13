@@ -21,8 +21,20 @@ class ThreadPanelBody extends StatelessWidget {
         if (state is! RhsThreadState) return const SizedBox.shrink();
         final threadState = state;
 
+        final channelState = context.read<ChannelBloc>().state;
+        bool isArchived = false;
+        if (channelState is ChannelsLoadedState) {
+          final ch = channelState.channels
+              .where((c) => c.id == threadState.channelId)
+              .firstOrNull;
+          if (ch != null && ch.deleteAt > 0) {
+            isArchived = true;
+          }
+        }
+
         return Column(
           children: [
+            if (isArchived) _ArchivedWarning(),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -56,10 +68,38 @@ class ThreadPanelBody extends StatelessWidget {
                 ],
               ),
             ),
-            MessageEditor(rootId: threadState.rootPostId),
+            if (!isArchived) MessageEditor(rootId: threadState.rootPostId),
           ],
         );
       },
+    );
+  }
+}
+
+class _ArchivedWarning extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: theme.centerChannelColor.withValues(alpha: 0.05),
+      child: Row(
+        children: [
+          Icon(Icons.archive_outlined, size: 20, color: theme.centerChannelColor.withValues(alpha: 0.6)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              l10n.createCommentThreadFromArchivedChannelMessage.replaceAll(RegExp(r'<[^>]*>'), ''),
+              style: TextStyle(
+                color: theme.centerChannelColor.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/app/routes/admin_console_route.dart';
 import 'package:flutter_mattermost/app/routes/channel_route.dart';
+import 'package:flutter_mattermost/app/routes/integration_route.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/app/routes/auth_routes.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
@@ -14,6 +15,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     ...authRoutes,
     channelRoute,
+    integrationRoute,
     adminRoute,
   ],
   redirect: _onRouteRedirect,

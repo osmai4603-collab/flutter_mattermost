@@ -50,6 +50,7 @@ abstract class PostRemoteDataSource {
     String? rootId,
     List<String>? fileIds,
     Map<String, dynamic>? metadata,
+    bool alsoSendToChannel = false,
   });
   Future<PostModel> sendPost(
     String channelId,
@@ -57,6 +58,7 @@ abstract class PostRemoteDataSource {
     String? rootId,
     List<String>? fileIds,
     Map<String, dynamic>? metadata,
+    bool alsoSendToChannel = false,
   });
   Future<PostModel> updatePost(String postId, Map<String, dynamic> update);
   Future<PostModel> patchPost(String postId, Map<String, dynamic> patch);
@@ -335,6 +337,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     String? rootId,
     List<String>? fileIds,
     Map<String, dynamic>? metadata,
+    bool alsoSendToChannel = false,
   }) async {
     final result = await _apiClient.post<PostModel>(
       PostsEndPoint.root,
@@ -344,6 +347,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
         if (rootId != null && rootId.isNotEmpty) 'root_id': rootId,
         if (fileIds != null && fileIds.isNotEmpty) 'file_ids': fileIds,
         if (metadata != null) 'metadata': metadata,
+        if (alsoSendToChannel) 'props': {'also_send_to_channel': 'true'},
       },
       fromJson: (json) => PostModel.fromMap(json as Map<String, dynamic>),
     );
@@ -360,6 +364,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
     String? rootId,
     List<String>? fileIds,
     Map<String, dynamic>? metadata,
+    bool alsoSendToChannel = false,
   }) async {
     return createPost(
       channelId: channelId,
@@ -367,6 +372,7 @@ class PostRemoteDataSourceImpl implements PostRemoteDataSource {
       rootId: rootId,
       fileIds: fileIds,
       metadata: metadata,
+      alsoSendToChannel: alsoSendToChannel,
     );
   }
 

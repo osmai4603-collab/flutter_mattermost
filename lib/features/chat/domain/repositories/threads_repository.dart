@@ -15,4 +15,21 @@ abstract class ThreadsRepository {
     String teamId,
     String threadId,
   );
+
+  Future<void> followThread(
+    String userId,
+    String teamId,
+    String threadId,
+  );
+
+  Future<void> unfollowThread(
+    String userId,
+    String teamId,
+    String threadId,
+  );
+
+  Future<void> markAllThreadsAsRead(
+    String userId,
+    String teamId,
+  );
 }

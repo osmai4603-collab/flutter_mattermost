@@ -13,6 +13,7 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/roles_schem
 import 'package:flutter_mattermost/features/admin/presentation/pages/security_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/server_logs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/system_analytics_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_console_shell.dart';
 import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
@@ -20,7 +21,9 @@ import 'package:go_router/go_router.dart';
 
 sealed class AdminConsoleRoutes {
   static const String root = '/admin_console';
+  static const overview = root;
   static const logs = '$root/logs';
+  static const analytics = '$root/analytics';
   static const users = '$root/users';
   static const general = '$root/general';
   static const authentication = '$root/authentication';
@@ -39,84 +42,157 @@ sealed class AdminConsoleRoutes {
 }
 
 final _key = GlobalKey<StatefulNavigationShellState>();
+
+/// مسار وحدة التحكم بالإدارة — هيكلية StatefulShell لتسهيل التنقل بين 18 قسماً.
 final adminRoute = StatefulShellRoute.indexedStack(
   key: _key,
   builder: (context, state, navigationShell) {
     return AdminConsoleShell(navigationShell: navigationShell);
   },
-  
   branches: [
-    StatefulShellBranch(routes: _routes),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.overview,
+          builder: (context, state) => const AdminConsoleSystemAnalyticsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.logs,
+          builder: (context, state) => const AdminConsoleServerLogsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.analytics,
+          builder: (context, state) => const AdminConsoleSystemAnalyticsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.users,
+          builder: (context, state) => const AdminConsoleUsersManagementPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.general,
+          builder: (context, state) => const AdminConsoleGeneralSettingsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.authentication,
+          builder: (context, state) => const AdminConsoleAuthenticationSettingsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.notifications,
+          builder: (context, state) => const AdminConsoleNotificationsSettingsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.security,
+          builder: (context, state) => const AdminConsoleSecuritySettingsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.compliance,
+          builder: (context, state) => const AdminConsoleCompliancePage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.jobs,
+          builder: (context, state) => const AdminConsoleJobsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.roles,
+          builder: (context, state) => const AdminConsoleRolesSchemesPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.groups,
+          builder: (context, state) => const AdminConsoleGroupsPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.plugins,
+          builder: (context, state) => const AdminConsolePluginsManagementPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.license,
+          builder: (context, state) => const AdminConsoleLicensePage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.dataRetention,
+          builder: (context, state) => const AdminConsoleDataRetentionPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.contentFlagging,
+          builder: (context, state) => const AdminConsoleContentFlaggingPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.accessControl,
+          builder: (context, state) => const AdminConsoleAccessControlPage(),
+        ),
+      ],
+    ),
+    StatefulShellBranch(
+      routes: [
+        GoRoute(
+          path: AdminConsoleRoutes.sharedChannels,
+          builder: (context, state) => const AdminConsoleSharedChannelsPage(),
+        ),
+      ],
+    ),
   ],
 );
-
-final List<RouteBase> _routes = [
-  GoRoute(
-    path: AdminConsoleRoutes.root,
-    builder: (context, state) => const AdminConsoleServerLogsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.logs,
-    builder: (context, state) => const AdminConsoleServerLogsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.users,
-    builder: (context, state) => const AdminConsoleUsersManagementPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.general,
-    builder: (context, state) => const AdminConsoleGeneralSettingsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.authentication,
-    builder: (context, state) => const AdminConsoleAuthenticationSettingsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.notifications,
-    builder: (context, state) => const AdminConsoleNotificationsSettingsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.security,
-    builder: (context, state) => const AdminConsoleSecuritySettingsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.compliance,
-    builder: (context, state) => const AdminConsoleCompliancePage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.jobs,
-    builder: (context, state) => const AdminConsoleJobsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.roles,
-    builder: (context, state) => const AdminConsoleRolesSchemesPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.groups,
-    builder: (context, state) => const AdminConsoleGroupsPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.plugins,
-    builder: (context, state) => const AdminConsolePluginsManagementPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.license,
-    builder: (context, state) => const AdminConsoleLicensePage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.dataRetention,
-    builder: (context, state) => const AdminConsoleDataRetentionPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.contentFlagging,
-    builder: (context, state) => const AdminConsoleContentFlaggingPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.accessControl,
-    builder: (context, state) => const AdminConsoleAccessControlPage(),
-  ),
-  GoRoute(
-    path: AdminConsoleRoutes.sharedChannels,
-    builder: (context, state) => const AdminConsoleSharedChannelsPage(),
-  ),
-];

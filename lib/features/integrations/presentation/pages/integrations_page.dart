@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/bots_page.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/incoming_webhooks_page.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/oauth_apps_page.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/outgoing_webhooks_page.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/slash_commands_page.dart';
+import 'package:flutter_mattermost/app/routes/integration_route.dart';
+import 'package:go_router/go_router.dart';
 
 enum IntegrationSection {
   incomingWebhooks,
@@ -17,28 +14,21 @@ class IntegrationsPage extends StatefulWidget {
   const IntegrationsPage({
     super.key,
     this.teamId,
-    this.initialSection = IntegrationSection.incomingWebhooks,
+    required this.navigationShell,
   });
 
   final String? teamId;
-  final IntegrationSection initialSection;
+  final StatefulNavigationShell navigationShell;
 
   @override
   State<IntegrationsPage> createState() => _IntegrationsPageState();
 }
 
 class _IntegrationsPageState extends State<IntegrationsPage> {
-  late IntegrationSection _selectedSection;
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedSection = widget.initialSection;
-  }
-
+  IntegrationSection get _currentSection =>
+      IntegrationSection.values[widget.navigationShell.currentIndex];
   @override
   Widget build(BuildContext context) {
-    final teamId = widget.teamId;
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E2E),
       body: Row(
@@ -46,16 +36,7 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
           _buildSidebar(),
           const VerticalDivider(width: 1, color: Colors.white12),
           Expanded(
-            child: IndexedStack(
-              index: _selectedSection.index,
-              children: [
-                IncomingWebhooksPage(teamId: teamId),
-                OutgoingWebhooksPage(teamId: teamId),
-                SlashCommandsPage(teamId: teamId ?? ''),
-                BotsPage(),
-                OAuthAppsPage(),
-              ],
-            ),
+            child: widget.navigationShell,
           ),
         ],
       ),
@@ -75,15 +56,19 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
             decoration: const BoxDecoration(
               border: Border(bottom: BorderSide(color: Colors.white12)),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white54, size: 18),
+                  onPressed: () => context.go('/${widget.teamId ?? 'home'}'),
+                ),
+                const Icon(
                   Icons.extension_outlined,
                   color: Colors.blueAccent,
                   size: 18,
                 ),
-                SizedBox(width: 8),
-                Text(
+                const SizedBox(width: 8),
+                const Text(
                   'Integrations',
                   style: TextStyle(
                     color: Colors.white,
@@ -102,26 +87,31 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
                   IntegrationSection.incomingWebhooks,
                   'Incoming Webhooks',
                   Icons.call_received_outlined,
+                  IntegrationRoutes.incoming,
                 ),
                 _buildSectionTile(
                   IntegrationSection.outgoingWebhooks,
                   'Outgoing Webhooks',
                   Icons.call_made_outlined,
+                  IntegrationRoutes.outgoing,
                 ),
                 _buildSectionTile(
                   IntegrationSection.slashCommands,
                   'Slash Commands',
                   Icons.terminal_outlined,
+                  IntegrationRoutes.commands,
                 ),
                 _buildSectionTile(
                   IntegrationSection.bots,
                   'Bot Accounts',
                   Icons.smart_toy_outlined,
+                  IntegrationRoutes.bots,
                 ),
                 _buildSectionTile(
                   IntegrationSection.oauthApps,
                   'OAuth Apps',
                   Icons.lock_outline,
+                  IntegrationRoutes.oauth,
                 ),
               ],
             ),
@@ -135,8 +125,9 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
     IntegrationSection section,
     String label,
     IconData icon,
+    String route,
   ) {
-    final isSelected = _selectedSection == section;
+    final isSelected = _currentSection == section;
     return ListTile(
       dense: true,
       selected: isSelected,
@@ -154,9 +145,8 @@ class _IntegrationsPageState extends State<IntegrationsPage> {
         ),
       ),
       onTap: () {
-        setState(() {
-          _selectedSection = section;
-        });
+        final path = route.replaceAll(':team', widget.teamId ?? 'home');
+        context.go(path);
       },
     );
   }

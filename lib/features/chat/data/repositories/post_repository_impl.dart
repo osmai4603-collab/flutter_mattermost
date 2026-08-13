@@ -61,6 +61,7 @@ class PostRepositoryImpl implements PostRepository {
     String message, {
     String? rootId,
     List<String> fileIds = const [],
+    bool alsoSendToChannel = false,
   }) async {
     try {
       final model = await _remoteDataSource.sendPost(
@@ -68,6 +69,7 @@ class PostRepositoryImpl implements PostRepository {
         message,
         rootId: rootId,
         fileIds: fileIds,
+        alsoSendToChannel: alsoSendToChannel,
       );
       final entity = model.toEntity();
 
@@ -106,6 +108,20 @@ class PostRepositoryImpl implements PostRepository {
   Future<PostEntity> getPostById(String postId) async {
     final model = await _remoteDataSource.getPost(postId);
     return model.toEntity();
+  }
+
+  @override
+  Future<List<PostEntity>> getPostsAround(
+    String channelId,
+    String postId, {
+    int perPage = 40,
+  }) async {
+    final models = await _remoteDataSource.getPostsAround(
+      channelId,
+      postId,
+      perPage: perPage,
+    );
+    return models.map((m) => m.toEntity()).toList();
   }
 
   @override

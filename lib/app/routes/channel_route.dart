@@ -2,7 +2,7 @@ import 'package:flutter_mattermost/features/channels/presentation/widgets/channe
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/features/chat/presentation/channel_screen.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/threads_page.dart';
-import 'package:flutter_mattermost/features/integrations/presentation/pages/integrations_page.dart';
+import 'package:flutter_mattermost/features/chat/presentation/pages/saved_messages_page.dart';
 
 abstract class ChatRoutes {
   static const String home = '/home';
@@ -10,12 +10,7 @@ abstract class ChatRoutes {
   static const String channel = '/:team/channels/:channel';
   static const String globalThreads = '/:team/threads';
   static const String globalThreadsThread = '/:team/threads/:threadId';
-  static const String integrations = '/:team/integrations';
-  static const String integrationsIncoming = '/:team/integrations/incoming';
-  static const String integrationsOutgoing = '/:team/integrations/outgoing';
-  static const String integrationsCommands = '/:team/integrations/commands';
-  static const String integrationsBots = '/:team/integrations/bots';
-  static const String integrationsOAuth = '/:team/integrations/oauth';
+  static const String savedMessages = '/:team/saved';
 }
 
 final channelRoute = StatefulShellRoute.indexedStack(
@@ -52,43 +47,9 @@ final List<RouteBase> _routes = [
     ),
   ),
   GoRoute(
-    path: ChatRoutes.integrations,
-    builder: (context, state) =>
-        IntegrationsPage(teamId: state.pathParameters['team']),
-  ),
-  GoRoute(
-    path: ChatRoutes.integrationsIncoming,
-    builder: (context, state) => IntegrationsPage(
-      teamId: state.pathParameters['team'],
-      initialSection: IntegrationSection.incomingWebhooks,
-    ),
-  ),
-  GoRoute(
-    path: ChatRoutes.integrationsOutgoing,
-    builder: (context, state) => IntegrationsPage(
-      teamId: state.pathParameters['team'],
-      initialSection: IntegrationSection.outgoingWebhooks,
-    ),
-  ),
-  GoRoute(
-    path: ChatRoutes.integrationsCommands,
-    builder: (context, state) => IntegrationsPage(
-      teamId: state.pathParameters['team'],
-      initialSection: IntegrationSection.slashCommands,
-    ),
-  ),
-  GoRoute(
-    path: ChatRoutes.integrationsBots,
-    builder: (context, state) => IntegrationsPage(
-      teamId: state.pathParameters['team'],
-      initialSection: IntegrationSection.bots,
-    ),
-  ),
-  GoRoute(
-    path: ChatRoutes.integrationsOAuth,
-    builder: (context, state) => IntegrationsPage(
-      teamId: state.pathParameters['team'],
-      initialSection: IntegrationSection.oauthApps,
+    path: ChatRoutes.savedMessages,
+    builder: (context, state) => SavedMessagesPage(
+      teamName: state.pathParameters['team'],
     ),
   ),
   GoRoute(

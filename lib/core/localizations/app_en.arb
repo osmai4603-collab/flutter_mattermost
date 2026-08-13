@@ -6875,6 +6875,8 @@
   "search_itemFile_tagDirect_message": "Direct Message",
   "search_itemFile_tagGroup_message": "Group Message",
   "search_itemJump": "Jump",
+  "search_invalidDateModifierHint": "Dates must be in the YYYY-MM-DD format, for example before:2026-01-15.",
+  "search_recentTitle": "Recent searches",
   "search_itemThread": "Thread in {channel}",
   "search_itemThread_direct": "Thread in Direct Message (with {username})",
   "search_list_optionAfter": "Messages after a date",
@@ -11734,6 +11736,8 @@
   "editorSend": "Send",
   "editorAddAttachment": "Add attachment",
   "editorAddEmoji": "Add emoji",
+  "editorSlashCommands": "Slash Commands",
+  "editorDrafts": "Drafts",
   "editorEditCancel": "Cancel editing",
   "editorEditingPost": "Editing message",
   "rhsThread": "Thread",
@@ -11870,5 +11874,6 @@
   "filePreviewPrevious": "Previous",
   "filePreviewNext": "Next",
   "filePreviewClose": "Close",
-  "filePreviewUnsupported": "This file type is not supported: {extension}"
+  "filePreviewUnsupported": "This file type is not supported: {extension}",
+  "post_commentCheckbox_also_send_to_channel": "Also send to channel"
 }

@@ -25,8 +25,9 @@ Widget _safeMarkdownBody({required String data, required MarkdownStyleSheet styl
 class MarkdownMessage extends StatelessWidget {
   final String text;
   final TextStyle? style;
+  final int? maxLines;
 
-  const MarkdownMessage({super.key, required this.text, this.style});
+  const MarkdownMessage({super.key, required this.text, this.style, this.maxLines});
 
   @override
   Widget build(BuildContext context) {
@@ -123,6 +124,15 @@ class MarkdownMessage extends StatelessWidget {
         ),
       ),
     );
+
+    if (maxLines != null) {
+      return Text(
+        text,
+        maxLines: maxLines,
+        overflow: TextOverflow.ellipsis,
+        style: markdownStyleSheet.p,
+      );
+    }
 
     return _safeMarkdownBody(data: text, styleSheet: markdownStyleSheet);
   }

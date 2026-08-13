@@ -232,7 +232,18 @@ class ChannelHeader extends StatelessWidget {
                 transparent: true,
                 tooltip: l10n.channelHeaderSearch,
                 onPressed: () {
-                  context.read<RhsBloc>().add(const ShowSearchResultsEvent());
+                  // بدء بحث من القناة الحالية: يُضاف in:<channel> تلقائيًا
+                  // (مطابق LocalSearchTerms في webapp rhs_utils).
+                  final channelState = context.read<ChannelBloc>().state;
+                  final channel = channelState is ChannelsLoadedState
+                      ? channelState.selectedChannel
+                      : null;
+                  final terms = channel == null
+                      ? ''
+                      : 'in:${channel.name} ';
+                  context.read<RhsBloc>().add(
+                    ShowSearchResultsEvent(terms),
+                  );
                 },
                 child: Icon(
                   Icons.search,

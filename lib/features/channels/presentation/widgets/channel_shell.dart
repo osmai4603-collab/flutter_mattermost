@@ -11,6 +11,9 @@ import 'package:flutter_mattermost/features/channels/presentation/widgets/team_s
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/rhs_container.dart';
 
+import 'package:flutter_mattermost/app/routes/integration_route.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+
 /// الهيكل العام — مطابق grid الـ webapp (sass/base/_structure.scss):
 /// "header" → GlobalHeader (44px)
 /// "team-sidebar main app-sidebar" → TeamSwitcher | LHS+center+RHS.
@@ -20,13 +23,17 @@ class ChannelShell extends StatelessWidget {
 
   const ChannelShell({super.key, required this.navigationShell});
 
-  // void _goToTeamPage(BuildContext context, String path) {
-  //   final teamState = context.read<TeamBloc>().state;
-  //   final teamName = teamState is TeamsLoadedState
-  //       ? teamState.selectedTeam?.name
-  //       : null;
-  //   context.go(teamName != null ? '/$teamName$path' : '/home');
-  // }
+  void _goToTeamPage(BuildContext context, String path) {
+    final teamState = context.read<TeamBloc>().state;
+    final teamName = teamState is TeamsLoadedState
+        ? teamState.selectedTeam?.name
+        : null;
+    if (teamName != null) {
+      context.go(path.replaceAll(':team', teamName));
+    } else {
+      context.go('/home');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +47,8 @@ class ChannelShell extends StatelessWidget {
       //   initialType: SearchResultType.files,
       // ),
       // onDrafts: () => _goToTeamPage(context, '/drafts'),
-      // onIntegrations: () => _goToTeamPage(context, '/integrations'),
-      // onAdminConsole: () => context.go('/admin_console'),
+      onIntegrations: () => _goToTeamPage(context, IntegrationRoutes.root),
+      onAdminConsole: () => context.go('/admin_console'),
       // onShortcuts: () => ModalRegistry.open(
       //   context,
       //   id: ModalIdentifiers.keyboardShortcuts,

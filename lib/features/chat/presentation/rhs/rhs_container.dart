@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_info_p
 import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_members_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/mentions_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/saved_pinned_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/search_results_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/thread_panel_body.dart';
 
 /// حاوية RHS الرئيسية — مطابقة RHSContainer.tsx في webapp:
@@ -221,7 +222,9 @@ class _RhsBody extends StatelessWidget {
 
     return switch (state.panel) {
       RhsPanel.thread => const ThreadPanelBody(),
-      RhsPanel.search => _SearchBody(searchTerms: (state as RhsListState).searchTerms),
+      RhsPanel.search => SearchResultsPanel(
+        searchTerms: (state as RhsListState).searchTerms,
+      ),
       RhsPanel.mention => const MentionsPanel(),
       RhsPanel.pinned => SavedPinnedPanel(isPinned: true),
       RhsPanel.flagged => _NoResultsBody(
@@ -281,60 +284,6 @@ class _NoResultsBody extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// لوحة البحث: حقل بحث + نتائج (إن وجدت) أو حالة فارغة.
-class _SearchBody extends StatelessWidget {
-  final String searchTerms;
-  const _SearchBody({required this.searchTerms});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: TextField(
-            autofocus: true,
-            onChanged: (value) {
-              context.read<RhsBloc>().add(UpdateRhsSearchTermsEvent(value));
-            },
-            style: TextStyle(color: theme.centerChannelColor, fontSize: 14),
-            decoration: InputDecoration(
-              hintText: l10n.search_barSearch_messages,
-              hintStyle: TextStyle(
-                color: theme.centerChannelColor.withValues(alpha: 0.5),
-                fontSize: 14,
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                size: 18,
-                color: theme.centerChannelColor.withValues(alpha: 0.6),
-              ),
-              isDense: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(DesignTokens.radiusM),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: searchTerms.trim().isEmpty
-              ? _NoResultsBody(
-                  title: l10n.search_headerSearch,
-                  subtitle: l10n.no_resultsSearchSubtitle,
-                )
-              : _NoResultsBody(
-                  title: l10n.search_headerResults,
-                  subtitle: l10n.no_resultsSearchSubtitle,
-                ),
-        ),
-      ],
     );
   }
 }

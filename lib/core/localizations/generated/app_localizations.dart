@@ -41987,6 +41987,18 @@ abstract class AppLocalizations {
   /// **'Jump'**
   String get search_itemJump;
 
+  /// No description provided for @search_invalidDateModifierHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Dates must be in the YYYY-MM-DD format, for example before:2026-01-15.'**
+  String get search_invalidDateModifierHint;
+
+  /// No description provided for @search_recentTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get search_recentTitle;
+
   /// No description provided for @search_itemThread.
   ///
   /// In en, this message translates to:
@@ -71891,6 +71903,18 @@ abstract class AppLocalizations {
   /// **'Add emoji'**
   String get editorAddEmoji;
 
+  /// No description provided for @editorSlashCommands.
+  ///
+  /// In en, this message translates to:
+  /// **'Slash Commands'**
+  String get editorSlashCommands;
+
+  /// No description provided for @editorDrafts.
+  ///
+  /// In en, this message translates to:
+  /// **'Drafts'**
+  String get editorDrafts;
+
   /// No description provided for @editorEditCancel.
   ///
   /// In en, this message translates to:
@@ -72712,6 +72736,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This file type is not supported: {extension}'**
   String filePreviewUnsupported(Object extension);
+
+  /// No description provided for @post_commentCheckbox_also_send_to_channel.
+  ///
+  /// In en, this message translates to:
+  /// **'Also send to channel'**
+  String get post_commentCheckbox_also_send_to_channel;
 }
 
 class _AppLocalizationsDelegate

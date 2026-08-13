@@ -4,11 +4,15 @@ import 'package:flutter/services.dart';
 class AppShortcuts extends StatelessWidget {
   final Widget child;
   final VoidCallback onQuickSwitch;
+  final VoidCallback? onIntegrations;
+  final VoidCallback? onAdminConsole;
 
   const AppShortcuts({
     super.key,
     required this.child,
     required this.onQuickSwitch,
+    this.onIntegrations,
+    this.onAdminConsole,
   });
 
   @override

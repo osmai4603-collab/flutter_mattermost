@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_mattermost/core/utils/markdown_apply.dart' as md;
 import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/utils/post_key_press.dart';
+import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplete/autocomplete_controller.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/composer_draft.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/file_upload_controller.dart';
@@ -33,6 +34,10 @@ String statusFromSlashCommand(String message) {
 class ComposerController extends ChangeNotifier {
   final ComposerDraft draft;
   final FileUploadController uploadController;
+
+  /// تخزين المسودات المحلية — عند توفيره يُحفظ نص الرسالة تلقائياً
+  /// (مؤجلاً) ويُستعاد عند فتح القناة ويُمسح عند الإرسال الناجح.
+  final DraftStorageService? draftStorage;
 
   final TextEditingController textController = TextEditingController();
   final FocusNode focusNode = FocusNode();
@@ -85,9 +90,14 @@ class ComposerController extends ChangeNotifier {
   int _lastChannelSwitchAt = 0;
   Timer? _typingTimer;
 
-  ComposerController({required this.draft, required this.uploadController}) {
+  ComposerController({
+    required this.draft,
+    required this.uploadController,
+    this.draftStorage,
+  }) {
     textController.addListener(_onTextControllerChanged);
     focusNode.addListener(_onFocusChanged);
+    _restoreDraft();
   }
 
   // ─────────────────────────── حالة عامة ───────────────────────────
@@ -122,7 +132,9 @@ class ComposerController extends ChangeNotifier {
     if (!_isEditMode) return;
     _isEditMode = false;
     _editingPostId = '';
+    _draftSaveTimer?.cancel();
     textController.clear();
+    _restoreDraft();
     notifyListeners();
   }
 
@@ -148,6 +160,52 @@ class ComposerController extends ChangeNotifier {
     if (!_emojiPickerOpen) return;
     _emojiPickerOpen = false;
     notifyListeners();
+  }
+
+  // ──────────────────────── المسودات المحلية ────────────────────────
+
+  Timer? _draftSaveTimer;
+  bool _restoringDraft = false;
+
+  /// استعادة المسودة المحفوظة للقناة/الثريد في المحرر (إن وجدت).
+  Future<void> _restoreDraft() async {
+    final storage = draftStorage;
+    if (storage == null || _restoringDraft) return;
+    _restoringDraft = true;
+    try {
+      final saved = await storage.load(draft.channelId, draft.rootId);
+      if (saved == null || saved.isEmpty) return;
+      // لا تُطبق الاستعادة إذا بدأ المستخدم الكتابة قبل اكتمال التحميل.
+      if (draft.message.isNotEmpty || textController.text.isNotEmpty) return;
+      textController.value = TextEditingValue(
+        text: saved,
+        selection: TextSelection.collapsed(offset: saved.length),
+      );
+      draft.setMessage(saved);
+      _lastText = saved;
+    } finally {
+      _restoringDraft = false;
+    }
+  }
+
+  /// جدولة حفظ مؤجل للنص بعد التوقف عن الكتابة (600ms).
+  void _scheduleDraftSave() {
+    if (draftStorage == null || _isEditMode) return;
+    _draftSaveTimer?.cancel();
+    _draftSaveTimer = Timer(const Duration(milliseconds: 600), _persistDraft);
+  }
+
+  void _persistDraft() {
+    final storage = draftStorage;
+    if (storage == null || _isEditMode) return;
+    unawaited(storage.save(draft.channelId, draft.rootId, draft.message));
+  }
+
+  /// مسح المسودة المخزنة بعد إرسال ناجح.
+  void _clearDraftStorage() {
+    final storage = draftStorage;
+    if (storage == null) return;
+    unawaited(storage.clear(draft.channelId, draft.rootId));
   }
 
   // ──────────────────────── سجل الرسائل ────────────────────────
@@ -219,6 +277,25 @@ class ComposerController extends ChangeNotifier {
     draft.setMessage(newText);
     _lastText = newText;
     onTypingDebounced();
+  }
+
+  /// يفتح قائمة أوامر السلاش عبر إدراج `/` في بداية سطر جديد.
+  void openSlashCommands() {
+    final text = textController.text;
+    final selection = textController.selection;
+    final start = selection.isValid ? selection.start : text.length;
+
+    final atLineStart = start == 0 || text[start - 1] == '\n';
+    final toInsert = atLineStart ? '/' : '\n/';
+
+    final newText = text.replaceRange(start, start, toInsert);
+    textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: start + toInsert.length),
+    );
+    draft.setMessage(newText);
+    _lastText = newText;
+    focusNode.requestFocus();
   }
 
   /// إدراج نص خام عند المؤشر (لـ GIF/روابط).
@@ -446,6 +523,8 @@ class ComposerController extends ChangeNotifier {
         }
       }
       _showPreview = false;
+      _draftSaveTimer?.cancel();
+      _clearDraftStorage();
       draft.clear();
       textController.clear();
       if (_isEditMode) {
@@ -682,6 +761,7 @@ class ComposerController extends ChangeNotifier {
     if (text.isEmpty) {
       _historyIndex = _messageHistory.length;
     }
+    _scheduleDraftSave();
   }
 
   void _onFocusChanged() {
@@ -693,6 +773,8 @@ class ComposerController extends ChangeNotifier {
   /// هل يجب ترك الإرسال بعد إغلاق مؤقت بسبب فقدان التركيز؟
   @override
   void dispose() {
+    _draftSaveTimer?.cancel();
+    _persistDraft();
     _typingTimer?.cancel();
     textController.removeListener(_onTextControllerChanged);
     focusNode.removeListener(_onFocusChanged);

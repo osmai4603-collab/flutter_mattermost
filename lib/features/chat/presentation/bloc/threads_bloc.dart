@@ -43,6 +43,43 @@ class MarkThreadReadEvent extends ThreadsEvent {
   List<Object?> get props => [userId, teamId, threadId];
 }
 
+class FollowThreadEvent extends ThreadsEvent {
+  final String userId;
+  final String teamId;
+  final String threadId;
+  const FollowThreadEvent({
+    required this.userId,
+    required this.teamId,
+    required this.threadId,
+  });
+  @override
+  List<Object?> get props => [userId, teamId, threadId];
+}
+
+class UnfollowThreadEvent extends ThreadsEvent {
+  final String userId;
+  final String teamId;
+  final String threadId;
+  const UnfollowThreadEvent({
+    required this.userId,
+    required this.teamId,
+    required this.threadId,
+  });
+  @override
+  List<Object?> get props => [userId, teamId, threadId];
+}
+
+class MarkAllThreadsReadEvent extends ThreadsEvent {
+  final String userId;
+  final String teamId;
+  const MarkAllThreadsReadEvent({
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [userId, teamId];
+}
+
 /// حالات صفحة المحادثات.
 abstract class ThreadsState extends Equatable {
   const ThreadsState();
@@ -79,6 +116,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     on<LoadThreadsEvent>(_onLoad);
     on<SetThreadsUnreadFilterEvent>(_onSetFilter);
     on<MarkThreadReadEvent>(_onMarkRead);
+    on<FollowThreadEvent>(_onFollow);
+    on<UnfollowThreadEvent>(_onUnfollow);
+    on<MarkAllThreadsReadEvent>(_onMarkAllRead);
   }
 
   Future<void> _onLoad(
@@ -133,6 +173,7 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
                   isFollowing: t.isFollowing,
                   unreadReplies: 0,
                   unreadMentions: 0,
+                  participants: t.participants,
                 )
               else
                 t,
@@ -142,6 +183,116 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     } catch (_) {
       // يحافظ على الحالة الحالية عند الفشل (webapp يظهر toast).
     }
+  }
+
+  Future<void> _onFollow(
+    FollowThreadEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      await _threadsRepository.followThread(
+        event.userId,
+        event.teamId,
+        event.threadId,
+      );
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              if (t.rootPostId == event.threadId)
+                ThreadEntity(
+                  rootPostId: t.rootPostId,
+                  channelId: t.channelId,
+                  channelName: t.channelName,
+                  rootPost: t.rootPost,
+                  replyCount: t.replyCount,
+                  lastReplyAt: t.lastReplyAt,
+                  lastViewedAt: t.lastViewedAt,
+                  isFollowing: true,
+                  unreadReplies: t.unreadReplies,
+                  unreadMentions: t.unreadMentions,
+                  participants: t.participants,
+                )
+              else
+                t,
+          ],
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _onUnfollow(
+    UnfollowThreadEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      await _threadsRepository.unfollowThread(
+        event.userId,
+        event.teamId,
+        event.threadId,
+      );
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              if (t.rootPostId == event.threadId)
+                ThreadEntity(
+                  rootPostId: t.rootPostId,
+                  channelId: t.channelId,
+                  channelName: t.channelName,
+                  rootPost: t.rootPost,
+                  replyCount: t.replyCount,
+                  lastReplyAt: t.lastReplyAt,
+                  lastViewedAt: t.lastViewedAt,
+                  isFollowing: false,
+                  unreadReplies: t.unreadReplies,
+                  unreadMentions: t.unreadMentions,
+                  participants: t.participants,
+                )
+              else
+                t,
+          ],
+        ),
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _onMarkAllRead(
+    MarkAllThreadsReadEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      await _threadsRepository.markAllThreadsAsRead(
+        event.userId,
+        event.teamId,
+      );
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              ThreadEntity(
+                rootPostId: t.rootPostId,
+                channelId: t.channelId,
+                channelName: t.channelName,
+                rootPost: t.rootPost,
+                replyCount: t.replyCount,
+                lastReplyAt: t.lastReplyAt,
+                lastViewedAt: t.lastViewedAt,
+                isFollowing: t.isFollowing,
+                unreadReplies: 0,
+                unreadMentions: 0,
+                participants: t.participants,
+              ),
+          ],
+        ),
+      );
+    } catch (_) {}
   }
 }
 

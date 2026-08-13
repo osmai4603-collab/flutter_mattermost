@@ -1,6 +1,8 @@
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/data/models/post_model.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/auth/data/models/user_model.dart';
 
 final class ThreadModel extends ThreadEntity {
   const ThreadModel({
@@ -14,6 +16,7 @@ final class ThreadModel extends ThreadEntity {
     required super.isFollowing,
     required super.unreadReplies,
     required super.unreadMentions,
+    super.participants = const [],
   });
 
   factory ThreadModel.fromMap(Map<String, dynamic> map) {
@@ -30,6 +33,9 @@ final class ThreadModel extends ThreadEntity {
       isFollowing: map["is_following"] as bool? ?? true,
       unreadReplies: (map["unread_replies"] as num?)?.toInt() ?? 0,
       unreadMentions: (map["unread_mentions"] as num?)?.toInt() ?? 0,
+      participants: (map["participants"] as List<dynamic>? ?? [])
+          .map((u) => UserModel.fromMap(u as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -45,6 +51,9 @@ final class ThreadModel extends ThreadEntity {
       "is_following": isFollowing,
       "unread_replies": unreadReplies,
       "unread_mentions": unreadMentions,
+      "participants": participants
+          .map((u) => u is UserModel ? u.toMap() : UserModel.fromEntity(u).toMap())
+          .toList(),
     };
   }
 
@@ -60,6 +69,7 @@ final class ThreadModel extends ThreadEntity {
       isFollowing: entity.isFollowing,
       unreadReplies: entity.unreadReplies,
       unreadMentions: entity.unreadMentions,
+      participants: entity.participants,
     );
   }
 
@@ -74,6 +84,7 @@ final class ThreadModel extends ThreadEntity {
     bool? isFollowing,
     int? unreadReplies,
     int? unreadMentions,
+    List<UserEntity>? participants,
   }) {
     return ThreadModel(
       rootPostId: rootPostId ?? this.rootPostId,
@@ -86,6 +97,7 @@ final class ThreadModel extends ThreadEntity {
       isFollowing: isFollowing ?? this.isFollowing,
       unreadReplies: unreadReplies ?? this.unreadReplies,
       unreadMentions: unreadMentions ?? this.unreadMentions,
+      participants: participants ?? this.participants,
     );
   }
 
@@ -100,5 +112,6 @@ final class ThreadModel extends ThreadEntity {
         isFollowing: isFollowing,
         unreadReplies: unreadReplies,
         unreadMentions: unreadMentions,
+        participants: participants,
       );
 }

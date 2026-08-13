@@ -6,10 +6,9 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
-import 'package:flutter_mattermost/core/utils/time_format.dart';
-import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/thread_card.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
 /// صفحة المحادثات (Global Threads) — مطابقة global_threading.tsx:
@@ -49,6 +48,7 @@ class _ThreadsPageState extends State<ThreadsPage> {
       }
     }
     _userId ??= (await getIt<SecureStorageService>().getUserId()) ?? 'me';
+    if (!context.mounted) return;
     if (_teamId != null && _loadedTeamId != _teamId) {
       _loadedTeamId = _teamId;
       context.read<ThreadsBloc>().add(
@@ -128,6 +128,19 @@ class _ThreadsPageState extends State<ThreadsPage> {
                       selected: _unreadOnly,
                       onTap: () => _setFilter(true),
                     ),
+                    const Spacer(),
+                    TextButton.icon(
+                      onPressed: _markAllRead,
+                      icon: const Icon(Icons.done_all, size: 18),
+                      label: Text(
+                        l10n.mark_all_threads_as_read_modalConfirm,
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.linkColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -150,6 +163,16 @@ class _ThreadsPageState extends State<ThreadsPage> {
           unreadOnly: unread,
         ),
       );
+    }
+  }
+
+  void _markAllRead() {
+    final teamId = _teamId;
+    final userId = _userId;
+    if (teamId != null && userId != null) {
+      context.read<ThreadsBloc>().add(
+            MarkAllThreadsReadEvent(userId: userId, teamId: teamId),
+          );
     }
   }
 
@@ -213,16 +236,17 @@ class _ThreadsPageState extends State<ThreadsPage> {
     return ListView(
       children: [
         for (final thread in threads)
-          _ThreadRow(
+          ThreadCard(
             thread: thread,
+            myUserId: _userId ?? 'me',
             onTap: () {
               context.read<ThreadsBloc>().add(
-                MarkThreadReadEvent(
-                  userId: _userId ?? 'me',
-                  teamId: _teamId ?? '',
-                  threadId: thread.rootPostId,
-                ),
-              );
+                    MarkThreadReadEvent(
+                      userId: _userId ?? 'me',
+                      teamId: _teamId ?? '',
+                      threadId: thread.rootPostId,
+                    ),
+                  );
               context
                   .read<RhsBloc>()
                   .add(OpenThreadEvent(thread.rootPostId, thread.channelId));
@@ -232,6 +256,36 @@ class _ThreadsPageState extends State<ThreadsPage> {
                     ? '/$teamName/threads/${thread.rootPostId}'
                     : '/threads/${thread.rootPostId}',
               );
+            },
+            onChannelTap: () {
+              final teamName = _teamName();
+              // We need channel name to navigate properly
+              // For now navigate to the thread and then to channel if we had channel name
+              // Actually, ThreadEntity has channelName, but navigation usually needs channel ID or name.
+              // In this app, it seems to use channel name in URL.
+              // We'll navigate to channel screen if we had the name correctly.
+              if (teamName != null) {
+                context.go('/$teamName/channels/${thread.channelName}');
+              }
+            },
+            onToggleFollow: () {
+              if (thread.isFollowing) {
+                context.read<ThreadsBloc>().add(
+                      UnfollowThreadEvent(
+                        userId: _userId ?? 'me',
+                        teamId: _teamId ?? '',
+                        threadId: thread.rootPostId,
+                      ),
+                    );
+              } else {
+                context.read<ThreadsBloc>().add(
+                      FollowThreadEvent(
+                        userId: _userId ?? 'me',
+                        teamId: _teamId ?? '',
+                        threadId: thread.rootPostId,
+                      ),
+                    );
+              }
             },
           ),
       ],
@@ -284,100 +338,6 @@ class _TabChip extends StatelessWidget {
             fontSize: 13,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ThreadRow extends StatelessWidget {
-  final ThreadEntity thread;
-  final VoidCallback onTap;
-
-  const _ThreadRow({required this.thread, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final unread = thread.hasUnread;
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (unread)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: theme.errorTextColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    thread.rootPost.message,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: theme.centerChannelColor,
-                      fontSize: 14,
-                      fontWeight: unread ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          thread.channelName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: theme.centerChannelColor.withValues(
-                              alpha: 0.6,
-                            ),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        formatPostTime(thread.lastReplyAt),
-                        style: TextStyle(
-                          color: theme.centerChannelColor.withValues(
-                            alpha: 0.5,
-                          ),
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.threadingNumReplies(thread.replyCount),
-                        style: TextStyle(
-                          color: theme.centerChannelColor.withValues(
-                            alpha: 0.5,
-                          ),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
         ),
       ),
     );

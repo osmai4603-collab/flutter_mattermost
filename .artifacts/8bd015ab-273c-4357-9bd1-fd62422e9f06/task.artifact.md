@@ -1,5 +1,17 @@
-- [ ] Add route for Saved Messages in `channel_route.dart`
-- [ ] Add "Saved Messages" link to `channel_sidebar.dart` (LHS)
-- [ ] Create `saved_messages_page.dart` for the main view
-- [ ] Enhance `saved_pinned_panel.dart` UI and logic (Cards, Jump to message, Arabic Empty State)
-- [ ] Verify functionality and UI
+- [x] Add route for Saved Messages in `channel_route.dart`
+- [x] Add "Saved Messages" link to `channel_sidebar.dart` (LHS)
+- [x] Create `saved_messages_page.dart` for the main view
+- [x] Enhance `saved_pinned_panel.dart` UI and logic (Cards, Jump to message, Arabic Empty State)
+- [x] Verify functionality and UI
+- [x] Refactor `IntegrationsPage` to support shell-like navigation
+- [x] Create `integration_route.dart` with independent routes
+- [x] Remove integration routes from `channel_route.dart`
+- [x] Register `integrationRoute` in `app_router.dart`
+- [x] Refactor `admin_console_route.dart` to use 18 separate branches
+- [x] Add "Back" button to `admin_sidebar.dart`
+- [x] Ensure `admin_console_shell.dart` handles branch navigation correctly
+- [x] Fixed syntax and structural errors in `sidebar_channel_row.dart`
+- [x] Fixed missing `RhsBloc` import in `saved_pinned_panel.dart`
+- [x] Fixed undefined `_focusKey` in `message_list.dart` and implemented scroll logic
+- [x] Fixed missing named parameters in `AppShortcuts`
+- [x] Fixed missing localization key usage in `sidebar_header.dart`

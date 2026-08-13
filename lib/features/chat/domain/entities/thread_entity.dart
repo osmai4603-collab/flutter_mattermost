@@ -1,3 +1,4 @@
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 
 /// ثريد من قائمة ثريدات المستخدم (webapp UserThread):
@@ -13,6 +14,7 @@ class ThreadEntity {
   final bool isFollowing;
   final int unreadReplies;
   final int unreadMentions;
+  final List<UserEntity> participants;
 
   const ThreadEntity({
     required this.rootPostId,
@@ -25,6 +27,7 @@ class ThreadEntity {
     this.isFollowing = true,
     this.unreadReplies = 0,
     this.unreadMentions = 0,
+    this.participants = const [],
   });
 
   bool get hasUnread => unreadReplies > 0 || unreadMentions > 0;

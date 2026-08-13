@@ -38,6 +38,10 @@ abstract class ThreadsRemoteDataSource {
     String threadId, {
     int? timestamp,
   });
+  Future<void> markAllThreadsAsRead(
+    String userId,
+    String teamId,
+  );
   Future<void> setThreadUnread(
     String userId,
     String teamId,
@@ -141,6 +145,17 @@ class ThreadsRemoteDataSourceImpl implements ThreadsRemoteDataSource {
     final ts = timestamp ?? DateTime.now().millisecondsSinceEpoch;
     await _apiClient.put<void>(
       UsersEndPoint.teamsThreadsRead2(userId, teamId, threadId, ts.toString()),
+      fromJson: (_) {},
+    );
+  }
+
+  @override
+  Future<void> markAllThreadsAsRead(
+    String userId,
+    String teamId,
+  ) async {
+    await _apiClient.put<void>(
+      UsersEndPoint.teamsThreadsRead(userId, teamId),
       fromJson: (_) {},
     );
   }

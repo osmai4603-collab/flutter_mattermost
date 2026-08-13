@@ -928,6 +928,8 @@
   "search_itemFile_tagDirect_message": "رسالة مباشرة",
   "search_itemFile_tagGroup_message": "رسالة جماعية",
   "search_itemJump": "انتقال",
+  "search_invalidDateModifierHint": "يجب أن يكون التاريخ بصيغة YYYY-MM-DD، مثال: before:2026-01-15.",
+  "search_recentTitle": "عمليات البحث الأخيرة",
   "search_itemThread": "خيط في {channel}",
   "search_itemThread_direct": "خيط في رسالة مباشرة (مع {username})",
   "search_list_optionAfter": "رسائل بعد تاريخ",
@@ -11734,6 +11736,8 @@
   "editorSend": "إرسال",
   "editorAddAttachment": "إضافة مرفق",
   "editorAddEmoji": "إضافة رمز تعبيري",
+  "editorSlashCommands": "أوامر السلاش",
+  "editorDrafts": "المسودات",
   "editorEditCancel": "إلغاء التعديل",
   "editorEditingPost": "جارٍ تعديل الرسالة",
   "rhsThread": "الخيط",
@@ -11870,5 +11874,6 @@
   "filePreviewPrevious": "السابق",
   "filePreviewNext": "التالي",
   "filePreviewClose": "إغلاق",
-  "filePreviewUnsupported": "نوع الملف هذا غير مدعوم: {extension}"
+  "filePreviewUnsupported": "نوع الملف هذا غير مدعوم: {extension}",
+  "post_commentCheckbox_also_send_to_channel": "أيضاً أرسل إلى القناة"
 }
