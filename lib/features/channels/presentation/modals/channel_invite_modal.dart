@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/teams/domain/repositories/team_repository.dart';
@@ -129,10 +130,31 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
     }
   }
 
-  void _selectUser(UserEntity user) {
-    _emailController.text = user.email;
-    setState(() => _suggestions = []);
+  /// إضافة العضو المختار من مساحة العمل مباشرة إلى القناة — يطابق
+  /// POST /channels/{id}/members (إضافة أعضاء ضمن team).
+  Future<void> _selectUser(UserEntity user) async {
+    final channelId = _channelId();
+    if (channelId == null) return;
+    setState(() {
+      _sending = true;
+      _suggestions = [];
+      _error = null;
+    });
     _focusNode.unfocus();
+    try {
+      await getIt<ChannelRepository>().addChannelMembers(channelId, [user.id]);
+      if (mounted) {
+        setState(() => _sending = false);
+        Navigator.of(context).pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _sending = false;
+          _error = 'Add failed';
+        });
+      }
+    }
   }
 
   void _openTeamInvite() {

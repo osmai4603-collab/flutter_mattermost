@@ -111,6 +111,11 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/browser-icons/
+    - assets/images/cloud/
+    - assets/images/deep-linking/
+    - assets/images/emoji/
+
 
   fonts:
     - family: Metropolis

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_mattermost/core/i18n/app_settings_cubit.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
@@ -48,7 +47,12 @@ class UserAccountMenuButton extends StatelessWidget {
               ),
             ],
           ),
-          onTap: () {},
+          onTap: () {
+            ModalRegistry.open(
+              context,
+              id: ModalIdentifiers.userProfile,
+            );
+          },
         ),
         MatterMenuItem.divider(),
         MatterMenuItem(

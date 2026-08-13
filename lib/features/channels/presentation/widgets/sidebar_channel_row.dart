@@ -5,12 +5,13 @@ import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
-import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
 
 /// صف قناة في LHS — مطابق sidebar_channel.tsx + sidebar_channel_link.tsx:
 /// ارتفاع 32px، padding 7px 16px 7px 19px، نشط = bg rgba(text,0.08)
-/// + خط عمودي 4px بعرض 4px، unread = نص عريض sidebar-unread-text،
-/// شارة إشارات pill، hover = sidebar-text-hover-bg.
+/// + خط عمودي 4px، unread = نص عريض sidebar-unread-text، شارة منشنات pill،
+/// hover = sidebar-text-hover-bg، وقائمة ⋯ (sidebar_channel_menu) عند التمرير
+/// أو النقر اليميني: مفضلة/نقل/كتم/تفضيلات/نسخ/معلومات/إعدادات/مغادرة/أرشفة.
 class SidebarChannelRow extends StatefulWidget {
   final ChannelEntity channel;
   final ChannelUnreadCounts? unread;
@@ -38,6 +39,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
     final channel = widget.channel;
     final hasUnreads = widget.unread?.hasUnreads ?? false;
     final hasMentions = (widget.unread?.mentions ?? 0) > 0;
+    final isArchived = channel.deleteAt > 0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
@@ -45,6 +47,9 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
+        onSecondaryTapDown: (details) {
+          showChannelContextMenu(context, channel, details.globalPosition);
+        },
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: DesignTokens.sidebarRowHeight,
@@ -78,6 +83,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                     type: channel.type,
                     active: hasUnreads || widget.isSelected,
                     theme: theme,
+                    archived: isArchived,
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -87,6 +93,9 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 14,
+                        decoration: isArchived
+                            ? TextDecoration.lineThrough
+                            : null,
                         color: hasUnreads
                             ? theme.sidebarUnreadText
                             : theme.sidebarText,
@@ -96,6 +105,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 4),
                   if (hasMentions)
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -103,7 +113,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.mentionBg ?? theme.errorTextColor,
+                        color: theme.mentionBg,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -124,6 +134,13 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                         shape: BoxShape.circle,
                       ),
                     ),
+                  const SizedBox(width: 2),
+                  // قائمة القناة تظهر عند التمرير فقط (مثل sidebar-menu في webapp).
+                  AnimatedOpacity(
+                    opacity: _hovered ? 1 : 0,
+                    duration: const Duration(milliseconds: 100),
+                    child: ChannelRowMenu(channel: channel),
+                  ),
                 ],
               ),
             ],
@@ -137,12 +154,14 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
 class _ChannelIcon extends StatelessWidget {
   final ChannelType type;
   final bool active;
+  final bool archived;
   final MattermostColors theme;
 
   const _ChannelIcon({
     required this.type,
     required this.active,
     required this.theme,
+    this.archived = false,
   });
 
   @override
@@ -154,7 +173,11 @@ class _ChannelIcon extends StatelessWidget {
       return Icon(Icons.circle, size: 8, color: color);
     }
     return Icon(
-      type == ChannelType.private ? Icons.lock_outline : Icons.tag,
+      archived
+          ? Icons.archive_outlined
+          : type == ChannelType.private
+          ? Icons.lock_outline
+          : Icons.tag,
       size: 15,
       color: color,
     );

@@ -11,6 +11,13 @@ class CodeBlockElementBuilder extends MarkdownElementBuilder {
   @override
   bool isBlockElement() => true;
 
+  /// flutter_markdown يستدعي visitText للعناصر داخل `pre`؛ والعودة بـ null
+  /// تترك مكدس _inlines غير مصفَّى فتقف assertion (_inlines.isEmpty).
+  /// إرجاع عنصر نائب يُصفّى المكدس، ويستبدل المحتوى في
+  /// [visitElementAfterWithContext] بكتلة الكود النهائية.
+  @override
+  Widget? visitText(md.Text text, TextStyle? preferredStyle) => Text(text.text);
+
   @override
   Widget? visitElementAfterWithContext(
     BuildContext context,

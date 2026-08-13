@@ -20339,6 +20339,14 @@ class AppLocalizationsAr extends AppLocalizations {
       'Post attachments cannot be edited';
 
   @override
+  String get file_previewRemove => 'إزالة';
+
+  @override
+  String file_previewUploading(Object percent) {
+    return 'جارٍ الرفع $percent%';
+  }
+
+  @override
   String get file_search_result_itemCopy_link => 'Copy link';
 
   @override
@@ -23989,6 +23997,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get no_resultsSearchSubtitle => 'تحقق من الإملاء أو جرّب بحثًا آخر.';
+
+  @override
+  String get no_resultsSearchResults => 'لا يوجد أعضاء مطابقون';
 
   @override
   String no_resultsSearchTitle(Object channelName) {
@@ -46161,6 +46172,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editorAddEmoji => 'إضافة رمز تعبيري';
 
   @override
+  String get editorEditCancel => 'إلغاء التعديل';
+
+  @override
+  String get editorEditingPost => 'جارٍ تعديل الرسالة';
+
+  @override
   String get rhsThread => 'الخيط';
 
   @override
@@ -46227,6 +46244,44 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get channel_headerUnfavorite => 'إزالة من المفضلة';
+
+  @override
+  String get channelHeaderStartCall => 'بدء مكالمة';
+
+  @override
+  String get channelHeaderNotifications => 'إعدادات التنبيهات';
+
+  @override
+  String get channelHeaderChannelInfoTooltip => 'عرض معلومات القناة';
+
+  @override
+  String get incomingCallTitle => 'مكالمة واردة';
+
+  @override
+  String get incomingCallAccept => 'قبول';
+
+  @override
+  String get incomingCallDecline => 'رفض';
+
+  @override
+  String incomingCallDescription(Object channelName) {
+    return 'أنت مدعو للانضمام إلى مكالمة في $channelName';
+  }
+
+  @override
+  String get postEdited => '(مُحرَّر)';
+
+  @override
+  String get postDeleted => 'تم حذف الرسالة';
+
+  @override
+  String get userProfileModalSendMessage => 'إرسال رسالة';
+
+  @override
+  String get userProfileModalViewFullProfile => 'عرض الملف الشخصي';
+
+  @override
+  String get userProfileModalClose => 'إغلاق';
 
   @override
   String get create_postReadOnly =>

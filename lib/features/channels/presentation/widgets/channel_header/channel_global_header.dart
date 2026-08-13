@@ -40,20 +40,6 @@ class ChannelGlobalHeader extends StatelessWidget {
               spacing: 8,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // RightIconButton(
-                //   icon: Icons.forum_outlined,
-                //   tooltip: l10n.globalThreadsSidebarLink,
-                //   toggled: false,
-                //   onTap: () {
-                //     final teamState = context.read<TeamBloc>().state;
-                //     final teamName = teamState is TeamsLoadedState
-                //         ? teamState.selectedTeam?.name
-                //         : null;
-                //     if (teamName != null) {
-                //       context.go('/$teamName/threads');
-                //     }
-                //   },
-                // ),
                 RightIconButton(
                   icon: Icons.alternate_email,
                   tooltip: l10n.sidebar_right_menuRecentMentions,

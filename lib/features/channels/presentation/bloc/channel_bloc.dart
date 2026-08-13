@@ -113,6 +113,99 @@ class ToggleFavoriteEvent extends ChannelEvent {
   List<Object?> get props => [channelId, userId, teamId];
 }
 
+/// نقل قناة بين فئات الشريط الجانبي (سحب وإفلات) — يطابق
+/// PUT /users/{userId}/teams/{teamId}/channels/categories بعد التحديث.
+class MoveChannelToCategoryEvent extends ChannelEvent {
+  final String channelId;
+  final String targetCategoryId;
+  final String userId;
+  final String teamId;
+  const MoveChannelToCategoryEvent({
+    required this.channelId,
+    required this.targetCategoryId,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [
+    channelId,
+    targetCategoryId,
+    userId,
+    teamId,
+  ];
+}
+
+/// إعادة تسمية فئة — يطابق PUT /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
+class RenameCategoryEvent extends ChannelEvent {
+  final String categoryId;
+  final String newName;
+  final String userId;
+  final String teamId;
+  const RenameCategoryEvent({
+    required this.categoryId,
+    required this.newName,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [categoryId, newName, userId, teamId];
+}
+
+/// كتم/إلغاء كتم فئة — يطابق PUT بنفس المسار مع muted.
+class ToggleMuteCategoryEvent extends ChannelEvent {
+  final String categoryId;
+  final bool muted;
+  final String userId;
+  final String teamId;
+  const ToggleMuteCategoryEvent({
+    required this.categoryId,
+    required this.muted,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [categoryId, muted, userId, teamId];
+}
+
+/// حذف فئة — يطابق DELETE /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
+class DeleteCategoryEvent extends ChannelEvent {
+  final String categoryId;
+  final String userId;
+  final String teamId;
+  const DeleteCategoryEvent({
+    required this.categoryId,
+    required this.userId,
+    required this.teamId,
+  });
+  @override
+  List<Object?> get props => [categoryId, userId, teamId];
+}
+
+/// إنشاء فئة جديدة — يطابق POST /users/{userId}/teams/{teamId}/channels/categories.
+class CreateCategoryEvent extends ChannelEvent {
+  final String displayName;
+  final String userId;
+  final String teamId;
+  final List<String>? channelIds;
+  const CreateCategoryEvent({
+    required this.displayName,
+    required this.userId,
+    required this.teamId,
+    this.channelIds,
+  });
+  @override
+  List<Object?> get props => [displayName, userId, teamId, channelIds];
+}
+
+/// مغادرة قناة/إلغاء تفعيل DM — يطابق DELETE /channels/{channel_id}/members/{user_id}.
+class LeaveChannelEvent extends ChannelEvent {
+  final String channelId;
+  final String userId;
+  const LeaveChannelEvent({required this.channelId, required this.userId});
+  @override
+  List<Object?> get props => [channelId, userId];
+}
+
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -189,6 +282,12 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     on<UpdateUnreadCountsEvent>(_onRefreshUnread);
     on<ToggleMuteEvent>(_onToggleMute);
     on<ToggleFavoriteEvent>(_onToggleFavorite);
+    on<MoveChannelToCategoryEvent>(_onMoveChannelToCategory);
+    on<RenameCategoryEvent>(_onRenameCategory);
+    on<ToggleMuteCategoryEvent>(_onToggleMuteCategory);
+    on<DeleteCategoryEvent>(_onDeleteCategory);
+    on<CreateCategoryEvent>(_onCreateCategory);
+    on<LeaveChannelEvent>(_onLeaveChannel);
 
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
       if (event is ChannelUpdatedEvent) {
@@ -203,9 +302,15 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     emit(ChannelLoadingState());
     try {
-      final channels = await _channelRepository.getChannelsForTeam(
-        event.teamId,
-      );
+      // العملية الأساسية: GetChannelsForTeamForUser — تجلب كل قنوات المستخدم
+      // في الفريق (عامة/خاصة/DM/GM) ليعمل قسم DM في الشريط الجانبي.
+      var channels = <ChannelEntity>[];
+      try {
+        channels = await _channelRepository.getMyChannels(event.teamId);
+      } catch (_) {
+        // بعض الخوادم لا تفعّل هذا المسار — نعود للقنوات العامة فقط.
+        channels = await _channelRepository.getChannelsForTeam(event.teamId);
+      }
 
       var categories = <ChannelCategoryEntity>[];
       if (event.userId != null) {
@@ -431,11 +536,11 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     );
   }
 
-  // إزالة القناة المؤرشفة من الحالة والقوائم والاختيار الحالي.
-  void _onArchiveChannel(
+  // أرشفة القناة: إزالة محلية فورية ثم DELETE /channels/{id} على الخادم.
+  Future<void> _onArchiveChannel(
     ArchiveChannelEvent event,
     Emitter<ChannelState> emit,
-  ) {
+  ) async {
     final current = state;
     if (current is! ChannelsLoadedState) return;
     emit(
@@ -461,6 +566,11 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         members: current.members,
       ),
     );
+    try {
+      await _channelRepository.deleteChannel(event.channel.id);
+    } catch (_) {
+      // يبقى الحذف محلياً عند فشل الخادم.
+    }
   }
 
   Future<void> _onRefreshUnread(
@@ -541,12 +651,41 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     final favorites = current.categories
         .where((c) => c.type == ChannelCategoryType.favorites)
         .toList();
-    final favoriteCategory = favorites.isEmpty ? null : favorites.first;
-    if (favoriteCategory == null) return;
-    final isFavorited = favoriteCategory.channelIds.contains(event.channelId);
+    var favoriteCategory = favorites.isEmpty ? null : favorites.first;
+
+    // بعض الخوادم لا تُنشئ فئة المفضلة تلقائياً — تُنشأ عند أول تفعيل.
+    if (favoriteCategory == null) {
+      try {
+        favoriteCategory = await _channelRepository.createChannelCategory(
+          event.userId,
+          event.teamId,
+          displayName: 'Favorites',
+          type: ChannelCategoryType.favorites.value,
+          channelIds: [event.channelId],
+        );
+        emit(
+          ChannelsLoadedState(
+            teamId: current.teamId,
+            channels: current.channels,
+            categories: [...current.categories, favoriteCategory],
+            unreadCounts: current.unreadCounts,
+            selectedChannel: current.selectedChannel,
+            userId: current.userId,
+            members: current.members,
+          ),
+        );
+        return;
+      } catch (_) {
+        // فشل إنشاء الفئة — بدون تغيير.
+        return;
+      }
+    }
+    // بعد هذا الفرع (يرجع دائماً عند غياب الفئة) تصبح الفئة مؤكدة الوجود.
+    final favoritesCategory = favoriteCategory;
+    final isFavorited = favoritesCategory.channelIds.contains(event.channelId);
     final updatedCategories = current.categories
         .map(
-          (c) => c.id == favoriteCategory.id
+          (c) => c.id == favoritesCategory.id
               ? c.copyWith(
                   channelIds: isFavorited
                       ? c.channelIds
@@ -576,6 +715,244 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       );
     } catch (_) {
       // إبقاء الحالة الحالية عند فشل تحديث المفضلة.
+    }
+  }
+
+  // نقل قناة بين الفئات بعد سحب وإفلات في الشريط الجانبي.
+  Future<void> _onMoveChannelToCategory(
+    MoveChannelToCategoryEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+
+    final updatedCategories = current.categories
+        .map(
+          (c) => c.copyWith(
+            channelIds: c.id == event.targetCategoryId
+                ? [...c.channelIds.where((id) => id != event.channelId),
+                    event.channelId]
+                : c.channelIds
+                      .where((id) => id != event.channelId)
+                      .toList(),
+          ),
+        )
+        .toList();
+
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updatedCategories,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+
+    try {
+      await _channelRepository.updateChannelCategories(
+        event.teamId,
+        event.userId,
+        updatedCategories,
+      );
+    } catch (_) {
+      // يبقى التغيير محلياً عند فشل الحفظ — لا حاجة للتراجع الفوري.
+    }
+  }
+
+  // إعادة تسمية فئة: تحديث محلي فوري ثم حفظ على الخادم.
+  Future<void> _onRenameCategory(
+    RenameCategoryEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final updated = current.categories
+        .map(
+          (c) => c.id == event.categoryId
+              ? c.copyWith(displayName: event.newName)
+              : c,
+        )
+        .toList();
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updated,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.updateChannelCategory(
+        event.userId,
+        event.teamId,
+        event.categoryId,
+        displayName: event.newName,
+      );
+    } catch (_) {
+      // يبقى الاسم الجديد محلياً عند فشل الحفظ.
+    }
+  }
+
+  // كتم/إلغاء كتم فئة — يطابق MuteCategory/UnmuteCategory في webapp.
+  Future<void> _onToggleMuteCategory(
+    ToggleMuteCategoryEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final updated = current.categories
+        .map(
+          (c) => c.id == event.categoryId
+              ? c.copyWith(muted: event.muted)
+              : c,
+        )
+        .toList();
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updated,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.updateChannelCategory(
+        event.userId,
+        event.teamId,
+        event.categoryId,
+        muted: event.muted,
+      );
+    } catch (_) {
+      // يبقى الكتم جديد محلياً عند فشل الحفظ.
+    }
+  }
+
+  // حذف فئة: قنواتها تنتقل لأول فئة متبقية (سلوك webapp)، ثم DELETE على الخادم.
+  Future<void> _onDeleteCategory(
+    DeleteCategoryEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    final removed = current.categories
+        .where((c) => c.id == event.categoryId)
+        .firstOrNull;
+    if (removed == null) return;
+
+    final remaining = current.categories
+        .where((c) => c.id != event.categoryId)
+        .toList();
+    var updated = remaining;
+    final target = remaining.firstOrNull;
+    if (target != null && removed.channelIds.isNotEmpty) {
+      updated = remaining
+          .map(
+            (c) => c.id == target.id
+                ? c.copyWith(channelIds: [...c.channelIds, ...removed.channelIds])
+                : c,
+          )
+          .toList();
+    }
+
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels,
+        categories: updated,
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel,
+        userId: current.userId,
+        members: current.members,
+      ),
+    );
+    try {
+      await _channelRepository.deleteChannelCategory(
+        event.userId,
+        event.teamId,
+        event.categoryId,
+      );
+    } catch (_) {
+      // يبقى الحذف محلياً عند فشل الخادم.
+    }
+  }
+
+  // إنشاء فئة جديدة وإلحاقها نهاية القائمة.
+  Future<void> _onCreateCategory(
+    CreateCategoryEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    try {
+      final created = await _channelRepository.createChannelCategory(
+        event.userId,
+        event.teamId,
+        displayName: event.displayName,
+        channelIds: event.channelIds,
+      );
+      emit(
+        ChannelsLoadedState(
+          teamId: current.teamId,
+          channels: current.channels,
+          categories: [...current.categories, created],
+          unreadCounts: current.unreadCounts,
+          selectedChannel: current.selectedChannel,
+          userId: current.userId,
+          members: current.members,
+        ),
+      );
+    } catch (_) {
+      // لا تغيير عند فشل الإنشاء.
+    }
+  }
+
+  // مغادرة قناة/إلغاء تفعيل DM: إزالة من القوائم والفئات والاختيار، ثم DELETE.
+  Future<void> _onLeaveChannel(
+    LeaveChannelEvent event,
+    Emitter<ChannelState> emit,
+  ) async {
+    final current = state;
+    if (current is! ChannelsLoadedState) return;
+    emit(
+      ChannelsLoadedState(
+        teamId: current.teamId,
+        channels: current.channels
+            .where((c) => c.id != event.channelId)
+            .toList(),
+        categories: current.categories
+            .map(
+              (c) => c.copyWith(
+                channelIds: c.channelIds
+                    .where((id) => id != event.channelId)
+                    .toList(),
+              ),
+            )
+            .toList(),
+        unreadCounts: current.unreadCounts,
+        selectedChannel: current.selectedChannel?.id == event.channelId
+            ? null
+            : current.selectedChannel,
+        userId: current.userId,
+        members: Map<String, ChannelMemberEntity>.of(current.members)
+          ..remove(event.channelId),
+      ),
+    );
+    try {
+      await _channelRepository.leaveChannel(
+        event.channelId,
+        event.userId,
+      );
+    } catch (_) {
+      // يبقى الحذف محلياً عند فشل الخادم.
     }
   }
 

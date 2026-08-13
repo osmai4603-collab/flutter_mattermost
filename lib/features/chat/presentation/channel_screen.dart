@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/call_widget.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_header.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/incoming_call_banner.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/message_list.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
@@ -23,6 +25,7 @@ class _ChannelPageState extends State<ChannelPage> {
   StreamSubscription? _teamSub;
   StreamSubscription? _channelSub;
   String? _loadedTeamId;
+  final ScrollController _listScrollController = ScrollController();
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _ChannelPageState extends State<ChannelPage> {
   void dispose() {
     _teamSub?.cancel();
     _channelSub?.cancel();
+    _listScrollController.dispose();
     super.dispose();
   }
 
@@ -72,11 +76,13 @@ class _ChannelPageState extends State<ChannelPage> {
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       children: [
-        ChannelHeader(),
-        Expanded(child: PostList()),
-        MessageEditor(),
+        const ChannelHeader(),
+        const IncomingCallBanner(),
+        const CallWidget(),
+        Expanded(child: PostList(scrollController: _listScrollController)),
+        MessageEditor(scrollController: _listScrollController),
       ],
     );
   }

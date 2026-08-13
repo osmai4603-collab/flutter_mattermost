@@ -10,12 +10,14 @@ import 'package:flutter_mattermost/core/modals/modal_registrations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_preferences_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 // http://localhost:8065/api/v4/system/ping
@@ -51,7 +53,9 @@ class MattermostApp extends StatelessWidget {
         BlocProvider(create: (_) => getIt<RhsBloc>()),
         BlocProvider(create: (_) => getIt<UserStatusBloc>()),
         BlocProvider(create: (_) => getIt<UserPreferencesBloc>()),
+        BlocProvider(create: (_) => getIt<UserProfileBloc>()),
         BlocProvider(create: (_) => getIt<ThreadsBloc>()),
+        BlocProvider(create: (_) => getIt<CallsBloc>()),
         // إعدادات الواجهة: اللغة EN/AR + الوضع (فاتح/داكن).
         BlocProvider(create: (_) => AppSettingsCubit()),
       ],

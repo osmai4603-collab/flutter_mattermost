@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/composer_draft.dart';
@@ -47,8 +48,7 @@ class AttachmentPreview extends StatelessWidget {
       ),
     );
   }
-
-  }
+}
 
 bool _isImage(String extension) {
   switch (extension.toLowerCase()) {
@@ -122,6 +122,7 @@ class _AttachmentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
       decoration: BoxDecoration(
@@ -155,21 +156,13 @@ class _AttachmentChip extends StatelessWidget {
                     color: theme.centerChannelColor.withValues(alpha: 0.85),
                   ),
                 ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 10.5,
-                    color: theme.centerChannelColor.withValues(alpha: 0.45),
-                  ),
-                ),
               ],
             ),
           ),
           if (onRemove != null) ...[
             const SizedBox(width: 4),
-            // TODO(i18n): أضف مفتاح file_preview.remove إلى ملفات الترجمة.
             Tooltip(
-              message: 'Remove',
+              message: l10n.file_previewRemove,
               child: InkWell(
                 onTap: onRemove,
                 borderRadius: BorderRadius.circular(4),
@@ -201,6 +194,7 @@ class _UploadingChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
     final percent = (upload.progress * 100).clamp(0, 100).round();
     final extension = upload.name.contains('.')
         ? upload.name.split('.').last
@@ -243,8 +237,7 @@ class _UploadingChip extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  // TODO(i18n): أضف مفتاح file_preview.uploading إلى الترجمة.
-                  'Uploading $percent%',
+                  l10n.file_previewUploading(percent),
                   style: TextStyle(
                     fontSize: 10.5,
                     color: theme.centerChannelColor.withValues(alpha: 0.45),
@@ -301,8 +294,7 @@ class _Thumbnail extends StatelessWidget {
                     child: Icon(
                       fallback,
                       size: 16,
-                      color: theme.centerChannelColor
-                          .withValues(alpha: 0.45),
+                      color: theme.centerChannelColor.withValues(alpha: 0.45),
                     ),
                   )
                 : Image.file(
@@ -313,8 +305,7 @@ class _Thumbnail extends StatelessWidget {
                       child: Icon(
                         fallback,
                         size: 16,
-                        color: theme.centerChannelColor
-                            .withValues(alpha: 0.45),
+                        color: theme.centerChannelColor.withValues(alpha: 0.45),
                       ),
                     ),
                   ),
@@ -346,8 +337,7 @@ class _Thumbnail extends StatelessWidget {
                       color: theme.centerChannelBg,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: theme.centerChannelColor
-                            .withValues(alpha: 0.2),
+                        color: theme.centerChannelColor.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Icon(

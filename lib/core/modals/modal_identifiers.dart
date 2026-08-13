@@ -1,6 +1,7 @@
 /// معرّفات النوافذ المنبثقة — مطابقة لـ ModalIdentifiers في webapp.
 abstract class ModalIdentifiers {
   static const String userSettings = 'user_settings';
+  static const String userProfile = 'user_profile';
   static const String quickSwitch = 'quick_switch';
   static const String invitation = 'invitation';
   static const String channelInvite = 'channel_invite';

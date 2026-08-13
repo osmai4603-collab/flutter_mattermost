@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
-import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
-import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
-import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
-import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
-import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
-import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_files_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_info_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/channel_members_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/mentions_panel.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/saved_pinned_panel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/rhs/thread_panel_body.dart';
 
 /// حاوية RHS الرئيسية — مطابقة RHSContainer.tsx في webapp:
@@ -224,24 +222,15 @@ class _RhsBody extends StatelessWidget {
     return switch (state.panel) {
       RhsPanel.thread => const ThreadPanelBody(),
       RhsPanel.search => _SearchBody(searchTerms: (state as RhsListState).searchTerms),
-      RhsPanel.mention => _NoResultsBody(
-        title: l10n.no_resultsMentionsTitle,
-        subtitle: l10n.no_resultsMentionsSubtitle,
-      ),
-      RhsPanel.pinned => _NoResultsBody(
-        title: l10n.no_resultsPinned_messagesTitle,
-        subtitle: l10n.no_resultsPinned_messagesSubtitle(l10n.postMenuPin),
-      ),
+      RhsPanel.mention => const MentionsPanel(),
+      RhsPanel.pinned => SavedPinnedPanel(isPinned: true),
       RhsPanel.flagged => _NoResultsBody(
         title: l10n.no_resultsFlagged_postsTitle,
         subtitle: l10n.no_resultsFlagged_postsSubtitle(l10n.postMenuFlag),
       ),
-      RhsPanel.channelFiles => _NoResultsBody(
-        title: l10n.no_resultsChannel_filesTitle,
-        subtitle: l10n.no_resultsChannel_filesSubtitle,
-      ),
-      RhsPanel.channelInfo => const _ChannelInfoBody(),
-      RhsPanel.channelMembers => _ChannelMembersBody(
+      RhsPanel.channelFiles => const ChannelFilesPanel(),
+      RhsPanel.channelInfo => const ChannelInfoPanel(),
+      RhsPanel.channelMembers => ChannelMembersPanel(
         channelId: (state as RhsChannelState).channelId,
       ),
       RhsPanel.editHistory => _NoResultsBody(
@@ -350,183 +339,3 @@ class _SearchBody extends StatelessWidget {
   }
 }
 
-/// لوحة معلومات القناة: الاسم/الوصف/الرأس/الاسم المختصر/المعرف.
-class _ChannelInfoBody extends StatelessWidget {
-  const _ChannelInfoBody();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-
-    final channelState = context.read<ChannelBloc>().state;
-    ChannelEntity? channel;
-    if (channelState is ChannelsLoadedState) {
-      channel = channelState.selectedChannel;
-    }
-    if (channel == null) return const SizedBox.shrink();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.channel_info_rhsAbout_areaChannel_nameHeading,
-            style: TextStyle(
-              color: theme.centerChannelColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            channel.displayName,
-            style: TextStyle(
-              color: theme.centerChannelColor.withValues(alpha: 0.7),
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            l10n.channel_info_rhsAbout_areaChannel_purposeHeading,
-            style: TextStyle(
-              color: theme.centerChannelColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: () => ModalRegistry.open(
-              context,
-              id: ModalIdentifiers.editChannelPurpose,
-            ),
-            child: Text(
-              channel.purpose.isEmpty
-                  ? l10n.channel_info_rhsAbout_areaAdd_channel_purpose
-                  : channel.purpose,
-              style: TextStyle(
-                color: theme.centerChannelColor.withValues(alpha: 0.7),
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            l10n.channel_info_rhsAbout_areaChannel_headerHeading,
-            style: TextStyle(
-              color: theme.centerChannelColor,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          InkWell(
-            onTap: () => ModalRegistry.open(
-              context,
-              id: ModalIdentifiers.editChannelHeader,
-            ),
-            child: Text(
-              channel.header.isEmpty
-                  ? l10n.channel_info_rhsAbout_areaAdd_channel_header
-                  : channel.header,
-              style: TextStyle(
-                color: theme.centerChannelColor.withValues(alpha: 0.7),
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            '${l10n.channel_info_rhsAbout_area_handle} ${channel.name}',
-            style: TextStyle(
-              color: theme.centerChannelColor.withValues(alpha: 0.6),
-              fontSize: 13,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${l10n.channel_info_rhsAbout_area_id} ${channel.id}',
-            style: TextStyle(
-              color: theme.centerChannelColor.withValues(alpha: 0.6),
-              fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// لوحة أعضاء القناة — قائمة من المخزن المحلي.
-class _ChannelMembersBody extends StatelessWidget {
-  final String channelId;
-  const _ChannelMembersBody({required this.channelId});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-
-    return FutureBuilder<List<ChannelMemberEntity>>(
-      future: getIt<ChannelRepository>().getChannelMembers(channelId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final members = snapshot.data ?? const <ChannelMemberEntity>[];
-        if (members.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return ListView.builder(
-          itemCount: members.length,
-          itemBuilder: (context, index) {
-            final member = members[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: theme.centerChannelColor.withValues(
-                      alpha: 0.2,
-                    ),
-                    child: Text(
-                      _initials(member.userId),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: theme.centerChannelColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      member.userId,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: theme.centerChannelColor,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _initials(String userId) {
-    final parts = userId.split(RegExp(r'[_-]'));
-    if (parts.length >= 2 &&
-        parts[0].isNotEmpty &&
-        parts[1].isNotEmpty) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    }
-    return userId.isNotEmpty ? userId[0].toUpperCase() : '?';
-  }
-}

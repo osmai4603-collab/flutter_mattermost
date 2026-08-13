@@ -1,0 +1,5 @@
+- [ ] Add route for Saved Messages in `channel_route.dart`
+- [ ] Add "Saved Messages" link to `channel_sidebar.dart` (LHS)
+- [ ] Create `saved_messages_page.dart` for the main view
+- [ ] Enhance `saved_pinned_panel.dart` UI and logic (Cards, Jump to message, Arabic Empty State)
+- [ ] Verify functionality and UI

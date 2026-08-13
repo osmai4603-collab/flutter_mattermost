@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/calls/calls_manager.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart'
+    hide ToggleMuteEvent;
 import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
 
+/// شريط المكالمة النشطة — يظهر أعلى قائمة الرسائل أثناء الاتصال
+/// (CallConnectedState)، مع معاينة فيديو محلية وأزرار كتم/فيديو/مشاركة/إنهاء.
 class CallWidget extends StatelessWidget {
   const CallWidget({super.key});
 
@@ -17,6 +23,16 @@ class CallWidget extends StatelessWidget {
         if (state is! CallConnectedState) {
           return const SizedBox.shrink();
         }
+
+        final channelState = context.read<ChannelBloc>().state;
+        final channelName = channelState is ChannelsLoadedState
+            ? channelState.channels
+                  .where((c) => c.id == state.channelId)
+                  .firstOrNull
+                  ?.displayName
+            : null;
+
+        final textureId = getIt<CallsManager>().localRenderer.textureId;
 
         return Container(
           height: 120,
@@ -35,17 +51,26 @@ class CallWidget extends StatelessWidget {
           ),
           child: Row(
             children: [
-              // Video placeholder
-              Container(
-                width: 160,
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
+              // معاينة الفيديو المحلية.
+              ClipRRect(
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(12),
                 ),
-                child: Center(
-                  child: state.isVideoOn
-                      ? const Icon(Icons.videocam, color: Colors.white)
-                      : const Icon(Icons.videocam_off, color: Colors.white54),
+                child: Container(
+                  width: 160,
+                  color: Colors.black,
+                  child: textureId != null && state.isVideoOn
+                      ? Texture(textureId: textureId)
+                      : Center(
+                          child: Icon(
+                            state.isVideoOn
+                                ? Icons.videocam
+                                : Icons.videocam_off,
+                            color: state.isVideoOn
+                                ? Colors.white
+                                : Colors.white54,
+                          ),
+                        ),
                 ),
               ),
               Expanded(
@@ -61,18 +86,40 @@ class CallWidget extends StatelessWidget {
                           color: theme.centerChannelColor,
                         ),
                       ),
+                      if (channelName != null)
+                        Text(
+                          channelName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: theme.centerChannelColor.withValues(
+                              alpha: 0.6,
+                            ),
+                            fontSize: 12,
+                          ),
+                        ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           IconButton(
-                            icon: Icon(state.isMuted ? Icons.mic_off : Icons.mic),
-                            color: state.isMuted ? theme.errorTextColor : theme.centerChannelColor,
-                            onPressed: () => context.read<CallsBloc>().add(ToggleMuteEvent()),
+                            icon: Icon(
+                              state.isMuted ? Icons.mic_off : Icons.mic,
+                            ),
+                            color: state.isMuted
+                                ? theme.errorTextColor
+                                : theme.centerChannelColor,
+                            onPressed: () =>
+                                context.read<CallsBloc>().add(ToggleMuteEvent()),
                           ),
                           IconButton(
-                            icon: Icon(state.isVideoOn ? Icons.videocam : Icons.videocam_off),
+                            icon: Icon(
+                              state.isVideoOn
+                                  ? Icons.videocam
+                                  : Icons.videocam_off,
+                            ),
                             color: theme.centerChannelColor,
-                            onPressed: () => context.read<CallsBloc>().add(ToggleVideoEvent()),
+                            onPressed: () =>
+                                context.read<CallsBloc>().add(ToggleVideoEvent()),
                           ),
                           IconButton(
                             tooltip: state.isSharingScreen
@@ -97,7 +144,8 @@ class CallWidget extends StatelessWidget {
                             ),
                             icon: const Icon(Icons.call_end),
                             label: Text(l10n.callWidgetEndCall),
-                            onPressed: () => context.read<CallsBloc>().add(EndCallEvent()),
+                            onPressed: () =>
+                                context.read<CallsBloc>().add(EndCallEvent()),
                           ),
                         ],
                       ),

@@ -32143,6 +32143,18 @@ abstract class AppLocalizations {
   /// **'Post attachments cannot be edited'**
   String get file_previewNo_edit_permission;
 
+  /// No description provided for @file_previewRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get file_previewRemove;
+
+  /// No description provided for @file_previewUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading {percent}%'**
+  String file_previewUploading(Object percent);
+
   /// No description provided for @file_search_result_itemCopy_link.
   ///
   /// In en, this message translates to:
@@ -38025,6 +38037,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Check the spelling or try another search.'**
   String get no_resultsSearchSubtitle;
+
+  /// No description provided for @no_resultsSearchResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No members found'**
+  String get no_resultsSearchResults;
 
   /// No description provided for @no_resultsSearchTitle.
   ///
@@ -71873,6 +71891,18 @@ abstract class AppLocalizations {
   /// **'Add emoji'**
   String get editorAddEmoji;
 
+  /// No description provided for @editorEditCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel editing'**
+  String get editorEditCancel;
+
+  /// No description provided for @editorEditingPost.
+  ///
+  /// In en, this message translates to:
+  /// **'Editing message'**
+  String get editorEditingPost;
+
   /// No description provided for @rhsThread.
   ///
   /// In en, this message translates to:
@@ -71992,6 +72022,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove from Favorites'**
   String get channel_headerUnfavorite;
+
+  /// No description provided for @channelHeaderStartCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Call'**
+  String get channelHeaderStartCall;
+
+  /// No description provided for @channelHeaderNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Preferences'**
+  String get channelHeaderNotifications;
+
+  /// No description provided for @channelHeaderChannelInfoTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'View channel info'**
+  String get channelHeaderChannelInfoTooltip;
+
+  /// No description provided for @incomingCallTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming Call'**
+  String get incomingCallTitle;
+
+  /// No description provided for @incomingCallAccept.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get incomingCallAccept;
+
+  /// No description provided for @incomingCallDecline.
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get incomingCallDecline;
+
+  /// No description provided for @incomingCallDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'You are being invited to a call in {channelName}'**
+  String incomingCallDescription(Object channelName);
+
+  /// No description provided for @postEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'(edited)'**
+  String get postEdited;
+
+  /// No description provided for @postDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Message deleted'**
+  String get postDeleted;
+
+  /// No description provided for @userProfileModalSendMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Send Message'**
+  String get userProfileModalSendMessage;
+
+  /// No description provided for @userProfileModalViewFullProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'View Full Profile'**
+  String get userProfileModalViewFullProfile;
+
+  /// No description provided for @userProfileModalClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get userProfileModalClose;
 
   /// No description provided for @create_postReadOnly.
   ///

@@ -6,9 +6,8 @@ import 'package:flutter_mattermost/features/chat/presentation/widgets/code_block
 import 'package:url_launcher/url_launcher.dart';
 
 Widget _safeMarkdownBody({required String data, required MarkdownStyleSheet styleSheet}) {
-  final sanitized = data.replaceAll(RegExp(r'(?<!\\)\`{3,}.*$'), '');
   return MarkdownBody(
-    data: sanitized.trim().isEmpty ? ' ' : sanitized,
+    data: data.trim().isEmpty ? ' ' : data,
     onTapLink: (text, href, title) {
       if (href == null || href.isEmpty) return;
       final uri = Uri.tryParse(href);

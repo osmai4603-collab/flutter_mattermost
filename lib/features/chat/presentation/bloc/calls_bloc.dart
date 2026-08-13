@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/calls/calls_manager.dart';
+import 'package:flutter_mattermost/core/network/websocket_client.dart';
 
 // Events
 abstract class CallsEvent extends Equatable {
@@ -115,27 +116,36 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
     on<ToggleShareScreenEvent>(_onToggleShareScreen);
     on<IncomingCallEvent>(_onIncomingCall);
     on<RejectCallEvent>(_onRejectCall);
+    _callsManager.incomingCalls.listen(_onIncomingCallFromServer);
+  }
+
+  void _onIncomingCallFromServer(CallStartedEvent event) {
+    add(IncomingCallEvent(callId: event.callId, channelId: event.channelId));
   }
 
   void _onStartCall(StartCallEvent event, Emitter<CallsState> emit) async {
-    // Generate a temporary callId or get it from API
-    final tempCallId = 'call_${DateTime.now().millisecondsSinceEpoch}';
-    await _callsManager.startCall(event.channelId, video: event.video);
-    emit(CallConnectedState(
-      callId: tempCallId,
-      channelId: event.channelId,
-      isVideoOn: event.video,
-    ));
+    try {
+      await _callsManager.startCall(event.channelId, video: event.video);
+      emit(CallConnectedState(
+        callId: 'call_${DateTime.now().millisecondsSinceEpoch}',
+        channelId: event.channelId,
+        isVideoOn: event.video,
+      ));
+    } catch (_) {
+      emit(CallIdleState());
+    }
   }
 
   void _onJoinCall(JoinCallEvent event, Emitter<CallsState> emit) async {
     // We need channelId, assuming we get it from state or event
-    String channelId = '';
-    if (state is CallRingingState) {
-      channelId = (state as CallRingingState).channelId;
+    final current = state;
+    if (current is! CallRingingState) return;
+    try {
+      await _callsManager.startCall(current.channelId);
+      emit(CallConnectedState(callId: event.callId, channelId: current.channelId));
+    } catch (_) {
+      emit(CallIdleState());
     }
-    await _callsManager.startCall(channelId);
-    emit(CallConnectedState(callId: event.callId, channelId: channelId));
   }
 
   void _onEndCall(EndCallEvent event, Emitter<CallsState> emit) {
@@ -176,8 +186,8 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
     }
   }
 
-  void _onRejectCall(RejectCallEvent event, Emitter<CallsState> emit) {
-    // Send reject signal
+  void _onRejectCall(RejectCallEvent event, Emitter<CallsState> emit) async {
+    await _callsManager.endCall();
     emit(CallIdleState());
   }
 }

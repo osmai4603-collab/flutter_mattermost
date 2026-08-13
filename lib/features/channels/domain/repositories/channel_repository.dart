@@ -49,7 +49,25 @@ abstract class ChannelRepository {
     String teamId, {
     String? displayName,
     List<String>? channelIds,
+    String? type,
   });
+
+  /// تحديث فئة واحدة (إعادة تسمية/نقل قنوات/كتم) — يطابق PUT /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
+  Future<ChannelCategoryEntity> updateChannelCategory(
+    String userId,
+    String teamId,
+    String categoryId, {
+    String? displayName,
+    List<String>? channelIds,
+    bool? muted,
+  });
+
+  /// حذف فئة — يطابق DELETE /users/{userId}/teams/{teamId}/channels/categories/{categoryId}.
+  Future<void> deleteChannelCategory(
+    String userId,
+    String teamId,
+    String categoryId,
+  );
 
   /// تحديث قائمة الفئات كاملة — يطابق PUT /users/{userId}/teams/{teamId}/channels/categories.
   Future<List<ChannelCategoryEntity>> updateChannelCategories(
@@ -74,10 +92,27 @@ abstract class ChannelRepository {
   /// أرشفة القناة — يطابق DELETE /channels/{id}.
   Future<void> deleteChannel(String channelId);
 
+  /// مغادرة قناة (أو إلغاء تفعيل DM/GM) — يطابق DELETE /channels/{channel_id}/members/{user_id}.
+  Future<void> leaveChannel(String channelId, String userId);
+
   Future<List<ChannelMemberEntity>> getChannelMembers(
     String channelId, {
     int page = 0,
     int perPage = 60,
+  });
+
+  /// إضافة أعضاء للقناة — يطابق POST /channels/{id}/members.
+  Future<void> addChannelMembers(String channelId, List<String> userIds);
+
+  /// إزالة عضو من القناة — يطابق DELETE /channels/{id}/members/{user_id}.
+  Future<void> removeChannelMember(String channelId, String userId);
+
+  /// ترقية/تنزيل دور عضو (channel admin / channel member) —
+  /// يطابق PUT /channels/{id}/members/{user_id}/scheme_roles.
+  Future<void> updateChannelMemberSchemeRoles(
+    String channelId,
+    String userId, {
+    bool schemeAdmin = false,
   });
   Future<ChannelMemberEntity> getMyChannelMember(String channelId);
   Future<ChannelStats> getChannelStats(String channelId);

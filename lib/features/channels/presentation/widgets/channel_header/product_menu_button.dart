@@ -126,14 +126,18 @@ class ProductMenuButton extends StatelessWidget {
                 height: 20,
                 colorBlendMode: BlendMode.srcIn,
                 // colorBlendMode: BlendMode.saturation,
-                color: isDark ? theme.centerChannelColor : theme.centerChannelBg,
+                color: isDark
+                    ? theme.centerChannelColor
+                    : theme.centerChannelBg,
               ),
-              
+
               const SizedBox(width: 16),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
-                  color: isDark ? theme.mentionColor.withValues(alpha: 0.20) : theme.mentionColor,
+                  color: isDark
+                      ? theme.mentionColor.withValues(alpha: 0.20)
+                      : theme.mentionColor,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(
@@ -141,7 +145,9 @@ class ProductMenuButton extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
-                    color: isDark ? theme.mentionColor : theme.mentionBg.withValues(alpha: 0.60),
+                    color: isDark
+                        ? theme.mentionColor
+                        : theme.mentionBg.withValues(alpha: 0.60),
                   ),
                 ),
               ),

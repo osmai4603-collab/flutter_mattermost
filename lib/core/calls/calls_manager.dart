@@ -8,6 +8,9 @@ class CallsManager {
   final WebSocketClientManager _webSocketClientManager;
   StreamSubscription? _wsSubscription;
 
+  final StreamController<CallStartedEvent> _incomingCallsController =
+      StreamController<CallStartedEvent>.broadcast();
+
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
 
@@ -15,6 +18,13 @@ class CallsManager {
   late final RTCVideoRenderer _remoteRenderer;
 
   bool _isInitialized = false;
+
+  /// تدفق المكالمات الواردة — يبث حدث `CallStartedEvent` عند استقباله من WebSocket.
+  Stream<CallStartedEvent> get incomingCalls =>
+      _incomingCallsController.stream;
+
+  RTCVideoRenderer get localRenderer => _localRenderer;
+  RTCVideoRenderer get remoteRenderer => _remoteRenderer;
 
   CallsManager(
     this._webSocketClientManager, {
@@ -36,6 +46,7 @@ class CallsManager {
 
   Future<void> dispose() async {
     _wsSubscription?.cancel();
+    await _incomingCallsController.close();
     await _localRenderer.dispose();
     await _remoteRenderer.dispose();
     await endCall();
@@ -50,9 +61,8 @@ class CallsManager {
   }
 
   Future<void> _handleCallStarted(CallStartedEvent event) async {
-    // In Mattermost Calls (SFU), starting a call generally involves establishing
-    // a WebRTC connection with the server. We wait for an offer from the server,
-    // or we might need to send a join request.
+    // إخطار الواجهة بوجود مكالمة واردة (عبر CallsBloc).
+    _incomingCallsController.add(event);
   }
 
   Future<void> _handleSignalingEvent(WebRTCSignalingEvent event) async {

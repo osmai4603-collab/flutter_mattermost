@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,27 +14,34 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
-import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
+import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
+import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_modal.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// قائمة الرسائل الافتراضية (أحدث الرسائل في الأسفل).
 class PostList extends StatefulWidget {
-  const PostList({super.key});
+  final ScrollController? scrollController;
+
+  const PostList({super.key, this.scrollController});
 
   @override
   State<PostList> createState() => _PostListState();
 }
 
 class _PostListState extends State<PostList> {
-  final ScrollController _scrollController = ScrollController();
+  late final ScrollController _scrollController =
+      widget.scrollController ?? ScrollController();
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    if (widget.scrollController == null) {
+      _scrollController.dispose();
+    }
     super.dispose();
   }
 
@@ -360,11 +366,14 @@ class _PostItemState extends State<PostItem> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ProfilePicture(
-              username: username,
-              avatarUrl: avatarUrl,
-              status: widget.isReply ? null : status,
-              size: widget.isReply ? 24 : 32,
+            GestureDetector(
+              onTap: () => showUserProfile(context, post.userId),
+              child: ProfilePicture(
+                username: username,
+                avatarUrl: avatarUrl,
+                status: widget.isReply ? null : status,
+                size: widget.isReply ? 24 : 32,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -377,14 +386,18 @@ class _PostItemState extends State<PostItem> {
                       child: Row(
                         children: [
                           Flexible(
-                            child: Text(
-                              username,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: theme.centerChannelColor,
-                                fontWeight: FontWeight.w600,
-                                fontSize: widget.isReply ? 13 : 14,
+                            child: GestureDetector(
+                              onTap: () =>
+                                  showUserProfile(context, post.userId),
+                              child: Text(
+                                username,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: theme.centerChannelColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: widget.isReply ? 13 : 14,
+                                ),
                               ),
                             ),
                           ),
@@ -411,14 +424,48 @@ class _PostItemState extends State<PostItem> {
                         ],
                       ),
                     ),
-                  Text(
-                    post.message,
-                    style: TextStyle(
-                      color: theme.centerChannelColor.withValues(alpha: 0.9),
-                      fontSize: 14,
-                      height: 1.35,
+                  if (post.deleteAt > 0)
+                    Text(
+                      l10n.postDeleted,
+                      style: TextStyle(
+                        color: theme.centerChannelColor.withValues(alpha: 0.5),
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                        height: 1.35,
+                      ),
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            post.message,
+                            style: TextStyle(
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.9,
+                              ),
+                              fontSize: 14,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                        if (post.editAt > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            l10n.postEdited,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.45,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
                   if (widget.filesList.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
@@ -451,7 +498,7 @@ class _PostItemState extends State<PostItem> {
                         ],
                       ),
                     ),
-                  if (widget.reactions.isNotEmpty || _hovered)
+                  if ((widget.reactions.isNotEmpty || _hovered) && post.deleteAt == 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 6),
                       child: _ReactionsBar(
@@ -482,7 +529,7 @@ class _PostItemState extends State<PostItem> {
                 ],
               ),
             ),
-            if (_hovered)
+            if (_hovered && post.deleteAt == 0)
               _PostActions(
                 post: post,
                 isFlagged: widget.isFlagged,
@@ -594,7 +641,7 @@ class _PostActions extends StatelessWidget {
                 id: 'edit',
                 label: l10n.postMenuEdit,
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                onTap: () => _showEditDialog(context),
+                onTap: () => _startComposerEdit(context),
               ),
             if (canDelete)
               MatterMenuItem(
@@ -614,6 +661,18 @@ class _PostActions extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  /// يدخل وضع التعديل في المحرر الرئيسي (مثل webapp)؛ وإن لم يتوفر محرر
+  /// نشط يستخدم نافذة التعديل السريعة كبديل.
+  void _startComposerEdit(BuildContext context) {
+    final composer = MessageEditor.activeComposer;
+    if (composer != null && !composer.isEditMode) {
+      composer.beginEdit(post.id, post.message);
+      composer.focusNode.requestFocus();
+    } else {
+      _showEditDialog(context);
+    }
   }
 
   Future<void> _showEditDialog(BuildContext context) async {
@@ -840,25 +899,29 @@ class _FileChipsRow extends StatelessWidget {
     return Wrap(
       spacing: 6,
       runSpacing: 6,
-      children: [for (final f in files) _FileChip(file: f)],
+      children: [
+        for (var i = 0; i < files.length; i++)
+          _FileChip(file: files[i], files: files, index: i),
+      ],
     );
   }
 }
 
 class _FileChip extends StatelessWidget {
   final FileInfoEntity file;
+  final List<FileInfoEntity> files;
+  final int index;
 
-  const _FileChip({required this.file});
+  const _FileChip({required this.file, required this.files, required this.index});
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
 
     return Tooltip(
       message: '${file.name} (${file.mimeType})',
       child: InkWell(
-        onTap: () => _showFileDetails(context, file),
+        onTap: () => _showFileDetails(context, files, index),
         borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -903,63 +966,12 @@ class _FileChip extends StatelessWidget {
 
   Future<void> _showFileDetails(
     BuildContext context,
-    FileInfoEntity file,
+    List<FileInfoEntity> files,
+    int index,
   ) async {
-    final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final isImage = file.mimeType.startsWith('image/');
-
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(file.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-        content: SizedBox(
-          width: 420,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (isImage)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: FutureBuilder<Uint8List>(
-                    future: getIt<PostRepository>().getFileThumbnail(file.id),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData) {
-                        return ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.memory(
-                            snapshot.data!,
-                            fit: BoxFit.contain,
-                            height: 260,
-                          ),
-                        );
-                      }
-                      return Container(
-                        height: 100,
-                        alignment: Alignment.center,
-                        child: const CircularProgressIndicator(),
-                      );
-                    },
-                  ),
-                ),
-              Text(
-                '${file.mimeType} • ${_formatFileSize(file.size)}',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: theme.centerChannelColor.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(l10n.postEditCancel),
-          ),
-        ],
-      ),
+      builder: (context) => FilePreviewModal(files: files, initialIndex: index),
     );
   }
 

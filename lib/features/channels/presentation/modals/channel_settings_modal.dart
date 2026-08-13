@@ -15,7 +15,10 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 /// تعديل القناة — مطابق ChannelSettingsModal في webapp:
 /// تبويبات Info (الاسم/الغرض/الرأس) / Privacy (خاص/عام) / Archive.
 class ChannelSettingsModal extends StatefulWidget {
-  const ChannelSettingsModal({super.key});
+  /// القناة المستهدفة — عند غيابها تُستخدم القناة المحددة حالياً.
+  final ChannelEntity? channel;
+
+  const ChannelSettingsModal({super.key, this.channel});
 
   @override
   State<ChannelSettingsModal> createState() => _ChannelSettingsModalState();
@@ -37,7 +40,9 @@ class _ChannelSettingsModalState extends State<ChannelSettingsModal> {
   void initState() {
     super.initState();
     final state = context.read<ChannelBloc>().state;
-    _channel = state is ChannelsLoadedState ? state.selectedChannel : null;
+    _channel =
+        widget.channel ??
+        (state is ChannelsLoadedState ? state.selectedChannel : null);
     final channel = _channel;
     _nameController = TextEditingController(text: channel?.name ?? '');
     _purposeController = TextEditingController(text: channel?.purpose ?? '');

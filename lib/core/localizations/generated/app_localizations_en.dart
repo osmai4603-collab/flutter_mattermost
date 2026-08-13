@@ -20361,6 +20361,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Post attachments cannot be edited';
 
   @override
+  String get file_previewRemove => 'Remove';
+
+  @override
+  String file_previewUploading(Object percent) {
+    return 'Uploading $percent%';
+  }
+
+  @override
   String get file_search_result_itemCopy_link => 'Copy link';
 
   @override
@@ -24019,6 +24027,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get no_resultsSearchSubtitle =>
       'Check the spelling or try another search.';
+
+  @override
+  String get no_resultsSearchResults => 'No members found';
 
   @override
   String no_resultsSearchTitle(Object channelName) {
@@ -46212,6 +46223,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorAddEmoji => 'Add emoji';
 
   @override
+  String get editorEditCancel => 'Cancel editing';
+
+  @override
+  String get editorEditingPost => 'Editing message';
+
+  @override
   String get rhsThread => 'Thread';
 
   @override
@@ -46278,6 +46295,44 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get channel_headerUnfavorite => 'Remove from Favorites';
+
+  @override
+  String get channelHeaderStartCall => 'Start Call';
+
+  @override
+  String get channelHeaderNotifications => 'Notification Preferences';
+
+  @override
+  String get channelHeaderChannelInfoTooltip => 'View channel info';
+
+  @override
+  String get incomingCallTitle => 'Incoming Call';
+
+  @override
+  String get incomingCallAccept => 'Accept';
+
+  @override
+  String get incomingCallDecline => 'Decline';
+
+  @override
+  String incomingCallDescription(Object channelName) {
+    return 'You are being invited to a call in $channelName';
+  }
+
+  @override
+  String get postEdited => '(edited)';
+
+  @override
+  String get postDeleted => 'Message deleted';
+
+  @override
+  String get userProfileModalSendMessage => 'Send Message';
+
+  @override
+  String get userProfileModalViewFullProfile => 'View Full Profile';
+
+  @override
+  String get userProfileModalClose => 'Close';
 
   @override
   String get create_postReadOnly =>

@@ -106,6 +106,10 @@ class ChannelRepositoryImpl implements ChannelRepository {
       _remoteDataSource.deleteChannel(channelId);
 
   @override
+  Future<void> leaveChannel(String channelId, String userId) =>
+      _remoteDataSource.removeUserFromChannel(channelId, userId);
+
+  @override
   Future<ChannelEntity> createDirectChannel(List<String> userIds) async {
     final model = await _remoteDataSource.createDirectChannel(
       userIds.first,
@@ -144,12 +148,14 @@ class ChannelRepositoryImpl implements ChannelRepository {
     String teamId, {
     String? displayName,
     List<String>? channelIds,
+    String? type,
   }) async {
     final model = await _categoriesDataSource.createChannelCategory(
       userId,
       teamId,
       displayName: displayName,
       channelIds: channelIds,
+      type: type,
     );
     return model.toEntity();
   }
@@ -171,6 +177,34 @@ class ChannelRepositoryImpl implements ChannelRepository {
   }
 
   @override
+  Future<ChannelCategoryEntity> updateChannelCategory(
+    String userId,
+    String teamId,
+    String categoryId, {
+    String? displayName,
+    List<String>? channelIds,
+    bool? muted,
+  }) async {
+    final model = await _categoriesDataSource.updateChannelCategory(
+      userId,
+      teamId,
+      categoryId,
+      displayName: displayName,
+      channelIds: channelIds,
+      muted: muted,
+    );
+    return model.toEntity();
+  }
+
+  @override
+  Future<void> deleteChannelCategory(
+    String userId,
+    String teamId,
+    String categoryId,
+  ) =>
+      _categoriesDataSource.deleteChannelCategory(userId, teamId, categoryId);
+
+  @override
   Future<List<ChannelMemberEntity>> getChannelMembers(
     String channelId, {
     int page = 0,
@@ -182,6 +216,28 @@ class ChannelRepositoryImpl implements ChannelRepository {
       perPage: perPage,
     );
     return members.map((m) => m.toEntity()).toList();
+  }
+
+  @override
+  Future<void> addChannelMembers(String channelId, List<String> userIds) async {
+    await _membersDataSource.addToChannels(channelId, userIds);
+  }
+
+  @override
+  Future<void> removeChannelMember(String channelId, String userId) =>
+      _membersDataSource.removeFromChannel(channelId, userId);
+
+  @override
+  Future<void> updateChannelMemberSchemeRoles(
+    String channelId,
+    String userId, {
+    bool schemeAdmin = false,
+  }) async {
+    await _membersDataSource.updateChannelMemberSchemeRoles(
+      channelId,
+      userId,
+      schemeAdmin: schemeAdmin,
+    );
   }
 
   @override

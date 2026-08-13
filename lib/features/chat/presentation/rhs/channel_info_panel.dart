@@ -2,7 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
+import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
@@ -11,9 +13,11 @@ import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class ChannelInfoPanel extends StatefulWidget {
   const ChannelInfoPanel({super.key});
@@ -59,6 +63,7 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
       members = channelState.members;
     }
     if (channel == null) return const SizedBox.shrink();
+    final ch = channel;
 
     final isFavorited = categories
         .where((c) => c.type == ChannelCategoryType.favorites)
@@ -226,6 +231,27 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
             child: Divider(height: 1),
           ),
 
+          // الإجراءات الحمراء: مغادرة القناة / أرشفة (للمدراء).
+          if (!isArchived && !_isDirectChannel(ch)) ...[
+            _buildDangerTile(
+              context,
+              icon: Icons.logout,
+              title: l10n.sidebar_leftSidebar_channel_menuLeaveChannel,
+              onTap: () => _leaveChannel(context, ch),
+            ),
+            if (_isAdmin(member))
+              _buildDangerTile(
+                context,
+                icon: Icons.archive_outlined,
+                title: l10n.channel_settingsModalArchiveTitle,
+                onTap: () => _archiveChannel(context, ch),
+              ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Divider(height: 1),
+            ),
+          ],
+
           // Technical Details (Handle / ID)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -375,6 +401,148 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
         ),
       ),
     );
+  }
+
+  Widget _buildDangerTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    final theme = AppTheme.of(context);
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: theme.errorTextColor),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: theme.errorTextColor,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _isDirectChannel(ChannelEntity channel) =>
+      channel.type == ChannelType.direct || channel.type == ChannelType.group;
+
+  bool _isAdmin(ChannelMemberEntity? member) =>
+      member != null &&
+      member.roles.split(',').any((r) => r.trim() == 'channel_admin');
+
+  Future<void> _goToTownSquare() async {
+    final teamState = context.read<TeamBloc>().state;
+    final teamName = teamState is TeamsLoadedState
+        ? teamState.selectedTeam?.name
+        : null;
+    context.read<RhsBloc>().add(CloseRhsEvent());
+    if (teamName != null) context.go('/$teamName/channels/town-square');
+  }
+
+  Future<void> _leaveChannel(BuildContext context, ChannelEntity channel) async {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.centerChannelBg,
+        title: Text(
+          channel.type == ChannelType.private
+              ? l10n.leave_private_channel_modalTitle(channel.displayName)
+              : l10n.leave_policy_channel_modalTitle(channel.displayName),
+          style: TextStyle(color: theme.centerChannelColor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              l10n.generic_modalCancel,
+              style: TextStyle(color: theme.centerChannelColor),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              channel.type == ChannelType.private
+                  ? l10n.leave_private_channel_modalLeave
+                  : l10n.leave_policy_channel_modalLeave,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final channelState = context.read<ChannelBloc>().state;
+    final userId = channelState is ChannelsLoadedState
+        ? channelState.userId
+        : null;
+    if (userId != null) {
+      context.read<ChannelBloc>().add(
+        LeaveChannelEvent(channelId: channel.id, userId: userId),
+      );
+    }
+    await _goToTownSquare();
+  }
+
+  Future<void> _archiveChannel(
+    BuildContext context,
+    ChannelEntity channel,
+  ) async {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.centerChannelBg,
+        title: Text(
+          l10n.channel_settingsModalArchiveTitle,
+          style: TextStyle(color: theme.centerChannelColor),
+        ),
+        content: Text(
+          l10n.channelSettingsArchiveDescription,
+          style: TextStyle(
+            color: theme.centerChannelColor.withValues(alpha: 0.7),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              l10n.generic_modalCancel,
+              style: TextStyle(color: theme.centerChannelColor),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text(
+              l10n.channel_settingsModalConfirmArchive,
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await getIt<ChannelRepository>().deleteChannel(channel.id);
+      if (!context.mounted) return;
+      context.read<ChannelBloc>().add(ArchiveChannelEvent(channel));
+      await _goToTownSquare();
+    } catch (_) {
+      // لا تغيير عند فشل الأرشفة.
+    }
   }
 
   void _copyChannelLink(BuildContext context, ChannelEntity channel) {

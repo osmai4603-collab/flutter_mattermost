@@ -15,6 +15,7 @@ abstract class ChannelCategoriesRemoteDataSource {
     String teamId, {
     String? displayName,
     List<String>? channelIds,
+    String? type,
   });
   Future<List<ChannelCategoryModel>> updateChannelCategories(
     String userId,
@@ -38,6 +39,7 @@ abstract class ChannelCategoriesRemoteDataSource {
     String categoryId, {
     String? displayName,
     List<String>? channelIds,
+    bool? muted,
   });
   Future<void> deleteChannelCategory(
     String userId,
@@ -79,12 +81,14 @@ class ChannelCategoriesRemoteDataSourceImpl
     String teamId, {
     String? displayName,
     List<String>? channelIds,
+    String? type,
   }) async {
     final result = await _apiClient.post<ChannelCategoryModel>(
       UsersEndPoint.teamsChannelsCategories(userId, teamId),
       data: {
         if (displayName != null) 'display_name': displayName,
         if (channelIds != null) 'channel_ids': channelIds,
+        if (type != null) 'type': type,
       },
       fromJson: (json) =>
           ChannelCategoryModel.fromMap(json as Map<String, dynamic>),
@@ -170,12 +174,14 @@ class ChannelCategoriesRemoteDataSourceImpl
     String categoryId, {
     String? displayName,
     List<String>? channelIds,
+    bool? muted,
   }) async {
     final result = await _apiClient.put<ChannelCategoryModel>(
       UsersEndPoint.teamsChannelsCategories2(userId, teamId, categoryId),
       data: {
         if (displayName != null) 'display_name': displayName,
         if (channelIds != null) 'channel_ids': channelIds,
+        if (muted != null) 'muted': muted,
       },
       fromJson: (json) =>
           ChannelCategoryModel.fromMap(json as Map<String, dynamic>),

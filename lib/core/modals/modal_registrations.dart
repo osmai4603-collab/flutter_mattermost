@@ -8,8 +8,13 @@ import 'package:flutter_mattermost/core/widgets/generic_modal.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/features/app/presentation/pages/app_settings_page.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/direct_channels_modal.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/create_new_channel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/teams/presentation/widgets/invitation_modal.dart';
+import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_page.dart';
+import 'package:flutter_mattermost/features/users/presentation/pages/user_settings_modal.dart';
 
 /// تسجيل نوافذ webapp المنبثقة (مكافئ ModalController.registerModal)
 /// ليتم فتحها عبر [ModalRegistry.open] بأي مكان.
@@ -37,6 +42,35 @@ void registerMattermostModals() {
   ModalRegistry.register(
     ModalIdentifiers.markAllThreadsAsRead,
     (context, args) => const _MarkAllThreadsAsReadModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.userSettings,
+    (context, args) => UserSettingsModal(
+      initialTab: _userSettingsTab(args?['initialTab'] as String?),
+    ),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.userProfile,
+    (context, args) => const UserProfilePage(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.invitation,
+    (context, args) => const InvitationModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.newChannel,
+    (context, args) => const CreateNewChannel(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.moreDirectChannels,
+    (context, args) => const DirectChannelsModal(),
+  );
+}
+
+UserSettingsTab _userSettingsTab(String? value) {
+  return UserSettingsTab.values.firstWhere(
+    (tab) => tab.name == value,
+    orElse: () => UserSettingsTab.notifications,
   );
 }
 
