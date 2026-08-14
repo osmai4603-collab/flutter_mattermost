@@ -24007,6 +24007,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get flaggedMessagesUnflagConfirmTitle =>
+      'Remove message from saved messages?';
+
+  @override
+  String get flaggedMessagesUnflagConfirmBody =>
+      'Are you sure you want to remove this message from saved messages?';
+
+  @override
+  String get flaggedMessagesTabMessages => 'Messages';
+
+  @override
+  String get flaggedMessagesTabFiles => 'Files';
+
+  @override
   String get no_resultsFlagged_postsTitle => 'No saved messages yet';
 
   @override

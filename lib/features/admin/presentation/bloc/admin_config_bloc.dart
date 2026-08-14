@@ -70,7 +70,7 @@ class AdminConfigError extends AdminConfigState {
   List<Object?> get props => [message];
 }
 
-@LazySingleton()
+@injectable
 class AdminConfigBloc extends Bloc<AdminConfigEvent, AdminConfigState> {
   final AdminConfigRepository _repository;
 

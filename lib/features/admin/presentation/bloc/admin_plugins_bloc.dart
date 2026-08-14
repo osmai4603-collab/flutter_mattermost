@@ -74,7 +74,7 @@ class PluginsError extends AdminPluginsState {
   List<Object?> get props => [message];
 }
 
-@LazySingleton()
+@injectable
 class AdminPluginsBloc extends Bloc<AdminPluginsEvent, AdminPluginsState> {
   final AdminPluginsRepository _repository;
 

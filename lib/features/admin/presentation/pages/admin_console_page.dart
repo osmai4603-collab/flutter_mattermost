@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart' hide LicensePage;
 import 'package:flutter_mattermost/features/admin/presentation/pages/access_control_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_email_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_guest_access_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_ldap_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_mfa_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_openid_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_password_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_signup_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/channels_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/delegated_admin_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/environment_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/general_settings_page.dart';
 import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
@@ -16,7 +26,9 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/roles_schem
 import 'package:flutter_mattermost/features/admin/presentation/pages/security_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/server_logs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_overview_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/system_analytics_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/teams_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_sidebar.dart';
 
@@ -57,7 +69,7 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
             child: IndexedStack(
               index: _selectedSection.index,
               children: [
-                const AdminConsoleSystemAnalyticsPage(),
+                const AdminConsoleSiteOverviewPage(),
                 const AdminConsoleServerLogsPage(),
                 const AdminConsoleSystemAnalyticsPage(),
                 const AdminConsoleUsersManagementPage(),
@@ -67,6 +79,14 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                 const AdminConsoleEnvironmentSettingsPage(subTab: 'file_storage'),
                 const AdminConsoleEnvironmentSettingsPage(subTab: 'smtp'),
                 const AdminConsoleAuthenticationSettingsPage(),
+                const AdminConsoleAuthSignupPage(),
+                const AdminConsoleAuthEmailPage(),
+                const AdminConsoleAuthPasswordPage(),
+                const AdminConsoleAuthMfaPage(),
+                const AdminConsoleAuthLdapPage(),
+                const AdminConsoleAuthSamlPage(),
+                const AdminConsoleAuthOpenIdPage(),
+                const AdminConsoleAuthGuestAccessPage(),
                 const AdminConsoleNotificationsSettingsPage(),
                 AdminConsoleSecuritySettingsPage(),
                 AdminConsoleCompliancePage(),
@@ -79,6 +99,9 @@ class _AdminConsolePageState extends State<AdminConsolePage> {
                 const AdminConsoleContentFlaggingPage(),
                 const AdminConsoleAccessControlPage(),
                 const AdminConsoleSharedChannelsPage(),
+                const AdminConsoleTeamsManagementPage(),
+                const AdminConsoleChannelsManagementPage(),
+                const AdminConsoleDelegatedAdminPage(),
               ],
             ),
           ),

@@ -675,13 +675,13 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i777.WebSocketClientManager>(),
       ),
     );
-    gh.lazySingleton<_i859.AdminConfigBloc>(
+    gh.factory<_i859.AdminConfigBloc>(
       () => _i859.AdminConfigBloc(gh<_i260.AdminConfigRepository>()),
     );
-    gh.lazySingleton<_i233.AdminLicenseBloc>(
+    gh.factory<_i233.AdminLicenseBloc>(
       () => _i233.AdminLicenseBloc(gh<_i1016.AdminLicenseRepository>()),
     );
-    gh.lazySingleton<_i174.AdminPluginsBloc>(
+    gh.factory<_i174.AdminPluginsBloc>(
       () => _i174.AdminPluginsBloc(gh<_i386.AdminPluginsRepository>()),
     );
     gh.lazySingleton<_i797.AuthBloc>(

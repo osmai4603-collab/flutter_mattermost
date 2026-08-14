@@ -26,10 +26,7 @@ abstract class AdminComplianceDataSource {
     int? startDate,
     int? endDate,
   });
-  Future<List<AuditModel>> getSystemAudits({
-    int page = 0,
-    int perPage = 60,
-  });
+  Future<List<AuditModel>> getSystemAudits({int page = 0, int perPage = 60});
   Future<void> addAuditLogCertificate(String filePath);
   Future<void> removeAuditLogCertificate();
 }
@@ -122,7 +119,7 @@ class AdminComplianceDataSourceImpl implements AdminComplianceDataSource {
     int? endDate,
   }) async {
     final result = await _apiClient.get<List<AuditModel>>(
-      AuditLogsEndPoint.base,
+      AuditsEndPoint.root,
       queryParameters: {
         'page': page,
         'per_page': perPage,
@@ -174,9 +171,7 @@ class AdminComplianceDataSourceImpl implements AdminComplianceDataSource {
 
   @override
   Future<void> removeAuditLogCertificate() async {
-    final result = await _apiClient.delete(
-      AuditLogsEndPoint.certificate,
-    );
+    final result = await _apiClient.delete(AuditLogsEndPoint.certificate);
     if (result is ApiFailure) {
       throw Exception('Failed to remove audit log certificate');
     }

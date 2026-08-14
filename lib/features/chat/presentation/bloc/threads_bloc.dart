@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 
 /// أحداث صفحة المحادثات (Global Threads).
@@ -146,6 +148,21 @@ class ThreadReadChangedSocketEvent extends ThreadsEvent {
   ];
 }
 
+/// حفظ/إزالة من المحفوظات لجذر المحادثة — مطابق flag/unflag في webapp
+/// (يحفظ المنشور بكود save_reaction ويظهر في صفحة Saved Messages).
+class ToggleSaveEvent extends ThreadsEvent {
+  final String teamId;
+  final String threadId;
+  final bool isCurrentlySaved;
+  const ToggleSaveEvent({
+    required this.teamId,
+    required this.threadId,
+    required this.isCurrentlySaved,
+  });
+  @override
+  List<Object?> get props => [teamId, threadId, isCurrentlySaved];
+}
+
 /// حالات صفحة المحادثات.
 abstract class ThreadsState extends Equatable {
   const ThreadsState();
@@ -186,6 +203,7 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     on<MoveThreadEvent>(_onMove);
     on<ThreadFollowChangedSocketEvent>(_onSocketFollowChanged);
     on<ThreadReadChangedSocketEvent>(_onSocketReadChanged);
+    on<ToggleSaveEvent>(_onToggleSave);
   }
 
   Future<void> _onLoad(
@@ -462,6 +480,41 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
         ],
       ),
     );
+  }
+
+  /// حفظ/إزالة من المحفوظات — يرسل flag/unflag للخادم ثم يحدّث حالة
+  /// is_saved محلياً (مطابق للسلوك المتفائل في webapp).
+  Future<void> _onToggleSave(
+    ToggleSaveEvent event,
+    Emitter<ThreadsState> emit,
+  ) async {
+    final current = state;
+    if (current is! ThreadsLoadedState) return;
+    try {
+      final postRepository = getIt<PostRepository>();
+      if (event.isCurrentlySaved) {
+        await postRepository.unflagPost(event.threadId);
+      } else {
+        await postRepository.flagPost(event.threadId);
+      }
+      emit(
+        current.copyWith(
+          threads: [
+            for (final t in current.threads)
+              if (t.rootPostId == event.threadId)
+                t.copyWith(
+                  rootPost: t.rootPost.copyWith(
+                    isSaved: !event.isCurrentlySaved,
+                  ),
+                )
+              else
+                t,
+          ],
+        ),
+      );
+    } catch (_) {
+      // لا نوقف القائمة عند فشل الشبكة — تبقى الحالة القديمة.
+    }
   }
 }
 

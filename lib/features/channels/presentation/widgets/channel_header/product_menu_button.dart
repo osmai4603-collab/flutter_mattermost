@@ -45,7 +45,7 @@ class ProductMenuButton extends StatelessWidget {
             id: 'system_console',
             label: 'Admin Console',
             icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
-            onTap: () => context.go(AdminConsoleRoutes.root),
+            onTap: () => context.go(AdminConsoleRoutes.home),
           ),
           MatterMenuItem(
             id: 'integrations',

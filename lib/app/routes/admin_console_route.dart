@@ -1,9 +1,18 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/access_control_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_email_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_guest_access_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_ldap_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_mfa_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_openid_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_password_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_signup_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/channels_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/delegated_admin_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/environment_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/general_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/jobs_page.dart';
@@ -14,229 +23,231 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/roles_schem
 import 'package:flutter_mattermost/features/admin/presentation/pages/security_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/server_logs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_overview_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/system_analytics_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/teams_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_console_shell.dart';
 import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
 import 'package:go_router/go_router.dart';
 
 sealed class AdminConsoleRoutes {
-  static const String root = '/admin_console';
-  static const overview = root;
-  static const logs = '$root/logs';
-  static const analytics = '$root/analytics';
-  static const general = '$root/general';
-  static const users = '$root/users';
-  static const webServer = '$root/environment/web_server';
-  static const database = '$root/environment/database';
-  static const fileStorage = '$root/environment/file_storage';
-  static const smtp = '$root/environment/smtp';
-  static const authentication = '$root/authentication';
-  static const notifications = '$root/notifications';
-  static const security = '$root/security';
-  static const compliance = '$root/compliance';
-  static const jobs = '$root/jobs';
-  static const roles = '$root/roles';
-  static const groups = '$root/groups';
-  static const plugins = '$root/plugins';
-  static const license = '$root/license';
-  static const dataRetention = '$root/data_retention';
-  static const contentFlagging = '$root/content_flagging';
-  static const accessControl = '$root/access_control';
-  static const sharedChannels = '$root/shared_channels';
+  static const String home = '/admin_console';
+  static const overview = '$home/overview';
+  static const logs = '$home/logs';
+  static const analytics = '$home/analytics';
+  static const general = '$home/general';
+  static const users = '$home/users';
+  static const teams = '$home/teams';
+  static const channels = '$home/channels';
+  static const delegatedAdmin = '$home/delegated_admin';
+  static const webServer = '$home/web_server';
+  static const database = '$home/database';
+  static const fileStorage = '$home/file_storage';
+  static const smtp = '$home/smtp';
+  static const authentication = '$home/authentication';
+  static const authSignup = '$home/authentication/signup';
+  static const authEmail = '$home/authentication/email';
+  static const authPassword = '$home/authentication/password';
+  static const authMfa = '$home/authentication/mfa';
+  static const authLdap = '$home/authentication/ldap';
+  static const authSaml = '$home/authentication/saml';
+  static const authOpenId = '$home/authentication/openid';
+  static const authGuestAccess = '$home/authentication/guest_access';
+  static const notifications = '$home/notifications';
+  static const security = '$home/security';
+  static const compliance = '$home/compliance';
+  static const jobs = '$home/jobs';
+  static const roles = '$home/roles';
+  static const groups = '$home/groups';
+  static const plugins = '$home/plugins';
+  static const license = '$home/license';
+  static const dataRetention = '$home/data_retention';
+  static const contentFlagging = '$home/content_flagging';
+  static const accessControl = '$home/access_control';
+  static const sharedChannels = '$home/shared_channels';
 }
 
-final _key = GlobalKey<StatefulNavigationShellState>();
-
-/// مسار وحدة التحكم بالإدارة — هيكلية StatefulShell لتسهيل التنقل بين 18 قسماً.
-final adminRoute = StatefulShellRoute.indexedStack(
-  key: _key,
-  builder: (context, state, navigationShell) {
-    return AdminConsoleShell(navigationShell: navigationShell);
+final adminConsoleRoute = ShellRoute(
+  builder: (context, state, child) {
+    return AdminConsoleShell(state: state, child: child);
   },
-  branches: [
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.overview,
-          builder: (context, state) => const AdminConsoleSystemAnalyticsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.logs,
-          builder: (context, state) => const AdminConsoleServerLogsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.analytics,
-          builder: (context, state) => const AdminConsoleSystemAnalyticsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.users,
-          builder: (context, state) => const AdminConsoleUsersManagementPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.general,
-          builder: (context, state) => const AdminConsoleGeneralSettingsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.webServer,
-          builder: (context, state) =>
-              const AdminConsoleEnvironmentSettingsPage(subTab: 'web_server'),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.database,
-          builder: (context, state) =>
-              const AdminConsoleEnvironmentSettingsPage(subTab: 'database'),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.fileStorage,
-          builder: (context, state) =>
-              const AdminConsoleEnvironmentSettingsPage(subTab: 'file_storage'),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.smtp,
-          builder: (context, state) =>
-              const AdminConsoleEnvironmentSettingsPage(subTab: 'smtp'),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.authentication,
-          builder: (context, state) =>
-              const AdminConsoleAuthenticationSettingsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.notifications,
-          builder: (context, state) =>
-              const AdminConsoleNotificationsSettingsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.security,
-          builder: (context, state) => const AdminConsoleSecuritySettingsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.compliance,
-          builder: (context, state) => const AdminConsoleCompliancePage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.jobs,
-          builder: (context, state) => const AdminConsoleJobsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.roles,
-          builder: (context, state) => const AdminConsoleRolesSchemesPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.groups,
-          builder: (context, state) => const AdminConsoleGroupsPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.plugins,
-          builder: (context, state) =>
-              const AdminConsolePluginsManagementPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.license,
-          builder: (context, state) => const AdminConsoleLicensePage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.dataRetention,
-          builder: (context, state) => const AdminConsoleDataRetentionPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.contentFlagging,
-          builder: (context, state) => const AdminConsoleContentFlaggingPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.accessControl,
-          builder: (context, state) => const AdminConsoleAccessControlPage(),
-        ),
-      ],
-    ),
-    StatefulShellBranch(
-      routes: [
-        GoRoute(
-          path: AdminConsoleRoutes.sharedChannels,
-          builder: (context, state) => const AdminConsoleSharedChannelsPage(),
-        ),
-      ],
-    ),
-  ],
+  routes: _routes,
 );
+
+final _routes = [
+  GoRoute(
+    path: AdminConsoleRoutes.home,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleSiteOverviewPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.overview,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleSiteOverviewPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.logs,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleServerLogsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.analytics,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleSystemAnalyticsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.users,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleUsersManagementPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.teams,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleTeamsManagementPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.channels,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleChannelsManagementPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.delegatedAdmin,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleDelegatedAdminPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.general,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleGeneralSettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.webServer,
+    pageBuilder: (context, state) => const NoTransitionPage(
+      child: AdminConsoleEnvironmentSettingsPage(subTab: 'web_server'),
+    ),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.database,
+    pageBuilder: (context, state) => const NoTransitionPage(
+      child: AdminConsoleEnvironmentSettingsPage(subTab: 'database'),
+    ),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.fileStorage,
+    pageBuilder: (context, state) => const NoTransitionPage(
+      child: AdminConsoleEnvironmentSettingsPage(subTab: 'file_storage'),
+    ),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.smtp,
+    pageBuilder: (context, state) => const NoTransitionPage(
+      child: AdminConsoleEnvironmentSettingsPage(subTab: 'smtp'),
+    ),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authentication,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthenticationSettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authSignup,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthSignupPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authEmail,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthEmailPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authPassword,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthPasswordPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authMfa,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthMfaPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authLdap,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthLdapPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authSaml,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthSamlPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authOpenId,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthOpenIdPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.authGuestAccess,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAuthGuestAccessPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.notifications,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleNotificationsSettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.security,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleSecuritySettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.compliance,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleCompliancePage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.jobs,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleJobsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.roles,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleRolesSchemesPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.groups,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleGroupsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.plugins,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsolePluginsManagementPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.license,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleLicensePage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.dataRetention,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleDataRetentionPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.contentFlagging,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleContentFlaggingPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.accessControl,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleAccessControlPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.sharedChannels,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AdminConsoleSharedChannelsPage()),
+  ),
+];

@@ -365,6 +365,15 @@ class _ThreadsPageState extends State<ThreadsPage> {
                 );
           },
           onCopyLink: () => _copyThreadLink(thread.rootPostId),
+          onToggleSave: () {
+            context.read<ThreadsBloc>().add(
+                  ToggleSaveEvent(
+                    teamId: _teamId ?? '',
+                    threadId: thread.rootPostId,
+                    isCurrentlySaved: thread.rootPost.isSaved,
+                  ),
+                );
+          },
           onMoveThread: _canMoveThread
               ? () => _openMoveThreadModal(thread)
               : null,

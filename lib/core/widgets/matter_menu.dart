@@ -30,16 +30,16 @@ class MatterMenuItem {
   });
 
   const MatterMenuItem.divider()
-      : id = '',
-        label = '',
-        icon = null,
-        richText = null,
-        subtitle = null,
-        onTap = null,
-        danger = false,
-        separatorBefore = false,
-        isDivider = true,
-        submenu = null;
+    : id = '',
+      label = '',
+      icon = null,
+      richText = null,
+      subtitle = null,
+      onTap = null,
+      danger = false,
+      separatorBefore = false,
+      isDivider = true,
+      submenu = null;
 
   const MatterMenuItem.richText({
     required this.id,
@@ -50,8 +50,8 @@ class MatterMenuItem {
     this.danger = false,
     this.separatorBefore = false,
     this.submenu,
-  })  : label = '',
-        isDivider = false;
+  }) : label = '',
+       isDivider = false;
 }
 
 const double _kMenuWidth = 264.0;
@@ -288,7 +288,8 @@ class _MenuOverlayPanelState extends State<_MenuOverlayPanel> {
     if (_openSubmenuFor == index && _submenuEntry != null) return;
 
     _closeSubmenu();
-    final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
+    final overlay =
+        Overlay.of(context).context.findRenderObject()! as RenderBox;
     final height = _menuHeight(subItems);
 
     var sx = widget.left + widget.width - 4;
@@ -347,10 +348,7 @@ class _MenuOverlayPanelState extends State<_MenuOverlayPanel> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          if (item.icon != null) ...[
-            item.icon!,
-            const SizedBox(width: 8),
-          ],
+          if (item.icon != null) ...[item.icon!, const SizedBox(width: 8)],
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -358,6 +356,7 @@ class _MenuOverlayPanelState extends State<_MenuOverlayPanel> {
               children: [
                 if (item.richText != null)
                   Text.rich(
+                    maxLines: 3,
                     item.richText!,
                     style: TextStyle(
                       fontSize: 14,
@@ -462,7 +461,8 @@ class MatterMenuScope extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         hoverColor:
-            hoverColor ?? AppTheme.of(context).mentionBg.withValues(alpha: 0.15),
+            hoverColor ??
+            AppTheme.of(context).mentionBg.withValues(alpha: 0.15),
         borderRadius: borderRadius ?? BorderRadius.circular(4.0),
         onTap: () {},
         child: MatterMenu(items: items, openUp: openUp, child: child),

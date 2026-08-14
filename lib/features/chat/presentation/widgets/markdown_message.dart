@@ -47,11 +47,13 @@ class MarkdownMessage extends StatelessWidget {
 
     final markdownStyleSheet = MarkdownStyleSheet(
       p: style ?? TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor.withValues(alpha: 0.96),
         fontSize: 14,
         height: 1.55,
       ),
       a: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: linkColor,
         fontWeight: FontWeight.w600,
         decoration: TextDecoration.underline,
@@ -60,10 +62,12 @@ class MarkdownMessage extends StatelessWidget {
         backgroundColor: linkColor.withValues(alpha: 0.08),
       ),
       strong: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         fontWeight: FontWeight.w800,
         color: textColor,
       ),
       em: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         fontStyle: FontStyle.italic,
         color: textColor.withValues(alpha: 0.94),
       ),
@@ -86,18 +90,21 @@ class MarkdownMessage extends StatelessWidget {
         ),
       ),
       h1: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor,
         fontWeight: FontWeight.w800,
         fontSize: 22,
         height: 1.3,
       ),
       h2: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor,
         fontWeight: FontWeight.w700,
         fontSize: 19,
         height: 1.35,
       ),
       h3: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor,
         fontWeight: FontWeight.w700,
         fontSize: 17,
@@ -107,11 +114,13 @@ class MarkdownMessage extends StatelessWidget {
       listBullet: TextStyle(color: linkColor),
       listIndent: 20,
       tableHead: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor,
         fontWeight: FontWeight.w700,
         fontSize: 13,
       ),
       tableBody: TextStyle(
+        fontFamily: 'NotoNaskhArabic',
         color: textColor.withValues(alpha: 0.92),
         fontSize: 13,
       ),

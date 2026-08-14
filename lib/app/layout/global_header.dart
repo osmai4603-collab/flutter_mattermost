@@ -127,7 +127,7 @@ class _ProductMenuButton extends StatelessWidget {
                 Text(
                   'Mattermost',
                   style: TextStyle(
-                    fontFamily: 'Metropolis',
+                    fontFamily: 'NotoNaskhArabic',
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
                     color: textColor,

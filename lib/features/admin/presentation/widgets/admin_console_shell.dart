@@ -1,32 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/app/routes/admin_console_route.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_sidebar.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 class AdminConsoleShell extends StatelessWidget {
-  final StatefulNavigationShell navigationShell;
-  const AdminConsoleShell({super.key, required this.navigationShell});
+  final GoRouterState state;
+  final Widget child;
+
+  const AdminConsoleShell({
+    super.key,
+    required this.state,
+    required this.child,
+  });
+
+  AdminConsoleSection _determineSelectedSection(String path) {
+    for (final section in AdminConsoleSection.values) {
+      final sectionPath = '${AdminConsoleRoutes.home}/${section.routeName}';
+      if (path == sectionPath || path.startsWith('$sectionPath/')) {
+        return section;
+      }
+    }
+    return AdminConsoleSection.overview;
+  }
 
   void _onBack(BuildContext context) {
-    if (context.canPop()) {
-      context.pop();
+    final teamState = context.read<TeamBloc>().state;
+    final teamName = teamState is TeamsLoadedState
+        ? teamState.selectedTeam?.name
+        : null;
+    if (teamName != null) {
+      context.go('/$teamName');
     } else {
-      final teamState = context.read<TeamBloc>().state;
-      final teamName = teamState is TeamsLoadedState
-          ? teamState.selectedTeam?.name
-          : null;
-      if (teamName != null) {
-        context.go('/$teamName');
-      } else {
-        context.go('/');
-      }
+      context.go('/');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedSection = _determineSelectedSection(state.matchedLocation);
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     if (isMobile) {
@@ -40,24 +54,23 @@ class AdminConsoleShell extends StatelessWidget {
             tooltip: 'Back',
             onPressed: () => _onBack(context),
           ),
-          title: const Text(
-            'Admin Console',
-            style: TextStyle(color: Colors.white, fontSize: 16),
+          title: Text(
+            selectedSection.title,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
         drawer: Drawer(
+          width: 260,
+          backgroundColor: const Color(0xFF161922),
           child: AdminConsoleSideBar(
-            selected: AdminConsoleSection.values[navigationShell.currentIndex],
+            selected: selectedSection,
             onSelected: (section) {
               Navigator.of(context).pop();
-              navigationShell.goBranch(
-                section.index,
-                initialLocation: section == AdminConsoleSection.overview,
-              );
+              context.go('${AdminConsoleRoutes.home}/${section.routeName}');
             },
           ),
         ),
-        body: navigationShell,
+        body: child,
       );
     }
 
@@ -66,15 +79,12 @@ class AdminConsoleShell extends StatelessWidget {
       body: Row(
         children: [
           AdminConsoleSideBar(
-            selected: AdminConsoleSection.values[navigationShell.currentIndex],
+            selected: selectedSection,
             onSelected: (section) {
-              navigationShell.goBranch(
-                section.index,
-                initialLocation: section == AdminConsoleSection.overview,
-              );
+              context.go('${AdminConsoleRoutes.home}/${section.routeName}');
             },
           ),
-          Expanded(child: navigationShell),
+          Expanded(child: child),
         ],
       ),
     );

@@ -60,7 +60,7 @@ class AdminLicenseError extends AdminLicenseState {
   List<Object?> get props => [message];
 }
 
-@LazySingleton()
+@injectable
 class AdminLicenseBloc extends Bloc<AdminLicenseEvent, AdminLicenseState> {
   final AdminLicenseRepository _repository;
 

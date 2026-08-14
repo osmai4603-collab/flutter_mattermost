@@ -23978,6 +23978,20 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String get flaggedMessagesUnflagConfirmTitle =>
+      'إزالة الرسالة من الرسائل المحفوظة؟';
+
+  @override
+  String get flaggedMessagesUnflagConfirmBody =>
+      'هل أنت متأكد من رغبتك في إزالة هذه الرسالة من الرسائل المحفوظة؟';
+
+  @override
+  String get flaggedMessagesTabMessages => 'الرسائل';
+
+  @override
+  String get flaggedMessagesTabFiles => 'الملفات';
+
+  @override
   String get no_resultsFlagged_postsTitle => 'لا توجد رسائل محفوظة بعد';
 
   @override

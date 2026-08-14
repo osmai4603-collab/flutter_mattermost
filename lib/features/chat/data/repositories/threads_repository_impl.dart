@@ -1,4 +1,3 @@
-import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/threads_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/data/models/thread_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
@@ -8,9 +7,8 @@ import 'package:flutter_mattermost/features/chat/domain/repositories/threads_rep
 /// الجذر (root post) من حمولة الاستجابة.
 class ThreadsRepositoryImpl implements ThreadsRepository {
   final ThreadsRemoteDataSource _remoteDataSource;
-  final SecureStorageService _secureStorage;
 
-  ThreadsRepositoryImpl(this._remoteDataSource, this._secureStorage);
+  ThreadsRepositoryImpl(this._remoteDataSource);
 
   @override
   Future<List<ThreadEntity>> getThreadsForUser(

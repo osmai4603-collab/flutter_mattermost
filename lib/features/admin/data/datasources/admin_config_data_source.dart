@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_mattermost/features/admin/data/models/analytics_model.dart';
 import 'package:flutter_mattermost/features/admin/data/models/installation_model.dart';
+import 'package:flutter_mattermost/features/admin/domain/entities/analytics_entity.dart';
 import 'package:flutter_mattermost/features/system/data/models/client_config_model.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/api_client.dart';
@@ -19,7 +20,7 @@ abstract class AdminConfigDataSource {
   Future<ClientConfigModel> getClientConfig();
   Future<Map<String, dynamic>> getEnvironmentConfig();
   Future<void> reloadConfig();
-  Future<AnalyticsModel> getAnalytics();
+  Future<AnalyticsEntity> getAnalytics();
   Future<List<String>> getPlainLogs({int page = 0, int perPage = 100});
   Future<List<LogEntryModel>> getLogs({
     int page = 0,
@@ -118,7 +119,8 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
   Future<ClientConfigModel> getClientConfig() async {
     final result = await _apiClient.get<ClientConfigModel>(
       ConfigEndPoint.client,
-      fromJson: (json) => ClientConfigModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          ClientConfigModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<ClientConfigModel>) {
       return result.data;
@@ -150,15 +152,19 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
   }
 
   @override
-  Future<AnalyticsModel> getAnalytics() async {
-    final result = await _apiClient.get<AnalyticsModel>(
+  Future<AnalyticsEntity> getAnalytics() async {
+    final result = await _apiClient.get<List<AnalyticsItemModel>>(
       AnalyticsEndPoint.old,
-      fromJson: (json) => AnalyticsModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (list) => (list as List<dynamic>? ?? [])
+          .map(
+            (data) => AnalyticsItemModel.fromMap(data as Map<String, dynamic>),
+          )
+          .toList(),
     );
-    if (result is ApiSuccess<AnalyticsModel>) {
-      return result.data;
+    if (result is ApiSuccess<List<AnalyticsItemModel>>) {
+      return AnalyticsEntity(items: result.data);
     }
-    throw Exception('Failed to get analytics');
+    throw Exception('Failed to get analytics: ');
   }
 
   @override
@@ -186,9 +192,27 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
       LogsEndPoint.query,
       queryParameters: {'page': page, 'logs_per_page': perPage},
       data: {'level': ?level, 'filter': ?filter},
-      fromJson: (json) => (json as List<dynamic>)
-          .map((e) => LogEntryModel.fromMap(e as Map<String, dynamic>))
-          .toList(),
+      fromJson: (json) {
+        if (json is Map<String, dynamic>) {
+          final list = <LogEntryModel>[];
+          for (final entries in json.values) {
+            if (entries is List) {
+              for (final e in entries) {
+                if (e is Map<String, dynamic>) {
+                  list.add(LogEntryModel.fromMap(e));
+                }
+              }
+            }
+          }
+          return list;
+        } else if (json is List) {
+          return json
+              .whereType<Map<String, dynamic>>()
+              .map((e) => LogEntryModel.fromMap(e))
+              .toList();
+        }
+        return [];
+      },
     );
     if (result is ApiSuccess<List<LogEntryModel>>) {
       return result.data;
@@ -495,7 +519,8 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
   Future<InstallationModel> checkCWSConnection() async {
     final result = await _apiClient.get<InstallationModel>(
       CloudEndPoint.connection,
-      fromJson: (json) => InstallationModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) =>
+          InstallationModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<InstallationModel>) {
       return result.data;
@@ -585,11 +610,18 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
 
   @override
   Future<void> setAIBridgeTestHelper(Map<String, dynamic> data) async {
-    await _apiClient.post<void>(SystemEndPoint.e2eAiBridge, data: data, fromJson: (_) {});
+    await _apiClient.post<void>(
+      SystemEndPoint.e2eAiBridge,
+      data: data,
+      fromJson: (_) {},
+    );
   }
 
   @override
   Future<void> updateMarketplaceVisitedByAdmin() async {
-    await _apiClient.post<void>(PluginsEndPoint.marketplaceVisited, fromJson: (_) {});
+    await _apiClient.post<void>(
+      PluginsEndPoint.marketplaceVisited,
+      fromJson: (_) {},
+    );
   }
 }

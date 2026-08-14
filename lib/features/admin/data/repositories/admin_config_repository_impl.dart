@@ -22,7 +22,14 @@ class AdminConfigRepositoryImpl implements AdminConfigRepository {
       _dataSource.patchConfig(patch);
 
   @override
-  Future<AnalyticsEntity> getAnalytics() => _dataSource.getAnalytics();
+  Future<AnalyticsEntity> getAnalytics() async {
+    final analytics = await _dataSource.getAnalytics();
+    return analytics;
+  }
+
+  @override
+  Future<List<String>> getPlainLogs({int page = 0, int perPage = 100}) =>
+      _dataSource.getPlainLogs(page: page, perPage: perPage);
 
   @override
   Future<List<LogEntryModel>> getLogs({

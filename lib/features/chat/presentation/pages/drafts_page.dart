@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
@@ -13,6 +15,7 @@ import 'package:flutter_mattermost/features/chat/data/models/scheduled_post_mode
 import 'package:flutter_mattermost/features/chat/domain/repositories/drafts_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/scheduled_posts_repository.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/reschedule_post_modal.dart';
 import 'package:intl/intl.dart';
 
 /// صفحة المسودات والرسائل المجدولة — مطابقة لـ Drafts / Scheduled Posts في webapp
@@ -31,6 +34,7 @@ class _DraftsPageState extends State<DraftsPage> {
   late int _selectedTab;
   Future<List<ScheduledPostModel>>? _scheduledFuture;
   Future<List<DraftModel>>? _draftsFuture;
+  StreamSubscription<TypedWebSocketEvent>? _socketSub;
 
   @override
   void initState() {
@@ -38,6 +42,26 @@ class _DraftsPageState extends State<DraftsPage> {
     _selectedTab = widget.initialTab;
     _reloadScheduled();
     _reloadDrafts();
+    _listenToSocketEvents();
+  }
+
+  /// مزامنة سحابية لحظية: أحداث draft_created / draft_updated /
+  /// draft_deleted من WebSocket تعيد تحميل القائمة فوراً —
+  /// مطابق لمزامنة المسودات بين الأجهزة في webapp.
+  void _listenToSocketEvents() {
+    if (!getIt.isRegistered<WebSocketClientManager>()) return;
+    _socketSub = getIt<WebSocketClientManager>().eventStream.listen((event) {
+      if (!mounted) return;
+      if (event is DraftUpsertedEvent || event is DraftDeletedEvent) {
+        _reloadDrafts();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _socketSub?.cancel();
+    super.dispose();
   }
 
   Future<String> _currentUserId() async =>
@@ -306,6 +330,21 @@ class _DraftsPageState extends State<DraftsPage> {
                 }
                 _reloadScheduled();
               },
+              onReschedule: () async {
+                final id = post.id;
+                final scheduledAt = post.scheduledAt;
+                if (scheduledAt == 0) return;
+                final newTime = await showReschedulePostModal(
+                  context,
+                  currentScheduledAt: scheduledAt,
+                );
+                if (newTime == null || !mounted) return;
+                await getIt<ScheduledPostsRepository>().editScheduledPost(
+                  id,
+                  scheduledAt: newTime,
+                );
+                _reloadScheduled();
+              },
               onEdit: () async {
                 final id = post.id;
                 if (id == null) return;
@@ -481,6 +520,7 @@ class _ScheduledPostPanel extends StatefulWidget {
   final VoidCallback onSendNow;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onReschedule;
 
   const _ScheduledPostPanel({
     required this.post,
@@ -488,6 +528,7 @@ class _ScheduledPostPanel extends StatefulWidget {
     required this.onSendNow,
     required this.onEdit,
     required this.onDelete,
+    required this.onReschedule,
   });
 
   @override
@@ -576,6 +617,12 @@ class _ScheduledPostPanelState extends State<_ScheduledPostPanel> {
                     onTap: widget.onDelete,
                   )
                 else ...[
+                  _ActionButton(
+                    icon: Icons.schedule_outlined,
+                    tooltip: l10n.scheduled_postActionReschedule,
+                    onTap: widget.onReschedule,
+                  ),
+                  const SizedBox(width: 4),
                   _ActionButton(
                     icon: Icons.edit_outlined,
                     tooltip: l10n.scheduledPostsEdit,

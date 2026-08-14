@@ -25,9 +25,7 @@ final channelRoute = StatefulShellRoute.indexedStack(
   builder: (context, state, navigationShell) {
     return ChannelShell(navigationShell: navigationShell);
   },
-  branches: [
-    StatefulShellBranch(routes: _routes),
-  ],
+  branches: [StatefulShellBranch(routes: _routes)],
 );
 
 final List<RouteBase> _routes = [
@@ -70,9 +68,8 @@ final List<RouteBase> _routes = [
   ),
   GoRoute(
     path: ChatRoutes.savedMessages,
-    builder: (context, state) => SavedMessagesPage(
-      teamName: state.pathParameters['team'],
-    ),
+    builder: (context, state) =>
+        SavedMessagesPage(teamName: state.pathParameters['team']),
   ),
   GoRoute(
     path: ChatRoutes.team,

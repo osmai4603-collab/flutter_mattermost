@@ -38002,6 +38002,30 @@ abstract class AppLocalizations {
   /// **'To save something for later, open the context menu on a message and choose {buttonText}. Saved messages are only visible to you'**
   String no_resultsFlagged_postsSubtitle(Object buttonText);
 
+  /// No description provided for @flaggedMessagesUnflagConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove message from saved messages?'**
+  String get flaggedMessagesUnflagConfirmTitle;
+
+  /// No description provided for @flaggedMessagesUnflagConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove this message from saved messages?'**
+  String get flaggedMessagesUnflagConfirmBody;
+
+  /// No description provided for @flaggedMessagesTabMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages'**
+  String get flaggedMessagesTabMessages;
+
+  /// No description provided for @flaggedMessagesTabFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get flaggedMessagesTabFiles;
+
   /// No description provided for @no_resultsFlagged_postsTitle.
   ///
   /// In en, this message translates to:

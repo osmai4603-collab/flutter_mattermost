@@ -61,8 +61,13 @@ class SendPostEvent extends PostEvent {
     this.scheduledAt,
   });
   @override
-  List<Object?> get props =>
-      [channelId, message, rootId, fileIds, alsoSendToChannel];
+  List<Object?> get props => [
+    channelId,
+    message,
+    rootId,
+    fileIds,
+    alsoSendToChannel,
+  ];
 }
 
 class RealtimePostReceivedEvent extends PostEvent {
@@ -294,7 +299,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       if (channelState is ChannelsLoadedState &&
           channelState.selectedChannel != null) {
         final current = state;
-        final alreadyLoaded = current is PostsLoadedState &&
+        final alreadyLoaded =
+            current is PostsLoadedState &&
             current.channelId == channelState.selectedChannel!.id;
         if (!alreadyLoaded) {
           add(LoadPostsForChannelEvent(channelState.selectedChannel!.id));

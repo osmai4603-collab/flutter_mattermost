@@ -43,7 +43,7 @@ class AdminJobsDataSourceImpl implements AdminJobsDataSource {
         'page': page,
         'per_page': perPage,
         'status': status,
-        'type': type,
+        'job_type': type,
       },
       fromJson: (json) => (json as List<dynamic>)
           .map((e) => JobModel.fromMap(e as Map<String, dynamic>))
@@ -55,17 +55,29 @@ class AdminJobsDataSourceImpl implements AdminJobsDataSource {
     throw Exception('Failed to get jobs');
   }
 
+  static const List<String> defaultJobTypes = [
+    'data_retention',
+    'message_export',
+    'elasticsearch_post_indexing',
+    'ldap_sync',
+    'compliance',
+    'product_notices',
+    'extract_content',
+    'migrations',
+    'import_process',
+    'export_process',
+  ];
+
   @override
   Future<List<String>> getJobTypes() async {
-    final result = await _apiClient.get<List<String>>(
-      JobsEndPoint.types,
-      fromJson: (json) =>
-          (json as List<dynamic>).map((e) => e.toString()).toList(),
-    );
-    if (result is ApiSuccess<List<String>>) {
-      return result.data;
+    try {
+      final jobs = await getJobs(perPage: 100);
+      final types = jobs.map((j) => j.type).whereType<String>().toSet();
+      types.addAll(defaultJobTypes);
+      return types.toList();
+    } catch (_) {
+      return defaultJobTypes;
     }
-    throw Exception('Failed to get job types');
   }
 
   @override
@@ -75,12 +87,8 @@ class AdminJobsDataSourceImpl implements AdminJobsDataSource {
     Map<String, dynamic>? data,
   }) async {
     final result = await _apiClient.post<JobModel>(
-      JobsEndPoint.type(jobType),
-      data: {
-        'type': jobType,
-        'description': description,
-        if (data != null) 'data': data,
-      },
+      JobsEndPoint.root,
+      data: {'type': jobType, if (data != null) 'data': data},
       fromJson: (json) => JobModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<JobModel>) {

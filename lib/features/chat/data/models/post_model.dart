@@ -21,6 +21,7 @@ final class PostModel extends PostEntity {
     required super.fileIds,
     required super.pendingPostId,
     super.metadata,
+    super.isSaved,
   });
 
   factory PostModel.fromMap(Map<String, dynamic> data) {
@@ -43,6 +44,7 @@ final class PostModel extends PostEntity {
       metadata: data['metadata'] != null
           ? PostMetadataModel.fromMap(data['metadata'] as Map<String, dynamic>)
           : null,
+      isSaved: data['is_saved'] == true,
     );
   }
 
@@ -64,6 +66,7 @@ final class PostModel extends PostEntity {
       fileIds: entity.fileIds,
       pendingPostId: entity.pendingPostId,
       metadata: entity.metadata,
+      isSaved: entity.isSaved,
     );
   }
 
@@ -106,6 +109,7 @@ final class PostModel extends PostEntity {
     List<String>? fileIds,
     String? pendingPostId,
     PostMetadataEntity? metadata,
+    bool? isSaved,
   }) {
     return PostModel(
       id: id ?? this.id,
@@ -124,6 +128,7 @@ final class PostModel extends PostEntity {
       fileIds: fileIds ?? this.fileIds,
       pendingPostId: pendingPostId ?? this.pendingPostId,
       metadata: metadata ?? this.metadata,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 
@@ -145,6 +150,7 @@ final class PostModel extends PostEntity {
       fileIds: fileIds,
       pendingPostId: pendingPostId,
       metadata: metadata,
+      isSaved: isSaved,
     );
   }
 }

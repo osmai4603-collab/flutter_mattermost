@@ -21,6 +21,10 @@ import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+/// نوع المحتوى المعروض في اللوحة — مطابق التبديل بين
+/// "الرسائل" و "الملفات" في webapp (messages_or_files_selector).
+enum SavedContentFilter { messages, files }
+
 /// لوحة الرسائل المحفوظة/المثبتة — مطابقة flagged/pinned_messages في webapp:
 /// قائمة منشورات مع فواصل تواريخ وأفاتار/اسم/وقت/نص وقناة (للمحفوظة)
 /// وزر إزالة (إلغاء الحفظ/إزالة التثبيت).
@@ -28,12 +32,16 @@ class SavedPinnedPanel extends StatefulWidget {
   final bool isPinned;
   final String? channelId;
   final void Function(int count)? onLoad;
+  final SavedContentFilter contentFilter;
+  final String searchQuery;
 
   const SavedPinnedPanel({
     super.key,
     this.isPinned = false,
     this.channelId,
     this.onLoad,
+    this.contentFilter = SavedContentFilter.messages,
+    this.searchQuery = '',
   });
 
   @override
@@ -72,6 +80,24 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
 
   void _reload() {
     setState(() => _postsFuture = _fetch());
+  }
+
+  /// فلترة محلية حسب نوع المحتوى (رسائل/ملفات) واستعلام البحث.
+  List<PostEntity> _applyFilters(List<PostEntity> posts) {
+    final query = widget.searchQuery.trim().toLowerCase();
+    return posts.where((post) {
+      final hasFiles = post.fileIds.isNotEmpty ||
+          (post.metadata?.files?.isNotEmpty ?? false);
+      if (widget.contentFilter == SavedContentFilter.files && !hasFiles) {
+        return false;
+      }
+      if (query.isEmpty) return true;
+      final fileNames = (post.metadata?.files ?? const [])
+          .map((f) => '${f['name'] ?? ''}')
+          .join(' ');
+      return post.message.toLowerCase().contains(query) ||
+          fileNames.toLowerCase().contains(query);
+    }).toList();
   }
 
   void _loadProfiles(List<PostEntity> posts) {
@@ -127,6 +153,35 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
     _reload();
   }
 
+  /// تأكيد قبل إلغاء الحفظ — مطابق لسلوك webapp في تجنّب الإزالة بالخطأ.
+  Future<void> _confirmAndRemove(PostEntity post) async {
+    if (widget.isPinned) {
+      await _removeFromList(post);
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.flaggedMessagesUnflagConfirmTitle),
+        content: Text(l10n.flaggedMessagesUnflagConfirmBody),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.generic_modalCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.generic_modalConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _removeFromList(post);
+    }
+  }
+
   void _navigateToPost(PostEntity post) {
     final channel = _channels[post.channelId];
     if (channel == null) return;
@@ -172,13 +227,18 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
         }
-        final posts = snapshot.data ?? const <PostEntity>[];
+        final all = snapshot.data ?? const <PostEntity>[];
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onLoad?.call(posts.length);
+          widget.onLoad?.call(all.length);
         });
+        final posts = _applyFilters(all);
         _loadProfiles(posts);
         _resolveChannels(posts);
         if (posts.isEmpty) {
+          if (widget.contentFilter == SavedContentFilter.files &&
+              all.isNotEmpty) {
+            return _FilesEmptyState(l10n: l10n);
+          }
           return widget.isPinned
               ? _PinnedEmptyState(l10n: l10n)
               : _SavedEmptyState(l10n: l10n);
@@ -228,7 +288,7 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
           removeTooltip: widget.isPinned
               ? l10n.postMenuUnpin
               : l10n.postMenuUnflag,
-          onRemove: () => _removeFromList(post),
+          onRemove: () => _confirmAndRemove(post),
           onTap: () => _navigateToPost(post),
         ),
       );
@@ -569,6 +629,50 @@ class _PinnedEmptyState extends StatelessWidget {
     return _EmptyBody(
       title: l10n.no_resultsPinned_messagesTitle,
       subtitle: l10n.no_resultsPinned_messagesSubtitle(l10n.postMenuPin),
+    );
+  }
+}
+
+class _FilesEmptyState extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _FilesEmptyState({required this.l10n});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.attach_file,
+              size: 64,
+              color: theme.centerChannelColor.withValues(alpha: 0.1),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.no_resultsFlagged_postsTitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.no_resultsFilesSubtitle,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: theme.centerChannelColor.withValues(alpha: 0.6),
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

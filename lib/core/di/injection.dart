@@ -2,7 +2,6 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
 import 'injection.config.dart';
 import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
-import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/threads_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/data/repositories/threads_repository_impl.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
@@ -20,7 +19,6 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<ThreadsRepository>(
     () => ThreadsRepositoryImpl(
       getIt<ThreadsRemoteDataSource>(),
-      getIt<SecureStorageService>(),
     ),
   );
   getIt.registerLazySingleton<ThreadsBloc>(

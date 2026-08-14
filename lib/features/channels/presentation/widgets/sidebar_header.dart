@@ -121,7 +121,9 @@ class _MainMenu extends StatelessWidget {
                 icon: const Icon(Icons.extension_outlined, size: 18),
                 onTap: () {
                   if (team != null) {
-                    context.go(IntegrationRoutes.root.replaceAll(':team', team.name));
+                    context.go(
+                      IntegrationRoutes.root.replaceAll(':team', team.name),
+                    );
                   }
                 },
               ),
@@ -129,16 +131,13 @@ class _MainMenu extends StatelessWidget {
                 id: 'system_console',
                 label: l10n.sidebar_right_menuConsole,
                 icon: const Icon(Icons.terminal_rounded, size: 18),
-                onTap: () => context.go(AdminConsoleRoutes.root),
+                onTap: () => context.go(AdminConsoleRoutes.home),
               ),
             ],
             child: Tooltip(
               message: l10n.teamMenuTitle,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 child: Row(
                   children: [
                     Flexible(
@@ -147,7 +146,7 @@ class _MainMenu extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontFamily: 'Metropolis',
+                          fontFamily: 'NotoNaskhArabic',
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: theme.sidebarHeaderTextColor,

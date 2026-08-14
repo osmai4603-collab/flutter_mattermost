@@ -1,23 +1,27 @@
 import 'package:flutter_mattermost/features/admin/domain/entities/analytics_entity.dart';
 
-final class AnalyticsModel extends AnalyticsEntity {
-  const AnalyticsModel({required Map<String, dynamic> raw}) : super(raw);
+final class AnalyticsItemModel extends AnalyticsItemEntity {
+  const AnalyticsItemModel({required super.name, required super.value});
 
-  factory AnalyticsModel.fromMap(Map<String, dynamic> map) {
-    return AnalyticsModel(raw: Map<String, dynamic>.from(map));
+  factory AnalyticsItemModel.fromMap(Map<String, dynamic> data) {
+    return AnalyticsItemModel(name: data['name'], value: data['value']);
   }
 
   Map<String, dynamic> toMap() {
-    return Map<String, dynamic>.from(raw);
+    return {'name': name, 'value': value};
   }
 
-  factory AnalyticsModel.fromEntity(AnalyticsEntity entity) {
-    return AnalyticsModel(raw: Map<String, dynamic>.from(entity.raw));
+  factory AnalyticsItemModel.fromEntity(AnalyticsItemEntity entity) {
+    return AnalyticsItemModel(name: entity.name, value: entity.value);
   }
 
-  AnalyticsModel copyWith({Map<String, dynamic>? raw}) {
-    return AnalyticsModel(raw: raw ?? this.raw);
+  AnalyticsItemModel copyWith({String? name, int? value}) {
+    return AnalyticsItemModel(
+      name: name ?? this.name,
+      value: value ?? this.value,
+    );
   }
 
-  AnalyticsEntity toEntity() => AnalyticsEntity(raw);
+  AnalyticsItemEntity toEntity() =>
+      AnalyticsItemEntity(name: name, value: value);
 }

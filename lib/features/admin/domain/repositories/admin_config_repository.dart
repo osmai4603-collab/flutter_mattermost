@@ -6,6 +6,7 @@ abstract class AdminConfigRepository {
   Future<Map<String, dynamic>> updateConfig(Map<String, dynamic> config);
   Future<Map<String, dynamic>> patchConfig(Map<String, dynamic> patch);
   Future<AnalyticsEntity> getAnalytics();
+  Future<List<String>> getPlainLogs({int page = 0, int perPage = 100});
   Future<List<LogEntryModel>> getLogs({
     int page = 0,
     int perPage = 100,

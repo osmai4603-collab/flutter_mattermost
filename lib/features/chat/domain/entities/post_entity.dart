@@ -19,6 +19,7 @@ class PostEntity extends Entity {
   final List<String> fileIds;
   final String pendingPostId;
   final PostMetadataEntity? metadata;
+  final bool isSaved;
 
   const PostEntity({
     required this.id,
@@ -37,6 +38,7 @@ class PostEntity extends Entity {
     this.fileIds = const [],
     this.pendingPostId = '',
     this.metadata,
+    this.isSaved = false,
   });
 
   @override
@@ -57,6 +59,7 @@ class PostEntity extends Entity {
         fileIds,
         pendingPostId,
         metadata,
+        isSaved,
       ];
 
   @override
@@ -77,6 +80,7 @@ class PostEntity extends Entity {
     List<String>? fileIds,
     String? pendingPostId,
     PostMetadataEntity? metadata,
+    bool? isSaved,
   }) {
     return PostEntity(
       id: id ?? this.id,
@@ -95,6 +99,7 @@ class PostEntity extends Entity {
       fileIds: fileIds ?? this.fileIds,
       pendingPostId: pendingPostId ?? this.pendingPostId,
       metadata: metadata ?? this.metadata,
+      isSaved: isSaved ?? this.isSaved,
     );
   }
 }

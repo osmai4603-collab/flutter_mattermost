@@ -57,62 +57,62 @@ sealed class AppTheme {
     final textTheme =
         ThemeData(useMaterial3: true, brightness: theme.brightness).textTheme
             .apply(
-              fontFamily: AppFonts.openSans,
+              fontFamily: AppFonts.notoNaskhArabic,
               bodyColor: theme.centerChannelColor,
               displayColor: theme.centerChannelColor,
             )
             .copyWith(
               displayLarge: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s48,
               ),
               displayMedium: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s40,
               ),
               displaySmall: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s36,
               ),
               headlineLarge: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s32,
               ),
               headlineMedium: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s28,
               ),
               headlineSmall: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s24,
               ),
               titleLarge: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s22,
               ),
               titleMedium: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s16,
               ),
               titleSmall: textStyle(
                 theme,
-                AppFonts.metropolis,
+                AppFonts.notoNaskhArabic,
                 FontWeight.w600,
                 AppFontSizes.s14,
               ),
@@ -125,13 +125,37 @@ sealed class AppTheme {
       textTheme: textTheme,
       scaffoldBackgroundColor: theme.centerChannelBg,
       canvasColor: theme.centerChannelBg,
-      fontFamily: AppFonts.openSans,
-      fontFamilyFallback: const ['Roboto', 'sans-serif'],
+      fontFamily: AppFonts.notoNaskhArabic,
+      fontFamilyFallback: const ['OpenSans', 'Roboto', 'sans-serif'],
       appBarTheme: AppBarTheme(
         backgroundColor: theme.centerChannelBg,
         foregroundColor: theme.centerChannelColor,
         elevation: 0,
         scrolledUnderElevation: 0,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: .circular(8)),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: .circular(4),
+            side: BorderSide(color: colorScheme.surface),
+          ),
+          foregroundColor: colorScheme.onSurface,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: .circular(8)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(borderRadius: .circular(8)),
+        ),
       ),
       dividerTheme: DividerThemeData(
         color: changeOpacity(theme.centerChannelColor, 0.2),

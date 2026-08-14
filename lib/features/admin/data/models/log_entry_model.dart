@@ -11,8 +11,8 @@ final class LogEntryModel extends LogEntryEntity {
   factory LogEntryModel.fromMap(Map<String, dynamic> map) {
     return LogEntryModel(
       level: map["level"] as String?,
-      message: map["message"] as String?,
-      time: map["time"] as String?,
+      message: (map["msg"] ?? map["message"]) as String?,
+      time: (map["timestamp"] ?? map["time"]) as String?,
       caller: map["caller"] as String?,
     );
   }

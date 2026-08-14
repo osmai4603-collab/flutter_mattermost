@@ -283,8 +283,8 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
   }
 
   Widget _buildMetricsTable(BuildContext context, AnalyticsEntity analytics) {
-    final rows = analytics.availableKeys
-        .where((k) => k != 'total_users')
+    final rows = analytics.items
+        .where((k) => k.name != 'total_users')
         .take(12)
         .toList();
     return Container(
@@ -313,7 +313,7 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      key.replaceAll('_', ' '),
+                      key.name.replaceAll('_', ' '),
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -321,7 +321,7 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    analytics.displayValue(key),
+                    key.value.toString(),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,

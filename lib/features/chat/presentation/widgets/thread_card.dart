@@ -20,6 +20,7 @@ class ThreadCard extends StatelessWidget {
   final VoidCallback? onMarkUnread;
   final VoidCallback? onCopyLink;
   final VoidCallback? onMoveThread;
+  final VoidCallback? onToggleSave;
 
   const ThreadCard({
     super.key,
@@ -32,6 +33,7 @@ class ThreadCard extends StatelessWidget {
     this.onMarkUnread,
     this.onCopyLink,
     this.onMoveThread,
+    this.onToggleSave,
   });
 
   @override
@@ -122,6 +124,7 @@ class ThreadCard extends StatelessWidget {
                   onMarkUnread: onMarkUnread,
                   onCopyLink: onCopyLink,
                   onMoveThread: onMoveThread,
+                  onToggleSave: onToggleSave,
                 ),
               ],
             ),
@@ -204,13 +207,15 @@ class ThreadCard extends StatelessWidget {
 }
 
 /// القائمة السياقية للبطاقة — مطابقة thread_menu في webapp:
-/// متابعة/إلغاء متابعة، تحديد كغير مقروء، نسخ الرابط، نقل المحادثة.
+/// متابعة/إلغاء متابعة، حفظ/إزالة من المحفوظات، تحديد كغير مقروء،
+/// نسخ الرابط، نقل المحادثة.
 class _ThreadOverflowMenu extends StatelessWidget {
   final ThreadEntity thread;
   final VoidCallback onToggleFollow;
   final VoidCallback? onMarkUnread;
   final VoidCallback? onCopyLink;
   final VoidCallback? onMoveThread;
+  final VoidCallback? onToggleSave;
 
   const _ThreadOverflowMenu({
     required this.thread,
@@ -218,6 +223,7 @@ class _ThreadOverflowMenu extends StatelessWidget {
     this.onMarkUnread,
     this.onCopyLink,
     this.onMoveThread,
+    this.onToggleSave,
   });
 
   @override
@@ -249,6 +255,30 @@ class _ThreadOverflowMenu extends StatelessWidget {
           ),
         ),
       ),
+      if (onToggleSave != null)
+        PopupMenuItem<String>(
+          value: 'save',
+          child: ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            leading: Icon(
+              thread.rootPost.isSaved
+                  ? Icons.bookmark
+                  : Icons.bookmark_border,
+              size: 18,
+              color: theme.centerChannelColor.withValues(alpha: 0.7),
+            ),
+            title: Text(
+              thread.rootPost.isSaved
+                  ? l10n.flag_postUnflag
+                  : l10n.flag_postFlag,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 13,
+              ),
+            ),
+          ),
+        ),
       if (onMarkUnread != null)
         PopupMenuItem<String>(
           value: 'unread',
@@ -325,6 +355,8 @@ class _ThreadOverflowMenu extends StatelessWidget {
         switch (value) {
           case 'follow':
             onToggleFollow();
+          case 'save':
+            onToggleSave?.call();
           case 'unread':
             onMarkUnread?.call();
           case 'copy':

@@ -37,36 +37,6 @@ class _MentionsPanelState extends State<MentionsPanel> {
   Map<String, String> _channelNames = {};
   List<String> _mentionKeys = const [];
 
-  /// مفاتيح الإشارة — مطابقة getCurrentUserMentionKeys في webapp:
-  /// مفاتيح مخصصة (notify_props.mention_keys) + الاسم الأول إن كان مفعّلاً
-  /// (notify_props.first_name == 'true') + @username دائماً، وأخيراً تستبعد
-  /// التنبيهات العامة @channel/@all/@here كما تفعل showMentions.
-  static List<String> mentionKeysFrom(UserEntity user) {
-    final keys = <String>[];
-    final notifyProps = user.notifyProps;
-    final rawKeys = notifyProps['mention_keys'] as String? ?? '';
-    for (final key in rawKeys.split(',')) {
-      final trimmed = key.trim();
-      if (trimmed.isNotEmpty) keys.add(trimmed);
-    }
-    if (notifyProps['first_name'] == 'true' && user.firstName.isNotEmpty) {
-      keys.add(user.firstName);
-    }
-    if (notifyProps['channel'] == 'true') {
-      keys.addAll(const ['@channel', '@all', '@here']);
-    }
-    final usernameKey = '@${user.username}';
-    if (!keys.contains(usernameKey)) keys.add(usernameKey);
-    return keys
-        .where((k) => k != '@channel' && k != '@all' && k != '@here')
-        .toList();
-  }
-
-  /// استعلام البحث — مطابق showMentions في webapp:
-  /// يجمع المفاتيح ويفصلها بمسافات ويرسل is_or_search=true.
-  static String queryFromKeys(List<String> keys) =>
-      '${keys.join(' ').trim()} ';
-
   Future<List<PostEntity>> _fetch() {
     final teamState = context.read<TeamBloc>().state;
     final teamId = teamState is TeamsLoadedState
@@ -76,7 +46,7 @@ class _MentionsPanelState extends State<MentionsPanel> {
     if (authState is! AuthenticatedState) return Future.value(const []);
     final user = authState.user;
     _mentionKeys = mentionKeysFrom(user);
-    final query = queryFromKeys(_mentionKeys);
+    final query = mentionKeysQuery(_mentionKeys);
     if (teamId == null || query.trim().isEmpty) {
       return Future.value(const []);
     }
@@ -410,6 +380,35 @@ class _MentionsEmptyState extends StatelessWidget {
     );
   }
 }
+
+/// مفاتيح الإشارة — مطابقة getCurrentUserMentionKeys في webapp:
+/// مفاتيح مخصصة (notify_props.mention_keys) + الاسم الأول إن كان مفعّلاً
+/// (notify_props.first_name == 'true') + @username دائماً، وأخيراً تستبعد
+/// التنبيهات العامة @channel/@all/@here كما تفعل showMentions.
+List<String> mentionKeysFrom(UserEntity user) {
+  final keys = <String>[];
+  final notifyProps = user.notifyProps;
+  final rawKeys = notifyProps['mention_keys'] as String? ?? '';
+  for (final key in rawKeys.split(',')) {
+    final trimmed = key.trim();
+    if (trimmed.isNotEmpty) keys.add(trimmed);
+  }
+  if (notifyProps['first_name'] == 'true' && user.firstName.isNotEmpty) {
+    keys.add(user.firstName);
+  }
+  if (notifyProps['channel'] == 'true') {
+    keys.addAll(const ['@channel', '@all', '@here']);
+  }
+  final usernameKey = '@${user.username}';
+  if (!keys.contains(usernameKey)) keys.add(usernameKey);
+  return keys
+      .where((k) => k != '@channel' && k != '@all' && k != '@here')
+      .toList();
+}
+
+/// استعلام البحث — مطابق showMentions في webapp:
+/// يجمع المفاتيح ويفصلها بمسافات (مع مسافة نهائية) ويرسل is_or_search=true.
+String mentionKeysQuery(List<String> keys) => '${keys.join(' ').trim()} ';
 
 /// بناء spans مع وعي بالإيموجي وتظليل مخصص للإشارات (Mention Highlighting) —
 /// مطابق لتظليل الكلمات المشَار إليها في webapp (خلفية mentionHighlightBg).
