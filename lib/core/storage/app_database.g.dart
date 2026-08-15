@@ -5365,6 +5365,653 @@ class PendingActionsCompanion extends UpdateCompanion<PendingAction> {
   }
 }
 
+class $PendingPostsTable extends PendingPosts
+    with TableInfo<$PendingPostsTable, PendingPost> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingPostsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serverIdMeta = const VerificationMeta(
+    'serverId',
+  );
+  @override
+  late final GeneratedColumn<String> serverId = GeneratedColumn<String>(
+    'server_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _channelIdMeta = const VerificationMeta(
+    'channelId',
+  );
+  @override
+  late final GeneratedColumn<String> channelId = GeneratedColumn<String>(
+    'channel_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _messageMeta = const VerificationMeta(
+    'message',
+  );
+  @override
+  late final GeneratedColumn<String> message = GeneratedColumn<String>(
+    'message',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _rootIdMeta = const VerificationMeta('rootId');
+  @override
+  late final GeneratedColumn<String> rootId = GeneratedColumn<String>(
+    'root_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _fileIdsMeta = const VerificationMeta(
+    'fileIds',
+  );
+  @override
+  late final GeneratedColumn<String> fileIds = GeneratedColumn<String>(
+    'file_ids',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('[]'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<int> lastAttemptAt = GeneratedColumn<int>(
+    'last_attempt_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('pending'),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    serverId,
+    channelId,
+    userId,
+    message,
+    rootId,
+    fileIds,
+    createdAt,
+    lastAttemptAt,
+    retryCount,
+    status,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_posts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingPost> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(
+        _serverIdMeta,
+        serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_serverIdMeta);
+    }
+    if (data.containsKey('channel_id')) {
+      context.handle(
+        _channelIdMeta,
+        channelId.isAcceptableOrUnknown(data['channel_id']!, _channelIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_channelIdMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('message')) {
+      context.handle(
+        _messageMeta,
+        message.isAcceptableOrUnknown(data['message']!, _messageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_messageMeta);
+    }
+    if (data.containsKey('root_id')) {
+      context.handle(
+        _rootIdMeta,
+        rootId.isAcceptableOrUnknown(data['root_id']!, _rootIdMeta),
+      );
+    }
+    if (data.containsKey('file_ids')) {
+      context.handle(
+        _fileIdsMeta,
+        fileIds.isAcceptableOrUnknown(data['file_ids']!, _fileIdsMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id, serverId};
+  @override
+  PendingPost map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingPost(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      serverId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}server_id'],
+      )!,
+      channelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}channel_id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      message: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}message'],
+      )!,
+      rootId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}root_id'],
+      )!,
+      fileIds: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}file_ids'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_attempt_at'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+    );
+  }
+
+  @override
+  $PendingPostsTable createAlias(String alias) {
+    return $PendingPostsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingPost extends DataClass implements Insertable<PendingPost> {
+  final String id;
+  final String serverId;
+  final String channelId;
+  final String userId;
+  final String message;
+  final String rootId;
+  final String fileIds;
+  final int createdAt;
+  final int lastAttemptAt;
+  final int retryCount;
+  final String status;
+  const PendingPost({
+    required this.id,
+    required this.serverId,
+    required this.channelId,
+    required this.userId,
+    required this.message,
+    required this.rootId,
+    required this.fileIds,
+    required this.createdAt,
+    required this.lastAttemptAt,
+    required this.retryCount,
+    required this.status,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['server_id'] = Variable<String>(serverId);
+    map['channel_id'] = Variable<String>(channelId);
+    map['user_id'] = Variable<String>(userId);
+    map['message'] = Variable<String>(message);
+    map['root_id'] = Variable<String>(rootId);
+    map['file_ids'] = Variable<String>(fileIds);
+    map['created_at'] = Variable<int>(createdAt);
+    map['last_attempt_at'] = Variable<int>(lastAttemptAt);
+    map['retry_count'] = Variable<int>(retryCount);
+    map['status'] = Variable<String>(status);
+    return map;
+  }
+
+  PendingPostsCompanion toCompanion(bool nullToAbsent) {
+    return PendingPostsCompanion(
+      id: Value(id),
+      serverId: Value(serverId),
+      channelId: Value(channelId),
+      userId: Value(userId),
+      message: Value(message),
+      rootId: Value(rootId),
+      fileIds: Value(fileIds),
+      createdAt: Value(createdAt),
+      lastAttemptAt: Value(lastAttemptAt),
+      retryCount: Value(retryCount),
+      status: Value(status),
+    );
+  }
+
+  factory PendingPost.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingPost(
+      id: serializer.fromJson<String>(json['id']),
+      serverId: serializer.fromJson<String>(json['serverId']),
+      channelId: serializer.fromJson<String>(json['channelId']),
+      userId: serializer.fromJson<String>(json['userId']),
+      message: serializer.fromJson<String>(json['message']),
+      rootId: serializer.fromJson<String>(json['rootId']),
+      fileIds: serializer.fromJson<String>(json['fileIds']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      lastAttemptAt: serializer.fromJson<int>(json['lastAttemptAt']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      status: serializer.fromJson<String>(json['status']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'serverId': serializer.toJson<String>(serverId),
+      'channelId': serializer.toJson<String>(channelId),
+      'userId': serializer.toJson<String>(userId),
+      'message': serializer.toJson<String>(message),
+      'rootId': serializer.toJson<String>(rootId),
+      'fileIds': serializer.toJson<String>(fileIds),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'lastAttemptAt': serializer.toJson<int>(lastAttemptAt),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'status': serializer.toJson<String>(status),
+    };
+  }
+
+  PendingPost copyWith({
+    String? id,
+    String? serverId,
+    String? channelId,
+    String? userId,
+    String? message,
+    String? rootId,
+    String? fileIds,
+    int? createdAt,
+    int? lastAttemptAt,
+    int? retryCount,
+    String? status,
+  }) => PendingPost(
+    id: id ?? this.id,
+    serverId: serverId ?? this.serverId,
+    channelId: channelId ?? this.channelId,
+    userId: userId ?? this.userId,
+    message: message ?? this.message,
+    rootId: rootId ?? this.rootId,
+    fileIds: fileIds ?? this.fileIds,
+    createdAt: createdAt ?? this.createdAt,
+    lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+    retryCount: retryCount ?? this.retryCount,
+    status: status ?? this.status,
+  );
+  PendingPost copyWithCompanion(PendingPostsCompanion data) {
+    return PendingPost(
+      id: data.id.present ? data.id.value : this.id,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      channelId: data.channelId.present ? data.channelId.value : this.channelId,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      message: data.message.present ? data.message.value : this.message,
+      rootId: data.rootId.present ? data.rootId.value : this.rootId,
+      fileIds: data.fileIds.present ? data.fileIds.value : this.fileIds,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      status: data.status.present ? data.status.value : this.status,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingPost(')
+          ..write('id: $id, ')
+          ..write('serverId: $serverId, ')
+          ..write('channelId: $channelId, ')
+          ..write('userId: $userId, ')
+          ..write('message: $message, ')
+          ..write('rootId: $rootId, ')
+          ..write('fileIds: $fileIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('status: $status')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    serverId,
+    channelId,
+    userId,
+    message,
+    rootId,
+    fileIds,
+    createdAt,
+    lastAttemptAt,
+    retryCount,
+    status,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingPost &&
+          other.id == this.id &&
+          other.serverId == this.serverId &&
+          other.channelId == this.channelId &&
+          other.userId == this.userId &&
+          other.message == this.message &&
+          other.rootId == this.rootId &&
+          other.fileIds == this.fileIds &&
+          other.createdAt == this.createdAt &&
+          other.lastAttemptAt == this.lastAttemptAt &&
+          other.retryCount == this.retryCount &&
+          other.status == this.status);
+}
+
+class PendingPostsCompanion extends UpdateCompanion<PendingPost> {
+  final Value<String> id;
+  final Value<String> serverId;
+  final Value<String> channelId;
+  final Value<String> userId;
+  final Value<String> message;
+  final Value<String> rootId;
+  final Value<String> fileIds;
+  final Value<int> createdAt;
+  final Value<int> lastAttemptAt;
+  final Value<int> retryCount;
+  final Value<String> status;
+  final Value<int> rowid;
+  const PendingPostsCompanion({
+    this.id = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.channelId = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.message = const Value.absent(),
+    this.rootId = const Value.absent(),
+    this.fileIds = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.status = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingPostsCompanion.insert({
+    required String id,
+    required String serverId,
+    required String channelId,
+    required String userId,
+    required String message,
+    this.rootId = const Value.absent(),
+    this.fileIds = const Value.absent(),
+    required int createdAt,
+    this.lastAttemptAt = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.status = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       serverId = Value(serverId),
+       channelId = Value(channelId),
+       userId = Value(userId),
+       message = Value(message),
+       createdAt = Value(createdAt);
+  static Insertable<PendingPost> custom({
+    Expression<String>? id,
+    Expression<String>? serverId,
+    Expression<String>? channelId,
+    Expression<String>? userId,
+    Expression<String>? message,
+    Expression<String>? rootId,
+    Expression<String>? fileIds,
+    Expression<int>? createdAt,
+    Expression<int>? lastAttemptAt,
+    Expression<int>? retryCount,
+    Expression<String>? status,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (serverId != null) 'server_id': serverId,
+      if (channelId != null) 'channel_id': channelId,
+      if (userId != null) 'user_id': userId,
+      if (message != null) 'message': message,
+      if (rootId != null) 'root_id': rootId,
+      if (fileIds != null) 'file_ids': fileIds,
+      if (createdAt != null) 'created_at': createdAt,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (status != null) 'status': status,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingPostsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? serverId,
+    Value<String>? channelId,
+    Value<String>? userId,
+    Value<String>? message,
+    Value<String>? rootId,
+    Value<String>? fileIds,
+    Value<int>? createdAt,
+    Value<int>? lastAttemptAt,
+    Value<int>? retryCount,
+    Value<String>? status,
+    Value<int>? rowid,
+  }) {
+    return PendingPostsCompanion(
+      id: id ?? this.id,
+      serverId: serverId ?? this.serverId,
+      channelId: channelId ?? this.channelId,
+      userId: userId ?? this.userId,
+      message: message ?? this.message,
+      rootId: rootId ?? this.rootId,
+      fileIds: fileIds ?? this.fileIds,
+      createdAt: createdAt ?? this.createdAt,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      retryCount: retryCount ?? this.retryCount,
+      status: status ?? this.status,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<String>(serverId.value);
+    }
+    if (channelId.present) {
+      map['channel_id'] = Variable<String>(channelId.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (message.present) {
+      map['message'] = Variable<String>(message.value);
+    }
+    if (rootId.present) {
+      map['root_id'] = Variable<String>(rootId.value);
+    }
+    if (fileIds.present) {
+      map['file_ids'] = Variable<String>(fileIds.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<int>(lastAttemptAt.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingPostsCompanion(')
+          ..write('id: $id, ')
+          ..write('serverId: $serverId, ')
+          ..write('channelId: $channelId, ')
+          ..write('userId: $userId, ')
+          ..write('message: $message, ')
+          ..write('rootId: $rootId, ')
+          ..write('fileIds: $fileIds, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('status: $status, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $CachedRolesTable extends CachedRoles
     with TableInfo<$CachedRolesTable, CachedRole> {
   @override
@@ -5807,6 +6454,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $CachedPreferencesTable(this);
   late final $SyncMetadataTable syncMetadata = $SyncMetadataTable(this);
   late final $PendingActionsTable pendingActions = $PendingActionsTable(this);
+  late final $PendingPostsTable pendingPosts = $PendingPostsTable(this);
   late final $CachedRolesTable cachedRoles = $CachedRolesTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -5825,6 +6473,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     cachedPreferences,
     syncMetadata,
     pendingActions,
+    pendingPosts,
     cachedRoles,
   ];
 }
@@ -8704,6 +9353,324 @@ typedef $$PendingActionsTableProcessedTableManager =
       PendingAction,
       PrefetchHooks Function()
     >;
+typedef $$PendingPostsTableCreateCompanionBuilder =
+    PendingPostsCompanion Function({
+      required String id,
+      required String serverId,
+      required String channelId,
+      required String userId,
+      required String message,
+      Value<String> rootId,
+      Value<String> fileIds,
+      required int createdAt,
+      Value<int> lastAttemptAt,
+      Value<int> retryCount,
+      Value<String> status,
+      Value<int> rowid,
+    });
+typedef $$PendingPostsTableUpdateCompanionBuilder =
+    PendingPostsCompanion Function({
+      Value<String> id,
+      Value<String> serverId,
+      Value<String> channelId,
+      Value<String> userId,
+      Value<String> message,
+      Value<String> rootId,
+      Value<String> fileIds,
+      Value<int> createdAt,
+      Value<int> lastAttemptAt,
+      Value<int> retryCount,
+      Value<String> status,
+      Value<int> rowid,
+    });
+
+class $$PendingPostsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingPostsTable> {
+  $$PendingPostsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get channelId => $composableBuilder(
+    column: $table.channelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get rootId => $composableBuilder(
+    column: $table.rootId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get fileIds => $composableBuilder(
+    column: $table.fileIds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingPostsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingPostsTable> {
+  $$PendingPostsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serverId => $composableBuilder(
+    column: $table.serverId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get channelId => $composableBuilder(
+    column: $table.channelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get message => $composableBuilder(
+    column: $table.message,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get rootId => $composableBuilder(
+    column: $table.rootId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get fileIds => $composableBuilder(
+    column: $table.fileIds,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingPostsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingPostsTable> {
+  $$PendingPostsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get channelId =>
+      $composableBuilder(column: $table.channelId, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get message =>
+      $composableBuilder(column: $table.message, builder: (column) => column);
+
+  GeneratedColumn<String> get rootId =>
+      $composableBuilder(column: $table.rootId, builder: (column) => column);
+
+  GeneratedColumn<String> get fileIds =>
+      $composableBuilder(column: $table.fileIds, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+}
+
+class $$PendingPostsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingPostsTable,
+          PendingPost,
+          $$PendingPostsTableFilterComposer,
+          $$PendingPostsTableOrderingComposer,
+          $$PendingPostsTableAnnotationComposer,
+          $$PendingPostsTableCreateCompanionBuilder,
+          $$PendingPostsTableUpdateCompanionBuilder,
+          (
+            PendingPost,
+            BaseReferences<_$AppDatabase, $PendingPostsTable, PendingPost>,
+          ),
+          PendingPost,
+          PrefetchHooks Function()
+        > {
+  $$PendingPostsTableTableManager(_$AppDatabase db, $PendingPostsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingPostsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingPostsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingPostsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> serverId = const Value.absent(),
+                Value<String> channelId = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> message = const Value.absent(),
+                Value<String> rootId = const Value.absent(),
+                Value<String> fileIds = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> lastAttemptAt = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingPostsCompanion(
+                id: id,
+                serverId: serverId,
+                channelId: channelId,
+                userId: userId,
+                message: message,
+                rootId: rootId,
+                fileIds: fileIds,
+                createdAt: createdAt,
+                lastAttemptAt: lastAttemptAt,
+                retryCount: retryCount,
+                status: status,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String serverId,
+                required String channelId,
+                required String userId,
+                required String message,
+                Value<String> rootId = const Value.absent(),
+                Value<String> fileIds = const Value.absent(),
+                required int createdAt,
+                Value<int> lastAttemptAt = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingPostsCompanion.insert(
+                id: id,
+                serverId: serverId,
+                channelId: channelId,
+                userId: userId,
+                message: message,
+                rootId: rootId,
+                fileIds: fileIds,
+                createdAt: createdAt,
+                lastAttemptAt: lastAttemptAt,
+                retryCount: retryCount,
+                status: status,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingPostsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingPostsTable,
+      PendingPost,
+      $$PendingPostsTableFilterComposer,
+      $$PendingPostsTableOrderingComposer,
+      $$PendingPostsTableAnnotationComposer,
+      $$PendingPostsTableCreateCompanionBuilder,
+      $$PendingPostsTableUpdateCompanionBuilder,
+      (
+        PendingPost,
+        BaseReferences<_$AppDatabase, $PendingPostsTable, PendingPost>,
+      ),
+      PendingPost,
+      PrefetchHooks Function()
+    >;
 typedef $$CachedRolesTableCreateCompanionBuilder =
     CachedRolesCompanion Function({
       required String serverId,
@@ -8957,6 +9924,8 @@ class $AppDatabaseManager {
       $$SyncMetadataTableTableManager(_db, _db.syncMetadata);
   $$PendingActionsTableTableManager get pendingActions =>
       $$PendingActionsTableTableManager(_db, _db.pendingActions);
+  $$PendingPostsTableTableManager get pendingPosts =>
+      $$PendingPostsTableTableManager(_db, _db.pendingPosts);
   $$CachedRolesTableTableManager get cachedRoles =>
       $$CachedRolesTableTableManager(_db, _db.cachedRoles);
 }

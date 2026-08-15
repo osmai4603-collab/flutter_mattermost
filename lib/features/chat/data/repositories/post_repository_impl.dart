@@ -10,6 +10,8 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:injectable/injectable.dart';
+import 'package:uuid/uuid.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/pending_post_entity.dart';
 
 @LazySingleton(as: PostRepository)
 class PostRepositoryImpl implements PostRepository {
@@ -18,6 +20,7 @@ class PostRepositoryImpl implements PostRepository {
   final ReactionsRemoteDataSource _reactionsDataSource;
   final FilesRemoteDataSource _filesDataSource;
   final SecureStorageService _secureStorage;
+  final _uuid = const Uuid();
 
   PostRepositoryImpl(
     this._remoteDataSource,
@@ -65,6 +68,9 @@ class PostRepositoryImpl implements PostRepository {
     Map<String, dynamic>? metadata,
     int? scheduledAt,
   }) async {
+    final pendingId = _uuid.v4();
+    final now = DateTime.now().millisecondsSinceEpoch;
+
     try {
       final model = await _remoteDataSource.sendPost(
         channelId,
@@ -72,7 +78,7 @@ class PostRepositoryImpl implements PostRepository {
         rootId: rootId,
         fileIds: fileIds,
         alsoSendToChannel: alsoSendToChannel,
-        metadata: metadata,
+        metadata: {...?metadata, 'pending_post_id': pendingId},
         scheduledAt: scheduledAt,
       );
       final entity = model.toEntity();
@@ -80,14 +86,24 @@ class PostRepositoryImpl implements PostRepository {
       await _localDataSource.cachePosts([entity]);
       return entity;
     } catch (e) {
-      final offlineEntity = PostEntity(
-        id: 'pending_${DateTime.now().millisecondsSinceEpoch}',
+      final pendingPost = PendingPostEntity(
+        id: pendingId,
         channelId: channelId,
-        userId: 'current_user',
         message: message,
         rootId: rootId ?? '',
-        createAt: DateTime.now().millisecondsSinceEpoch,
-        updateAt: DateTime.now().millisecondsSinceEpoch,
+        fileIds: fileIds,
+        createdAt: now,
+        status: PendingPostStatus.pending,
+      );
+      
+      final offlineEntity = PostEntity(
+        id: pendingId,
+        channelId: channelId,
+        userId: await _currentUserId(),
+        message: message,
+        rootId: rootId ?? '',
+        createAt: now,
+        updateAt: now,
         deleteAt: 0,
         editAt: 0,
         originalId: '',
@@ -95,15 +111,12 @@ class PostRepositoryImpl implements PostRepository {
         propsData: const {},
         hashtag: '',
         fileIds: fileIds,
-        pendingPostId: 'pending_${DateTime.now().millisecondsSinceEpoch}',
+        pendingPostId: pendingId,
       );
+      
       await _localDataSource.cachePosts([offlineEntity]);
-      await _localDataSource.enqueuePendingAction('CREATE_POST', {
-        'channel_id': channelId,
-        'message': message,
-        'root_id': rootId,
-        if (fileIds.isNotEmpty) 'file_ids': fileIds,
-      });
+      await _localDataSource.savePendingPost(pendingPost);
+      
       return offlineEntity;
     }
   }

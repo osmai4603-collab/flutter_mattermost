@@ -16,8 +16,14 @@ class SFUStreamManager {
   void startMonitoring(RTCPeerConnection pc) {
     _statsTimer?.cancel();
     _statsTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-      final stats = await pc.getStats();
-      _processStats(stats);
+      // قد يُغلق الـ peer connection (انتهاء المكالمة) قبل توقف المؤقّت —
+      // لا نترك استثناءً غير معالج يُلوّث السجل.
+      try {
+        final stats = await pc.getStats();
+        _processStats(stats);
+      } catch (_) {
+        stopMonitoring();
+      }
     });
   }
 

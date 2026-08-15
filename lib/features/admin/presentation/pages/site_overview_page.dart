@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
-import 'package:flutter_mattermost/features/admin/data/datasources/admin_reports_data_source.dart';
-import 'package:flutter_mattermost/features/teams/domain/repositories/team_repository.dart';
+import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة النظرة العامة للوحة التحكم (Site Overview Page)
 /// تعرض حالة الخادم، المؤشرات الرئيسية (KPIs)، التنبيهات، والإجراءات السريعة عبر الـ Repositories.
@@ -15,9 +14,17 @@ class AdminConsoleSiteOverviewPage extends StatefulWidget {
 
 class _AdminConsoleSiteOverviewPageState
     extends State<AdminConsoleSiteOverviewPage> {
+  final _adminRepo = getIt<AdminConfigRepository>();
+
   bool _isLoading = true;
-  int _totalUsersCount = 1248;
-  int _totalTeamsCount = 18;
+  int _totalUsersCount = 0;
+  int _totalTeamsCount = 0;
+  int _totalChannelsCount = 0;
+  int _totalPostsCount = 0;
+
+  String _serverVersion = '...';
+  String _databaseType = '...';
+  String _licenseEdition = '...';
 
   @override
   void initState() {
@@ -28,20 +35,30 @@ class _AdminConsoleSiteOverviewPageState
   Future<void> _loadOverviewData() async {
     setState(() => _isLoading = true);
     try {
-      if (getIt.isRegistered<AdminReportsDataSource>()) {
-        final reportsDS = getIt<AdminReportsDataSource>();
-        final usersCount = await reportsDS.getUsersCount();
-        _totalUsersCount = usersCount;
-      }
-      if (getIt.isRegistered<TeamRepository>()) {
-        final teamRepo = getIt<TeamRepository>();
-        final teams = await teamRepo.getMyTeams();
-        if (teams.isNotEmpty) {
-          _totalTeamsCount = teams.length;
-        }
+      final analytics = await _adminRepo.getAnalytics();
+      final config = await _adminRepo.getConfig();
+
+      if (mounted) {
+        setState(() {
+          _totalUsersCount = analytics.totalUsers;
+          _totalTeamsCount = analytics.totalTeams;
+          _totalChannelsCount = analytics.totalChannels;
+          _totalPostsCount = analytics.totalPosts;
+
+          final buildInfo = (config['BuildInfo'] as Map<String, dynamic>?) ?? {};
+          _serverVersion = buildInfo['Version'] as String? ?? 'Unknown';
+
+          final sqlSettings =
+              (config['SqlSettings'] as Map<String, dynamic>?) ?? {};
+          _databaseType = sqlSettings['DriverName'] as String? ?? 'Unknown';
+
+          _licenseEdition = config['LicenseSettings'] != null
+              ? 'Enterprise Edition'
+              : 'Team Edition';
+        });
       }
     } catch (_) {
-      // الاحتفاظ بالقيم الافتراضية في حالة الخطأ لضمان استقرار العرض
+      // Keep defaults on error
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -175,8 +192,8 @@ class _AdminConsoleSiteOverviewPageState
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
+              children: [
+                const Text(
                   'System Status: All Services Operational',
                   style: TextStyle(
                     color: Colors.white,
@@ -184,10 +201,10 @@ class _AdminConsoleSiteOverviewPageState
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Mattermost Server v9.5.0 • Uptime 14d 8h 22m • Database PostgreSQL 15.2 • License: Enterprise Edition',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  'Mattermost Server v$_serverVersion • Database $_databaseType • License: $_licenseEdition',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
                 ),
               ],
             ),
@@ -201,9 +218,9 @@ class _AdminConsoleSiteOverviewPageState
                 color: Colors.purpleAccent.withValues(alpha: 0.4),
               ),
             ),
-            child: const Text(
-              'Enterprise Edition',
-              style: TextStyle(
+            child: Text(
+              _licenseEdition,
+              style: const TextStyle(
                 color: Colors.purpleAccent,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
@@ -247,17 +264,17 @@ class _AdminConsoleSiteOverviewPageState
               icon: Icons.groups_rounded,
               accentColor: Colors.purpleAccent,
             ),
-            const _MetricCard(
+            _MetricCard(
               title: 'Total Channels',
-              value: '342',
-              subtitle: '210 Public • 132 Private',
+              value: '$_totalChannelsCount',
+              subtitle: 'Public & Private channels',
               icon: Icons.forum_rounded,
               accentColor: Colors.orangeAccent,
             ),
-            const _MetricCard(
+            _MetricCard(
               title: 'Posts & Messages',
-              value: '842.6K',
-              subtitle: '18.4K posted today',
+              value: _formatLargeNumber(_totalPostsCount),
+              subtitle: 'Total system message count',
               icon: Icons.chat_bubble_rounded,
               accentColor: Colors.greenAccent,
             ),
@@ -265,6 +282,15 @@ class _AdminConsoleSiteOverviewPageState
         );
       },
     );
+  }
+
+  String _formatLargeNumber(int number) {
+    if (number >= 1000000) {
+      return '${(number / 1000000).toStringAsFixed(1)}M';
+    } else if (number >= 1000) {
+      return '${(number / 1000).toStringAsFixed(1)}K';
+    }
+    return number.toString();
   }
 
   /// كرت الإجراءات السريعة

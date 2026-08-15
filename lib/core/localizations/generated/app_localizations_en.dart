@@ -46347,6 +46347,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String incomingCallFrom(Object callerName) {
+    return 'Incoming call from $callerName';
+  }
+
+  @override
   String get postEdited => '(edited)';
 
   @override
@@ -46638,6 +46643,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get callWidgetEndCall => 'End call';
+
+  @override
+  String get callWidgetMute => 'Mute';
+
+  @override
+  String get callWidgetUnmute => 'Unmute';
+
+  @override
+  String get callWidgetVideoOn => 'Start video';
+
+  @override
+  String get callWidgetVideoOff => 'Stop video';
+
+  @override
+  String get callsSpeakerTalking => 'is talking…';
+
+  @override
+  String get callsNoOneTalking => 'No one';
+
+  @override
+  String get callsCallStarted => 'Call started';
+
+  @override
+  String get callsCallEnded => 'Call ended';
+
+  @override
+  String get callsJoinCall => 'Join call';
+
+  @override
+  String get callsCallStateInChannel => 'Call status in this channel';
+
+  @override
+  String get callsOngoingCall => 'Ongoing call';
+
+  @override
+  String get callsYouAreInTheCall => 'You\'re in the call';
 
   @override
   String get autocompleteMentionAll => 'Notifies everyone in this channel';

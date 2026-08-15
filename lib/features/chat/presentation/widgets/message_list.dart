@@ -23,6 +23,7 @@ import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_p
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/call_state_tiles.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/post_attachment_preview.dart';
 import 'package:intl/intl.dart';
 
@@ -269,6 +270,12 @@ class _PostListBodyState extends State<_PostListBody> {
     }
 
     final items = <Widget>[];
+    // لافتة حالة المكالمة الحية — أسفل القائمة (فوق محرر الرسائل) في القناة
+    // الحالية؛ تعرض «مكالمة جارية» + زر انضمام أو «أنت في المكالمة».
+    items.insert(
+      0,
+      ChannelCallStateBanner(channelId: state.channelId),
+    );
     if (state.hasMore && state.posts.isNotEmpty) {
       items.add(
         Center(
@@ -684,31 +691,37 @@ class _PostItemState extends State<PostItem> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        MarkdownMessage(text: post.message),
-                        if (post.editAt > 0)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: InkWell(
-                              onTap: () =>
-                                  context.read<RhsBloc>().add(
-                                    OpenEditHistoryEvent(post.id),
+                        if (CallStateTiles.isCallPost(post))
+                          CallPostTile(post: post)
+                        else ...[
+                          MarkdownMessage(text: post.message),
+                          if (post.editAt > 0)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: InkWell(
+                                onTap: () => context
+                                    .read<RhsBloc>()
+                                    .add(
+                                      OpenEditHistoryEvent(post.id),
+                                    ),
+                                borderRadius: BorderRadius.circular(4),
+                                child: Text(
+                                  l10n.postEdited,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontStyle: FontStyle.italic,
+                                    color: theme.centerChannelColor
+                                        .withValues(alpha: 0.45),
+                                    decoration: TextDecoration.underline,
+                                    decorationColor:
+                                        theme.centerChannelColor.withValues(
+                                      alpha: 0.3,
+                                    ),
                                   ),
-                              borderRadius: BorderRadius.circular(4),
-                              child: Text(
-                                l10n.postEdited,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontStyle: FontStyle.italic,
-                                  color: theme.centerChannelColor.withValues(
-                                    alpha: 0.45,
-                                  ),
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: theme.centerChannelColor
-                                      .withValues(alpha: 0.3),
                                 ),
                               ),
                             ),
-                          ),
+                        ],
                       ],
                     ),
                   if (widget.filesList.isNotEmpty)

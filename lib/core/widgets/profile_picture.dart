@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/app/config/app_config.dart';
+import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 
 enum ProfileSize { sm, md, lg, xl }
+
+/// رابط صورة المستخدم (يتطلب ترخيص — يقع الاحتياط على الأحرف الأولى عند الفشل).
+String serverUserAvatarUrl(String userId) {
+  final serverUrl = getIt<ServerManager>().activeServerUrl;
+  return '$serverUrl/api/v4/users/$userId/image';
+}
 
 /// صورة المستخدم مع الحالة (مطابقة components/profile_picture في webapp).
 class ProfilePicture extends StatelessWidget {
@@ -83,15 +91,15 @@ class ProfilePicture extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         color: theme.sidebarHeaderBg.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
       child: avatarUrl != null && avatarUrl!.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: _resolve(avatarUrl!),
               fit: BoxFit.cover,
-              placeholder: (_, __) => _initials(theme),
-              errorWidget: (_, __, ___) => _initials(theme),
+              placeholder: (_, _) => _initials(theme),
+              errorWidget: (_, _, _) => _initials(theme),
             )
           : _initials(theme),
     );

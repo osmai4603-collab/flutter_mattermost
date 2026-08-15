@@ -72,6 +72,13 @@ set_target_properties(${BINARY_NAME}
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# GStreamer -dev packages are unavailable in this environment; headers and
+# .pc files are provided through a local sysroot (/tmp/opencode/gst-sysroot).
+# The linker needs this directory on the search path so plugins (e.g.
+# audioplayers_linux) can resolve -lgstreamer-1.0 etc.
+if(EXISTS "/tmp/opencode/gst-sysroot/lib/x86_64-linux-gnu")
+  link_directories(/tmp/opencode/gst-sysroot/lib/x86_64-linux-gnu)
+endif()
 include(flutter/generated_plugins.cmake)
 
 

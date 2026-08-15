@@ -54,6 +54,7 @@ class AnalyticsEntity {
   int get totalOutgoingWebhooks => _intOf('total_outgoing_webhooks');
 
   int _intOf(String key) {
-    return items.where((item) => item.name == 'total_users').length;
+    final item = items.where((item) => item.name == key).firstOrNull;
+    return item?.value ?? 0;
   }
 }

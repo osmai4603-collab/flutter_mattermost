@@ -14,8 +14,8 @@ class DesktopWindowConfig {
         center: true,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,
-        fullScreen: true,
-        titleBarStyle: TitleBarStyle.hidden, // Custom titlebar support
+        // fullScreen: true,
+        // titleBarStyle: TitleBarStyle.hidden, // Custom titlebar support
         title: 'Mattermost Desktop',
       );
 

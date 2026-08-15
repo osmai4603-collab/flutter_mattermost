@@ -28,7 +28,7 @@ class OutboxRetryService {
   );
 
   void start() {
-    _connectivitySubscription = _connectivityMonitor.onConnectivityChanged.listen((connected) {
+    _connectivitySubscription = _connectivityMonitor.connectionChangeStream.listen((connected) {
       if (connected) {
         processOutbox();
       }
@@ -55,7 +55,7 @@ class OutboxRetryService {
 
   Future<void> processOutbox() async {
     if (_isProcessing) return;
-    if (!_connectivityMonitor.isConnected) return;
+    if (!_connectivityMonitor.hasConnection) return;
 
     _isProcessing = true;
     try {

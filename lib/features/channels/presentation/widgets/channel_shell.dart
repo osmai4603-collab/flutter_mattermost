@@ -6,6 +6,8 @@ import 'package:flutter_mattermost/core/shortcuts/app_shortcuts.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/call_widget.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/incoming_call_banner.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/quick_switcher.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/team_switcher.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
@@ -18,10 +20,26 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 /// "header" → GlobalHeader (44px)
 /// "team-sidebar main app-sidebar" → TeamSwitcher | LHS+center+RHS.
 /// عند توسعة RHS (overlay) يغطي منطقة المحتوى كاملة فوق المركز.
-class ChannelShell extends StatelessWidget {
+/// يستضيف (في Stack يغطي الجسم كاملاً) بطاقة المكالمة النشطة القابلة
+/// للتحريك CallWidgetOverlay — عرضها يتبع عرض الـ LHS عبر ValueNotifier.
+class ChannelShell extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
   const ChannelShell({super.key, required this.navigationShell});
+
+  @override
+  State<ChannelShell> createState() => _ChannelShellState();
+}
+
+class _ChannelShellState extends State<ChannelShell> {
+  final ValueNotifier<double> _lhsWidth =
+      ValueNotifier(DesignTokens.lhsDefaultWidth);
+
+  @override
+  void dispose() {
+    _lhsWidth.dispose();
+    super.dispose();
+  }
 
   void _goToTeamPage(BuildContext context, String path) {
     final teamState = context.read<TeamBloc>().state;
@@ -55,47 +73,66 @@ class ChannelShell extends StatelessWidget {
       // ),
       child: Scaffold(
         backgroundColor: theme.sidebarBg,
-        body: Column(
+        body: Stack(
           children: [
-            const ChannelGlobalHeader(),
-            Expanded(
-              child: BlocBuilder<RhsBloc, RhsState>(
-                builder: (context, rhsState) {
-                  final expanded =
-                      rhsState is RhsPanelState && rhsState.isExpanded;
-                  return Container(
-                    color: theme.sidebarBg,
-                    margin: EdgeInsetsDirectional.only(end: 4, bottom: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const TeamSwitcher(),
-                        const _ResizableLhs(),
-                        Expanded(
-                          child: Container(
-                            margin: const EdgeInsetsDirectional.only(start: 8),
-                            padding: .all(4),
-                            decoration: BoxDecoration(
-                              color: theme.centerChannelBg,
-                              borderRadius: .circular(8),
-                            ),
-                            child: Stack(
-                              children: [
-                                Positioned.fill(child: navigationShell),
-                                if (expanded)
-                                  Positioned.fill(
-                                    child: const RhsContainer(overlay: true),
-                                  ),
-                              ],
-                            ),
-                          ),
+            Column(
+              children: [
+                const ChannelGlobalHeader(),
+                Expanded(
+                  child: BlocBuilder<RhsBloc, RhsState>(
+                    builder: (context, rhsState) {
+                      final expanded =
+                          rhsState is RhsPanelState && rhsState.isExpanded;
+                      return Container(
+                        color: theme.sidebarBg,
+                        margin: EdgeInsetsDirectional.only(
+                          end: 4,
+                          bottom: 8,
                         ),
-                        if (!expanded) const RhsContainer(),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const TeamSwitcher(),
+                            _ResizableLhs(widthNotifier: _lhsWidth),
+                            Expanded(
+                              child: Container(
+                                margin: const EdgeInsetsDirectional.only(
+                                  start: 8,
+                                ),
+                                padding: .all(4),
+                                decoration: BoxDecoration(
+                                  color: theme.centerChannelBg,
+                                  borderRadius: .circular(8),
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: widget.navigationShell,
+                                    ),
+                                    if (expanded)
+                                      Positioned.fill(
+                                        child: const RhsContainer(
+                                          overlay: true,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            if (!expanded) const RhsContainer(),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+            // بطاقة المكالمة النشطة فوق كل شيء — قابلة للتحريك داخل
+            // نافذة التطبيق، افتراضياً أسفل-يسار فوق منطقة الـ sidebar
+            // (بنفس عرضه). تختفي تلقائياً عند انتهاء المكالمة.
+            Positioned.fill(
+              child: CallWidgetOverlay(lhsWidth: _lhsWidth),
             ),
           ],
         ),
@@ -107,15 +144,25 @@ class ChannelShell extends StatelessWidget {
 /// لوحة LHS بعرض قابل للتحجيم — مطابق ResizableLhs في webapp:
 /// افتراضي 264، min 200 / max 304، سحب من الحافة اليمنى،
 /// نقرة مزدوجة على المقبض تعيد العرض الافتراضي.
+/// العرض يمرر لأعلى عبر widthNotifier ليستخدمه CallWidgetOverlay.
 class _ResizableLhs extends StatefulWidget {
-  const _ResizableLhs();
+  final ValueNotifier<double> widthNotifier;
+
+  const _ResizableLhs({required this.widthNotifier});
 
   @override
   State<_ResizableLhs> createState() => _ResizableLhsState();
 }
 
 class _ResizableLhsState extends State<_ResizableLhs> {
-  double _width = DesignTokens.lhsDefaultWidth;
+  late double _width = widget.widthNotifier.value;
+
+  void _updateWidth(double newWidth) {
+    setState(() {
+      _width = newWidth;
+      widget.widthNotifier.value = newWidth;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,22 +171,40 @@ class _ResizableLhsState extends State<_ResizableLhs> {
       width: _width,
       child: Row(
         children: [
-          Expanded(child: ChannelSidebar()),
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const ChannelSidebar(),
+                // بطاقة المكالمة الواردة أسفل يسار الشاشة — بنفس عرض
+                // الشريط الجانبي (مطابقة call widget في webapp: fixed
+                // bottom-left فوق الـ sidebar). العرض يتبع تحجيم الـ LHS
+                // تلقائياً لأنه داخل نفس الـ SizedBox.
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: IncomingCallBanner(),
+                ),
+              ],
+            ),
+          ),
           MouseRegion(
             cursor: SystemMouseCursors.resizeColumn,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
               onHorizontalDragUpdate: (details) {
-                setState(() {
-                  _width = (_width + details.delta.dx)
-                      .clamp(DesignTokens.lhsMinWidth, DesignTokens.lhsMaxWidth)
-                      .toDouble();
-                });
+                _updateWidth(
+                  (_width + details.delta.dx)
+                      .clamp(
+                        DesignTokens.lhsMinWidth,
+                        DesignTokens.lhsMaxWidth,
+                      )
+                      .toDouble(),
+                );
               },
               onDoubleTap: () {
-                setState(() {
-                  _width = DesignTokens.lhsDefaultWidth;
-                });
+                _updateWidth(DesignTokens.lhsDefaultWidth);
               },
               child: Container(
                 width: 12,

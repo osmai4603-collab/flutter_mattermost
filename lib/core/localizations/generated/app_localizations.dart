@@ -72113,6 +72113,12 @@ abstract class AppLocalizations {
   /// **'You are being invited to a call in {channelName}'**
   String incomingCallDescription(Object channelName);
 
+  /// No description provided for @incomingCallFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming call from {callerName}'**
+  String incomingCallFrom(Object callerName);
+
   /// No description provided for @postEdited.
   ///
   /// In en, this message translates to:
@@ -72694,6 +72700,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End call'**
   String get callWidgetEndCall;
+
+  /// No description provided for @callWidgetMute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get callWidgetMute;
+
+  /// No description provided for @callWidgetUnmute.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get callWidgetUnmute;
+
+  /// No description provided for @callWidgetVideoOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Start video'**
+  String get callWidgetVideoOn;
+
+  /// No description provided for @callWidgetVideoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop video'**
+  String get callWidgetVideoOff;
+
+  /// No description provided for @callsSpeakerTalking.
+  ///
+  /// In en, this message translates to:
+  /// **'is talking…'**
+  String get callsSpeakerTalking;
+
+  /// No description provided for @callsNoOneTalking.
+  ///
+  /// In en, this message translates to:
+  /// **'No one'**
+  String get callsNoOneTalking;
+
+  /// No description provided for @callsCallStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Call started'**
+  String get callsCallStarted;
+
+  /// No description provided for @callsCallEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Call ended'**
+  String get callsCallEnded;
+
+  /// No description provided for @callsJoinCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Join call'**
+  String get callsJoinCall;
+
+  /// No description provided for @callsCallStateInChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Call status in this channel'**
+  String get callsCallStateInChannel;
+
+  /// No description provided for @callsOngoingCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing call'**
+  String get callsOngoingCall;
+
+  /// No description provided for @callsYouAreInTheCall.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re in the call'**
+  String get callsYouAreInTheCall;
 
   /// No description provided for @autocompleteMentionAll.
   ///

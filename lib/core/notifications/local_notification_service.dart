@@ -1,17 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
-import 'dart:async';
+import 'package:flutter_mattermost/core/notifications/notification_payload_handler.dart';
+import 'package:flutter_mattermost/core/notifications/web_notifier.dart'
+    if (dart.library.js_interop) 'package:flutter_mattermost/core/notifications/web_notifier_web.dart';
 
 @lazySingleton
 class LocalNotificationService {
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
   final WebSocketClientManager _wsClient;
+  final NotificationPayloadHandler _payloadHandler;
   StreamSubscription? _wsSubscription;
 
-  LocalNotificationService(this._wsClient);
+  LocalNotificationService(this._wsClient, this._payloadHandler);
 
   Future<void> initialize() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -24,16 +29,52 @@ class LocalNotificationService {
       requestSoundPermission: true,
     );
 
+    const LinuxInitializationSettings initializationSettingsLinux =
+        LinuxInitializationSettings(defaultActionName: 'Open');
+
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
       macOS: initializationSettingsDarwin,
+      linux: initializationSettingsLinux,
     );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onDidReceiveNotificationResponse,
     );
+  }
+
+  Future<void> requestPermissions() async {
+    if (kIsWeb) {
+      const WebNotifier().requestNotificationPermission();
+      return;
+    }
+
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      await androidImplementation?.requestNotificationsPermission();
+    } else if (defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+      await _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          );
+    }
   }
 
   void startListening() {
@@ -81,6 +122,11 @@ class LocalNotificationService {
     required String body,
     String? payload,
   }) async {
+    if (kIsWeb) {
+      const WebNotifier().showNotification(title, body);
+      return;
+    }
+
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'mattermost_channel',
@@ -90,8 +136,17 @@ class LocalNotificationService {
       priority: Priority.high,
       showWhen: true,
     );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
+    
+    const LinuxNotificationDetails linuxPlatformChannelSpecifics =
+        LinuxNotificationDetails(
+      defaultActionName: 'Open',
+      urgency: LinuxNotificationUrgency.critical,
+    );
+
+    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+      linux: linuxPlatformChannelSpecifics,
+    );
 
     await _notificationsPlugin.show(
       id,
@@ -105,9 +160,7 @@ class LocalNotificationService {
   void _onDidReceiveNotificationResponse(NotificationResponse response) {
     if (response.payload != null) {
       final data = jsonDecode(response.payload!) as Map<String, dynamic>;
-      // Handle navigation via NotificationPayloadHandler (to be implemented)
-      // For now, we just print
-      print('Notification clicked: $data');
+      _payloadHandler.handlePayload(data);
     }
   }
 }

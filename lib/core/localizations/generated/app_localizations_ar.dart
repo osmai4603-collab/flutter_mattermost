@@ -46296,6 +46296,11 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
+  String incomingCallFrom(Object callerName) {
+    return 'مكالمة واردة من $callerName';
+  }
+
+  @override
   String get postEdited => '(مُحرَّر)';
 
   @override
@@ -46586,6 +46591,42 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get callWidgetEndCall => 'إنهاء المكالمة';
+
+  @override
+  String get callWidgetMute => 'كتم الصوت';
+
+  @override
+  String get callWidgetUnmute => 'إلغاء الكتم';
+
+  @override
+  String get callWidgetVideoOn => 'تشغيل الكاميرا';
+
+  @override
+  String get callWidgetVideoOff => 'إيقاف الكاميرا';
+
+  @override
+  String get callsSpeakerTalking => 'يتحدث…';
+
+  @override
+  String get callsNoOneTalking => 'لا أحد';
+
+  @override
+  String get callsCallStarted => 'بدأت المكالمة';
+
+  @override
+  String get callsCallEnded => 'انتهت المكالمة';
+
+  @override
+  String get callsJoinCall => 'انضم إلى المكالمة';
+
+  @override
+  String get callsCallStateInChannel => 'حالة المكالمة في القناة';
+
+  @override
+  String get callsOngoingCall => 'مكالمة جارية';
+
+  @override
+  String get callsYouAreInTheCall => 'أنت في المكالمة';
 
   @override
   String get autocompleteMentionAll => 'يُخطر الجميع في هذه القناة';

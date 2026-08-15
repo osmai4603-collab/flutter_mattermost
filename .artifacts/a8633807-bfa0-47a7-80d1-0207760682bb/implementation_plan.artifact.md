@@ -15,10 +15,12 @@ This plan outlines the steps to replace hardcoded/default data in various Admin 
 - Fix the `_intOf` method to correctly return the value for the requested metric name instead of always checking for `total_users`.
 
 #### [MODIFY] [AdminConsoleSiteOverviewPage](file:///home/osmsoftwareengineering/StudioProjects/flutter_mattermost/lib/features/admin/presentation/pages/site_overview_page.dart)
-- Integrate `AdminConfigRepository` to fetch analytics data.
-- Replace hardcoded metrics ("Total Channels", "Posts & Messages") with data from `AnalyticsEntity`.
-- Replace hardcoded server version, uptime, and database info in the health banner with data from the system configuration.
-- Fetch real values for the system health checklist if available (e.g., SMTP status, Plugin status).
+- Integrate `AdminConfigRepository` and `AdminConfigBloc` to fetch analytics and configuration data.
+- Replace hardcoded metrics ("Total Channels", "Posts & Messages") with real data from `AnalyticsEntity`.
+- Replace hardcoded server version, uptime, and database info in the health banner with real data.
+    - Version and Database Type can be fetched from the server configuration.
+    - Uptime can be fetched using the `ping` endpoint or similar status indicators.
+- Update `System Health Checklist` with real values where possible (e.g., database connection status, plugin engine status).
 
 #### [MODIFY] [AdminConsoleUsersManagementPage](file:///home/osmsoftwareengineering/StudioProjects/flutter_mattermost/lib/features/admin/presentation/pages/users_management/users_management_page.dart)
 - Remove `_defaultUsers` mock data.

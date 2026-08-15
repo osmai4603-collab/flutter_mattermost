@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_mattermost/core/calls/calls_manager.dart';
+import 'package:flutter_mattermost/core/calls/calls_websocket_client.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
@@ -97,6 +98,32 @@ class FakeTeamRepository implements TeamRepository {
 class FakeCallsManager implements CallsManager {
   @override
   Stream<CallStartedEvent> get incomingCalls => const Stream.empty();
+
+  @override
+  Stream<Map<String, CallParticipantState>> get participantsStream =>
+      const Stream.empty();
+
+  @override
+  Stream<CallsWebSocketStatus> get connectionStatusStream =>
+      const Stream.empty();
+
+  @override
+  Stream<String> get callEndedStream => const Stream.empty();
+
+  @override
+  Stream<CallState> get callStateStream => const Stream.empty();
+
+  @override
+  CallState get currentCallState => CallState.idle;
+
+  @override
+  Stream<String> get incomingCallExpiredStream => const Stream.empty();
+
+  @override
+  Stream<CallReactionEvent> get reactionsStream => const Stream.empty();
+
+  @override
+  Stream<CallHostControlEvent> get hostControlStream => const Stream.empty();
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>

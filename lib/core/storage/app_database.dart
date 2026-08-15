@@ -168,6 +168,23 @@ class PendingActions extends Table {
   TextColumn get tempId => text().withDefault(const Constant(''))();
 }
 
+class PendingPosts extends Table {
+  TextColumn get id => text()(); // Local UUID
+  TextColumn get serverId => text()();
+  TextColumn get channelId => text()();
+  TextColumn get userId => text()();
+  TextColumn get message => text()();
+  TextColumn get rootId => text().withDefault(const Constant(''))();
+  TextColumn get fileIds => text().withDefault(const Constant('[]'))(); // JSON array
+  IntColumn get createdAt => integer()();
+  IntColumn get lastAttemptAt => integer().withDefault(const Constant(0))();
+  IntColumn get retryCount => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  @override
+  Set<Column> get primaryKey => {id, serverId};
+}
+
 // الأدوار والصلاحيات المخزنة محلياً
 class CachedRoles extends Table {
   TextColumn get serverId => text()();
@@ -197,6 +214,7 @@ class CachedRoles extends Table {
     CachedPreferences,
     SyncMetadata,
     PendingActions,
+    PendingPosts,
     CachedRoles,
   ],
 )
@@ -205,14 +223,14 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? openDatabaseConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
       // Re-create all for simplicity in this phase since data is not yet in production
-      if (from < 4) {
+      if (from < 5) {
         await m.createAll();
       }
     },

@@ -2,6 +2,17 @@
 
 تُعد هذه الخطة الدليل التنفيذي والتصميمي لدعم وتطوير نظام المكالمات الصوتية والمرئية عبر بروتوكول IP داخل تطبيق **Flutter (`flutter_mattermost`)** للعمل على **شبكة محلية (LAN)** دون الحاجة إلى خدمات سحابية خارجية أو ربط أرقام هواتف تقليدية.
 
+> [!IMPORTANT]
+> **تصحيح ميداني (المرحلة 0 — 2026-08)**: بعض أسماء الإشارات والأحداث في هذه الخطة
+> (`call_started`, `join_call`, `leave_call`, `webrtc_offer/answer`, `ice_candidate`)
+> **غير دقيقة**. المواصفات المعتمدة (أحداث، إشارات، حمولات، REST، واتصال
+> `?calls=true` المخصص) موثقة في
+> [mattermost_realtime_analysis.md](file:///home/osmsoftwareengineering/StudioProjects/flutter_mattermost/docs/mattermost_realtime_analysis.md)
+> — القسمان 3.3 و 3.4 و 8. استند إليها عند التنفيذ.
+>
+> **المخطط المرجعي الحالي**: قسم **«المخطط المرجعي المحدّث بالمراحل 0–8»**
+> في نهاية هذا المستند هو المرجع المعتمد لحالة التنفيذ وخطوات المتابعة.
+
 ---
 
 ## إجابات وتفضيلات المستخدم (User Answers & Target Scope)
@@ -243,3 +254,186 @@
 - الاتصال المحلي: اختبار إجراء مكالمة بين هاتفين على الشبكة المحلية وتأكيد وضوح الصوت والفيديو.
 - رنين الجوال: اختبار استقبال إشعار رنين الشاشة الأصلية واستجابة رفع السماعة.
 - أجهزة الصوت: تجربة تحويل مخرج الصوت إلى سماعة البلوتوث والسماعة الخارجية خلال المكالمة.
+
+---
+
+## سجل التقدم (Progress Log)
+
+### المرحلة 2 — محرك الإشارات والشبكة (نُفِّذت، 2026-08)
+- **عميل اتصال المكالمات** `calls_websocket_client.dart` (المرحلة 1): اتصال `?calls=true`
+  بـ auth + hello + join/leave + sdp (msgpack bin + zlib) + ice + mute/unmute/voice/screen/
+  raise_hand/react/call_state، فلتر connID (connID = connID المتلقي — مُتحقق من
+  `server/websocket.go` v1.12.2-6)، ping/pong 30s، إعادة اتصال backoff مع
+  `reconnect{channelID, originalConnID, prevConnID}` و`connection_id`/`sequence_number`.
+- **Hub events**: `CallStateEvent{callEventName,data,seq}` لجميع `custom_com.mattermost.calls_*`
+  (مفاتيح غير متناسقة بين الأحداث: `user_id` vs `userID`)، و`CallStartedEvent` يُقرأ الآن
+  `id`/`channelID`/`thread_id`/`host_id`/`owner_id`/`post_id`/`start_at` (مُتحقق من الخادم).
+- **CallsManager**: أُعيد بناؤه — `startCall(channelId,{video,selfInitiated})` +
+  `joinExistingCall`، SDP offer بعد إقرار `calls_join`، ICE config من REST
+  (`ICEServersConfigs`/`ICEServers` + TURN عند `NeedsTURNCredentials`)، ICE restart
+  عند الانقطاع، تحديث المشاركين من أحداث الـ Hub، و`closeForLeave()` يصفّر الجلسة
+  (connID/seq) ليكون الانضمام التالي جلسة أولى نظيفة.
+- **REST**: `CallsRestRepository` بالمسارات الفعلية (انظر §3.3 في
+  `mattermost_realtime_analysis.md`).
+- **التحقق**: `flutter analyze` نظيف على الملفات المعدّلة + 51 اختباراً تجتاز الكل.
+
+---
+
+## المخطط المرجعي المحدّث بالمراحل 0–8 (2026-08) — حالة التنفيذ
+
+> [!IMPORTANT]
+> هذا المخطط **هو المرجع المعتمد حالياً** ويرقّم المراحل 0–8 بترتيب مختلف عن
+> القسم أعلاه. رموز الحالة: ✅ منجزة | ⚠️ جزئية/بتصميم مختلف | ❌ غير منجزة.
+
+### المرحلة 0 — توثيق البروتوكول والتحقق على الخادم (قبل أي كود)
+- [x] **0.3** تحديث `docs/mattermost_realtime_analysis.md` بأسماء الإشارات
+      والحِمل الفعلي واتصال `calls=true` (§3.3 / §3.4 / §8) — منجز.
+- [x] **0.1** فحص إصدار الإضافة من قشرة الخادم (`GET /api/v4/plugins` أو
+      `config.json`) وتأكيد `icehostoverride` والمنفذ `8443 UDP/TCP` — **منجز
+      على الخادم المحلي** (2026-08): Calls **v1.11.5** مثبّتة ومفعّلة من
+      السوق، و`GET /plugins/com.mattermost.calls/config` يعيد
+      `UDPServerPort/TCPServerPort: 8443`, `EnableRinging: true`,
+      `AllowEnableCalls: true`, `DefaultEnabled: true`, `MaxCallParticipants: 8`,
+      `NeedsTURNCredentials: false`, `AllowScreenSharing: true`
+      (`sku_short_name: "starter"` — خادم بلا ترخيص ⇒ مكالمات DM/GM فقط).
+- [x] **0.2** التقاط أحداث WS حقيقية (فتح مكالمة من متصفح + أدوات المطوّر)
+      وتحديث الأسماء الفعلية `channel_id/user_id/session_id` — **منجز**:
+      عميل WS محلي (python) على الـ Hub الرئيسي بجلسة مصادقة التقط
+      `custom_com.mattermost.calls_call_start`/`user_joined`/`user_left`/
+      `call_host_changed`/`call_state`/`user_unmuted` بحمولة فعلية
+      `{id, channelID, host_id, owner_id, post_id, start_at, thread_id}`
+      (الاسم الفعلي للمعرّف `id` وليس `call_id`، والقناة `channelID` camelCase)،
+      وأكّد أن أحداث الحالة تُبثّ على الـ Hub الرئيسي (وليس اتصال `calls=true`).
+
+### المرحلة 1 — اتصال WS مخصص للمكالمات (البنية الصحيحة)
+- [x] `lib/core/calls/calls_websocket_client.dart`: اتصال ثانٍ بـ
+      `?calls=true&connection_id=&sequence_number=` + header `authorization: Bearer`.
+- [x] يعالج `hello` (session_id/connID) و`calls_join` (ack) و`calls_error`
+      و`calls_signal` (SDP ثنائي msgpack+zlib / ICE نصي) + ping/pong 30s.
+- [x] إعادة اتصال بإرسال `reconnect{channelID, originalConnID, prevConnID}`
+      وليس `join` عند نفس الـ originalConnID.
+- [x] مستقل تماماً عن `WebSocketClientManager` (مسجَّل `@lazySingleton` في DI).
+
+### المرحلة 2 — أحداث المكالمات الناقصة على الـ Hub الرئيسي
+- [x] كلاسات typed لكل حدث (مُتحققة من `server/websocket.go` v1.12.2-6):
+      `CallEndedEvent`, `CallUserJoinedEvent`, `CallUserLeftEvent`,
+      `CallUserMuteEvent`, `CallUserVideoEvent`, `CallUserVoiceEvent`,
+      `CallScreenShareEvent`, `CallRaiseHandEvent`, `CallHostChangedEvent`,
+      `CallUserReactedEvent`, `CallRecordingStateEvent`, `CallJobStateEvent`,
+      `CallCaptionEvent` + `CallStartedEvent` (id/channelID) — مع تحليل
+      `user_id` vs `userID` (غير متناسق بين الأحداث) و`emoji.name` و
+      `raised_hand` و`timestamp`.
+- [x] الربط في الـ switch: `_handleCallsEvent` يوجّه كل `calls_*` إلى الكلاس
+      المناسب؛ `host_mute/host_unmute/host_screen_off/host_lower_hand/
+      host_removed/call_state` تبقى على `CallStateEvent` العام (يديرها
+      `CallsManager` عبر `hostControlStream`).
+- [x] استخراج `channel_id`: من `broadcast.channel_id` أولاً ثم `data`
+      (`channelID`/`channel_id`) — يغطي `call_end` (broadcast فقط) و
+      `user_left` الفردي (data فقط).
+- [x] اختبارات وحدة لكل حدث (12 اختباراً في `websocket_client_test.dart`).
+
+### المرحلة 3 — إعادة بناء CallsManager كآلة حالات
+- [x] `enum CallState {idle, ringing, joining, connected, reconnecting, ended}`
+      — `CallState _callState` + `callStateStream` + `currentCallState` في
+      `CallsManager` (المرحلة 5 تربطه بحالات الـ bloc).
+- [x] إرسال إشارات عبر اتصال المكالمات: `join{channelID,title,threadID,
+      av1Support,dcSignaling}` / `leave` / `mute` / `unmute` / `raise_hand` /
+      `react` / `sdp` (zlib+msgpack) / `ice` / `host_*` / `call_state`.
+- [x] المشاركون: `Map<String sessionId, CallParticipantState>` تُدار من أحداث
+      الـ Hub بالإضافة إلى `onTrack`.
+- [x] إنهاء الجهاز عند `user_left`: يُحذف من الخريطة دون `await renderer.dispose()`.
+- [x] `_handleSignalingEvent` يقرأ `calls_signal` (offer/answer/candidate) —
+      ربط `caller_id` بجلسة كل مشارك عبر track ID في نموذج SFU
+      (`audio_<session_id>_<random>` من `genTrackID` في rtcd v1.2.6) —
+      الـ renderers مربوطة بمفتاح `sessionId` (متسق مع `user_left`).
+- [x] ICE restart + بث الـ offer مجدداً عند إعادة الاتصال/الانقطاع.
+- [x] تفعيل `getCallsConfig` كمصدر ICE (`ICEServersConfigs`/`ICEServers` +
+      TURN عند `NeedsTURNCredentials`) — أُزيلت قيمة TURN الثابتة من `AppConfig`.
+- [x] تحسين `toggleScreenShare`: إزالة مسار الكاميرا + إرسال `screen_on/off`.
+- [x] مؤقت رنين للمكالمة الواردة (ringing timeout → رفض تلقائي):
+      `Timer(incomingCallRingDuration=30s)` → `incomingCallExpiredStream` +
+      حالة `ringing` عند `call_start` الوارد (ملغي عند endCall/call_end/join).
+
+### المرحلة 4 — إكمال CallsRestRepository
+- [x] `getCallsConfig()` + `getTurnCredentials()` + `endCall(channelId)` +
+      `dismissNotification(channelId)` + أوامر المضيف `host/{make|mute|
+      screen-off|lower-hand|remove}` + `getChannelState(channelId)` (يشمل
+      المشاركين من `call.sessions`).
+- [ ] `recordingStart/Stop` (غير موجود — مؤجل حتى مرحلة التسجيل).
+- [x] موديلات `CallParticipantDto` + `CallDto` مع `fromMap` + اختبارات وحدة
+      (مطابقة لشكل الخادم `UserStateClient`/`CallStateClient`/`JobStateClient`
+      من `server/state.go`): `CallChannelStateDto{enabled,channel_id,call}` +
+      `CallDto{id,start_at,sessions,thread_id,post_id,screen_sharing_session_id,
+      owner_id,host_id,recording,transcription,live_captions,
+      dismissed_notification}` — `getChannelCallState` يعيد `CallChannelStateDto`
+      و `_applyCallState` يستهلك `CallDto` (8 اختبارات في
+      `test/features/chat/call_dto_test.dart`).
+
+### المرحلة 5 — ربط CallsBloc والحالات
+- [x] `CallReconnectingState` (من `onIceConnectionState`/فقدان الـ WS).
+- [x] تمييز `CallEndedState` عن `CallIdleState` — `CallState.ended` من
+      `callStateStream` → `CallEndedState{channelId}` (عبر `CallStateFromManager`
+      الداخلي) ثم مهلة 2 ثانية → idle.
+- [x] `JoinCallEvent` يستخدم `callId` الحقيقي من حدث `call_start`.
+- [x] رفض/إنهاء خارجي (`call_end`) يعيد idle مع رسالة — يُدار من
+      `callStateStream` (حالة `ended`)، والإنهاء المحلي `_onEndCall` يلغي المؤقت.
+- [x] `ToggleReactionEvent(emojiName)` يرسل `react` فعلياً عبر
+      `CallsManager.sendReaction` (`sendReact(CallsEmoji)` — `react{data:
+      <EmojiData JSON>}` مُحقّق من server websocket.go + mobile connection.ts).
+
+### المرحلة 6 — واجهات المشاركين والتفاعلات (الملفات موجودة — الربط ناقص)
+- [x] `FullCallScreen`: شبكة المشاركين من `state.participants` (الإزالة عند
+      الغادر تلقائياً) + أسماء عبر `UserRepository.getProfilesByIds` مع تخزين
+      مؤقت + إطار المتحدث النشط (`isVoiceActive`) + شارات (كتم/يد/شاشة/مضيف)
+      + عرض فيديو كل مشارك عبر `participant.renderer`.
+- [x] `HostControlsBottomSheet` تربط فعلياً: كتم الكل / إنزال الأيدي /
+      طرد مشارك / إنهاء للجميع — عبر `CallsManager.hostMuteAll/
+      hostLowerAllHands/hostRemove/hostEndCall` (REST host/*)، ويظهر فقط
+      للمضيف (`isCurrentUserHost`).
+- [x] شريط الإيموجي يرسل/يستقبل تفاعلات حقيقية: `ToggleReactionEvent(CallsEmoji)`
+      → `react`، والاستقبال عبر `reactionsStream` (CallReactionEvent يحمل
+      `emojiLiteral` من `emoji.literal`) يُعرض كفقاعات مؤقتة (3 ثوانٍ).
+- [x] `IncomingCallBanner`: اسم المتصل من `owner_id` (call_start → CallRingingState
+      → `UserRepository.getProfilesByIds`) + `incomingCallFrom` جديد بالترجمات
+      + رفض فعلي (`dismissIncomingCall` → REST dismiss-notification) + اختفاء
+      تلقائي عند انتهاء مهلة الرنين (آلة الحالات).
+
+### المرحلة 7 — الصوت والتنبيهات
+- [x] `AudioSessionManager`: `activateAudioSession()` (ensureAudioSession +
+      `setSpeakerphoneOnButPreferBluetooth` — توجيه تلقائي بلوتوث/سماعة، وضع
+      playAndRecord يتحقق عبر getUserMedia على Android) عند `initialize()`/
+      بدء المكالمة، و`deactivateAudioSession()` (setSpeakerphoneOn(false)) عند
+      `endCall()` — توجيه يدوي عبر `setAudioOutput` موجود مسبقاً.
+- [x] نغمة/اهتزاز الرنين للمكالمة الواردة: `CallRinger` (SystemSound.alert +
+      HapticFeedback.heavyImpact كل ثانية) يُشغَّل مع `_startIncomingCallRingingTimer`
+      ويُوقَف عند القبول/الرفض/انتهاء المهلة/call_end.
+- [ ] `flutter_callkit_incoming` — مؤجَّل خارج نطاق LAN الحالي (يتطلب إعدادات
+      أصيلة iOS/Android + PushKit).
+
+### المرحلة 8 — الاختبارات والتحقق
+- [x] وحدة: parsing الأحداث (تم)، `CallsManager` عبر WS وهمي
+      (`test/core/calls/calls_manager_test.dart` — 14 اختباراً: الرنين/المهلة/
+      الرفض، نهاية المكالمة، المشاركون والتحديثات، الاتصال وإعادة الاتصال،
+      hostMuteAll، رسائل خروج)، `CallsBloc`
+      (`test/features/chat/calls_bloc_test.dart` — 13 اختباراً: البدء/الإنهاء،
+      الرنين/القبول/الرفض، الضوابط، ended→idle بمؤقت 2s). (27/27 ناجحاً)
+- [x] يدوي على LAN — **جزئي منجز** (2026-08، الخادم المحلي 127.0.0.1:8065):
+      مكالمة من متصفح (testuser01) في قناة DM → التطبيق (sysadmin) يستقبل
+      `call_start` على الـ Hub، يظهر `IncomingCallBanner` مع اسم المتصل،
+      القبول يُدخل المكالمة (يصبح مضيفاً بعد مغادرة المالك)،
+      `call_end` يعيد idle، ورسائل "started a call"/"call ended" تظهر في
+      المحادثة. **المتبقي**: اختبار صوت/فيديو/مشاركة شاشة بجهازين فعليين،
+      فصل Wi-Fi أثناء المكالمة (ICE restart)، رفض/انتهاء خارجي، NAT متعدد الأجهزة.
+
+### الملخص
+| المرحلة | الحالة |
+|---|---|
+| 0 | ✅ مكتملة (0.1/0.2/0.3 — تحقق فعلي من الإضافة وأحداث WS الحقيقية على الخادم المحلي) |
+| 1 | ✅ مكتملة |
+| 2 | ✅ مكتملة (كلاسات typed + channel_id من broadcast + اختبارات لكل حدث) |
+| 3 | ✅ مكتملة (آلة الحالات CallState، مؤقت الرنين 30s، ربط sessionId من track ID، reconnecting من statusStream) |
+| 4 | ⚠️ ~95% (ناقص: recording فقط — موديلات CallDto/ParticipantDto + اختبارات ✅) |
+| 5 | ✅ مكتملة (CallEndedState من callStateStream + مؤقت 2s، ToggleReactionEvent يرسل react) |
+| 6 | ✅ مكتملة (شبكة بأسماء/شارات/متحدث نشط، تحكمات المضيف، تفاعلات حقيقية، banner باسم المتصل) |
+| 7 | ✅ مكتملة (جلسة صوت activate/deactivate + توجيه تلقائي + نغمة/اهتزاز رنين) — CallKit مؤجَّل خارج نطاق LAN |
+| 8 | ⚠️ جزئي — وحدة ✅ (CallsManager + CallsBloc، 27/27) — يدوي ✅ جزئياً (مكالمة واردة/قبول/مضيف/انتهاء) — صوت/فيديو/مشاركة/NAT معلّقة |

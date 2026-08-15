@@ -8,7 +8,7 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/authenticat
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_signup_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/channels_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/channels_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
@@ -25,8 +25,8 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/server_logs
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/site_overview_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/system_analytics_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/teams_management_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/teams_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/users_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_console_shell.dart';
 import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
 import 'package:go_router/go_router.dart';

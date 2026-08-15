@@ -11,10 +11,8 @@ import 'package:flutter_mattermost/features/channels/domain/repositories/channel
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_history_cubit.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/call_widget.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_bookmarks.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_header.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/incoming_call_banner.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/message_list.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/domain/repositories/user_repository.dart';
@@ -251,8 +249,6 @@ class _ChannelPageState extends State<ChannelPage> {
     return Column(
       children: [
         const ChannelHeader(),
-        const IncomingCallBanner(),
-        const CallWidget(),
         const ChannelBookmarks(),
         Expanded(child: PostList(scrollController: _listScrollController)),
         if (showsArchivedBar)

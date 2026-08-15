@@ -10,6 +10,8 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 
+import 'package:flutter_mattermost/features/chat/domain/entities/pending_post_entity.dart';
+
 abstract class ChatLocalDataSource {
   Future<void> cacheChannels(List<ChannelEntity> channels);
   Future<List<ChannelEntity>> getCachedChannels(String teamId);
@@ -30,6 +32,12 @@ abstract class ChatLocalDataSource {
     String status = 'pending',
   });
   Future<void> completePendingAction(int actionId);
+
+  // Pending Posts
+  Future<void> savePendingPost(PendingPostEntity post);
+  Future<List<PendingPostEntity>> getPendingPosts();
+  Future<void> updatePendingPost(PendingPostEntity post);
+  Future<void> deletePendingPost(String id);
 }
 
 @LazySingleton(as: ChatLocalDataSource)
@@ -318,5 +326,75 @@ class ChatLocalDataSourceImpl implements ChatLocalDataSource {
   Future<void> completePendingAction(int actionId) async {
     await (_db.update(_db.pendingActions)..where((a) => a.id.equals(actionId)))
         .write(PendingActionsCompanion(status: const Value('completed')));
+  }
+
+  @override
+  Future<void> savePendingPost(PendingPostEntity post) async {
+    await _db.into(_db.pendingPosts).insert(
+      PendingPostsCompanion.insert(
+        id: post.id,
+        serverId: _serverManager.activeServerUrl,
+        channelId: post.channelId,
+        userId: '', // Will be filled if needed, or get from session
+        message: post.message,
+        rootId: Value(post.rootId),
+        fileIds: Value(jsonEncode(post.fileIds)),
+        createdAt: post.createdAt,
+        lastAttemptAt: Value(post.lastAttemptAt),
+        retryCount: Value(post.retryCount),
+        status: Value(post.status.name),
+      ),
+      mode: InsertMode.insertOrReplace,
+    );
+  }
+
+  @override
+  Future<List<PendingPostEntity>> getPendingPosts() async {
+    final query = _db.select(_db.pendingPosts)
+      ..where((t) => t.serverId.equals(_serverManager.activeServerUrl));
+    final rows = await query.get();
+
+    return rows.map((row) {
+      return PendingPostEntity(
+        id: row.id,
+        channelId: row.channelId,
+        message: row.message,
+        rootId: row.rootId,
+        fileIds: (jsonDecode(row.fileIds) as List).cast<String>(),
+        createdAt: row.createdAt,
+        lastAttemptAt: row.lastAttemptAt,
+        retryCount: row.retryCount,
+        status: PendingPostStatus.values.firstWhere(
+          (e) => e.name == row.status,
+          orElse: () => PendingPostStatus.pending,
+        ),
+      );
+    }).toList();
+  }
+
+  @override
+  Future<void> updatePendingPost(PendingPostEntity post) async {
+    await (_db.update(_db.pendingPosts)..where(
+          (t) =>
+              t.id.equals(post.id) &
+              t.serverId.equals(_serverManager.activeServerUrl),
+        ))
+        .write(
+          PendingPostsCompanion(
+            status: Value(post.status.name),
+            retryCount: Value(post.retryCount),
+            lastAttemptAt: Value(post.lastAttemptAt),
+          ),
+        );
+  }
+
+  @override
+  Future<void> deletePendingPost(String id) async {
+    await (_db.delete(_db.pendingPosts)..where(
+          (t) =>
+              t.id.equals(id) &
+              t.serverId.equals(_serverManager.activeServerUrl),
+        ))
+        .go();
   }
 }
