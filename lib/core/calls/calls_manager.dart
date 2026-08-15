@@ -950,9 +950,7 @@ class CallsManager {
   }
 
   void _handleRecordingState(CallRecordingStateEvent event) {
-    final state = event.recordingState['recordingState'] as String?;
-    final isRecording = state == 'recording';
-    _recordingStateController.add(isRecording);
+    _recordingStateController.add(event.recording);
   }
 
   void _handleJobState(CallJobStateEvent event) {

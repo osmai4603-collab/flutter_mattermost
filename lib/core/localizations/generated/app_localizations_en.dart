@@ -46672,6 +46672,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get callsJoinCall => 'Join call';
 
   @override
+  String get callsLeaveCall => 'Leave';
+
+  @override
+  String callsCallEndedAt(Object endTime) {
+    return 'Ended at $endTime';
+  }
+
+  @override
+  String callsCallLasted(Object duration) {
+    return 'Lasted $duration';
+  }
+
+  @override
+  String callsCallBy(Object user) {
+    return 'by $user';
+  }
+
+  @override
   String get callsCallStateInChannel => 'Call status in this channel';
 
   @override

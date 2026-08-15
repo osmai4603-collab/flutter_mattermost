@@ -72755,6 +72755,30 @@ abstract class AppLocalizations {
   /// **'Join call'**
   String get callsJoinCall;
 
+  /// No description provided for @callsLeaveCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave'**
+  String get callsLeaveCall;
+
+  /// No description provided for @callsCallEndedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended at {endTime}'**
+  String callsCallEndedAt(Object endTime);
+
+  /// No description provided for @callsCallLasted.
+  ///
+  /// In en, this message translates to:
+  /// **'Lasted {duration}'**
+  String callsCallLasted(Object duration);
+
+  /// No description provided for @callsCallBy.
+  ///
+  /// In en, this message translates to:
+  /// **'by {user}'**
+  String callsCallBy(Object user);
+
   /// No description provided for @callsCallStateInChannel.
   ///
   /// In en, this message translates to:

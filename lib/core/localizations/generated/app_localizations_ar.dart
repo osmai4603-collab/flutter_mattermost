@@ -46620,6 +46620,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get callsJoinCall => 'انضم إلى المكالمة';
 
   @override
+  String get callsLeaveCall => 'مغادرة';
+
+  @override
+  String callsCallEndedAt(Object endTime) {
+    return 'انتهت في $endTime';
+  }
+
+  @override
+  String callsCallLasted(Object duration) {
+    return 'استمرت $duration';
+  }
+
+  @override
+  String callsCallBy(Object user) {
+    return 'بواسطة $user';
+  }
+
+  @override
   String get callsCallStateInChannel => 'حالة المكالمة في القناة';
 
   @override
