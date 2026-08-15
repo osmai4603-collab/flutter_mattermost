@@ -1,0 +1,6 @@
+- [ ] Fix `AnalyticsEntity` logic in `lib/features/admin/domain/entities/analytics_entity.dart`
+- [ ] Integrate real data into `AdminConsoleSiteOverviewPage`
+- [ ] Clean up `AdminConsoleUsersManagementPage` (remove mocks)
+- [ ] Clean up `AdminConsoleTeamsManagementPage` (remove mocks and integrate stats)
+- [ ] Clean up `AdminConsoleChannelsManagementPage` (remove mocks and integrate stats)
+- [ ] Verify all changes
