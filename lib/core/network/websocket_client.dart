@@ -133,6 +133,15 @@ class UserPresenceEvent extends TypedWebSocketEvent {
   });
 }
 
+class UserUpdatedEvent extends TypedWebSocketEvent {
+  final Map<String, dynamic> userJson;
+
+  UserUpdatedEvent({
+    required this.userJson,
+    required super.seq,
+  });
+}
+
 class UserTypingEvent extends TypedWebSocketEvent {
   final String userId;
   final String channelId;
@@ -642,6 +651,18 @@ class WebSocketClientManager {
               UserRemovedEvent(
                 userId: data['user_id'] as String? ?? '',
                 channelId: data['channel_id'] as String? ?? '',
+                seq: seq,
+              ),
+            );
+            break;
+          case 'user_updated':
+            final userRaw = data['user'] as String?;
+            final userJson = (userRaw != null && userRaw.isNotEmpty)
+                ? jsonDecode(userRaw) as Map<String, dynamic>
+                : (data['user'] as Map<String, dynamic>? ?? {});
+            _typedEventStreamController.add(
+              UserUpdatedEvent(
+                userJson: userJson,
                 seq: seq,
               ),
             );

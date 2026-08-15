@@ -788,8 +788,12 @@ class CallsManager {
         (defaultTargetPlatform == TargetPlatform.windows ||
             defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.linux)) {
-      windowManager.show();
-      windowManager.focus();
+      try {
+        windowManager.show();
+        windowManager.focus();
+      } catch (e) {
+        debugPrint('Failed to focus window: $e');
+      }
     }
 
     // مكالمة واردة في قناة أخرى: رنين + مهلة زمنية للرفض التلقائي.

@@ -7,7 +7,6 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/widgets/matter_button.dart';
-import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
@@ -18,12 +17,12 @@ import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/call_state_tiles.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_modal.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/call_state_tiles.dart';
+
 import 'package:flutter_mattermost/features/chat/presentation/widgets/post_attachment_preview.dart';
 import 'package:intl/intl.dart';
 
@@ -82,8 +81,9 @@ class _PostListState extends State<PostList> {
     return BlocBuilder<PostBloc, PostsState>(
       builder: (context, state) {
         final body = switch (state) {
-          PostLoadingState() =>
-            const Center(child: CircularProgressIndicator()),
+          PostLoadingState() => const Center(
+            child: CircularProgressIndicator(),
+          ),
           PostErrorState() => _ErrorView(message: state.message),
           PostsLoadedState() => _PostListBody(
             state: state,
@@ -173,7 +173,11 @@ class _ScrollToBottomButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.keyboard_arrow_down, size: 20, color: theme.buttonColor),
+              Icon(
+                Icons.keyboard_arrow_down,
+                size: 20,
+                color: theme.buttonColor,
+              ),
               const SizedBox(width: 6),
               Text(
                 label,
@@ -272,10 +276,7 @@ class _PostListBodyState extends State<_PostListBody> {
     final items = <Widget>[];
     // لافتة حالة المكالمة الحية — أسفل القائمة (فوق محرر الرسائل) في القناة
     // الحالية؛ تعرض «مكالمة جارية» + زر انضمام أو «أنت في المكالمة».
-    items.insert(
-      0,
-      ChannelCallStateBanner(channelId: state.channelId),
-    );
+    items.insert(0, ChannelCallStateBanner(channelId: state.channelId));
     if (state.hasMore && state.posts.isNotEmpty) {
       items.add(
         Center(
@@ -699,24 +700,21 @@ class _PostItemState extends State<PostItem> {
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: InkWell(
-                                onTap: () => context
-                                    .read<RhsBloc>()
-                                    .add(
-                                      OpenEditHistoryEvent(post.id),
-                                    ),
+                                onTap: () => context.read<RhsBloc>().add(
+                                  OpenEditHistoryEvent(post.id),
+                                ),
                                 borderRadius: BorderRadius.circular(4),
                                 child: Text(
                                   l10n.postEdited,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontStyle: FontStyle.italic,
-                                    color: theme.centerChannelColor
-                                        .withValues(alpha: 0.45),
-                                    decoration: TextDecoration.underline,
-                                    decorationColor:
-                                        theme.centerChannelColor.withValues(
-                                      alpha: 0.3,
+                                    color: theme.centerChannelColor.withValues(
+                                      alpha: 0.45,
                                     ),
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: theme.centerChannelColor
+                                        .withValues(alpha: 0.3),
                                   ),
                                 ),
                               ),
@@ -1032,69 +1030,6 @@ class _ActionIcon extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// شريط ردود الفعل أسفل الرسالة: رموز مضافة + زر إضافة.
-class _ReactionsBar extends StatelessWidget {
-  final String postId;
-  final List<ReactionEntity> reactions;
-  final String myUserId;
-
-  const _ReactionsBar({
-    required this.postId,
-    required this.reactions,
-    required this.myUserId,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-
-    final byEmoji = <String, List<ReactionEntity>>{};
-    for (final r in reactions) {
-      byEmoji.putIfAbsent(r.emojiName, () => []).add(r);
-    }
-    final entries = byEmoji.entries.toList()
-      ..sort((a, b) => b.value.length.compareTo(a.value.length));
-
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        for (final entry in entries)
-          _ReactionChip(postId: postId, entry: entry, myUserId: myUserId),
-        Tooltip(
-          message: AppLocalizations.of(context).reactionAdd,
-          child: InkWell(
-            onTap: () async {
-              final emoji = await showReactionPicker(context);
-              if (emoji != null && context.mounted) {
-                context.read<PostBloc>().add(
-                  ToggleReactionEvent(postId, emoji),
-                );
-              }
-            },
-            borderRadius: BorderRadius.circular(4),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: theme.centerChannelColor.withValues(alpha: 0.2),
-                ),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Icon(
-                Icons.add_reaction_outlined,
-                size: 14,
-                color: theme.centerChannelColor.withValues(alpha: 0.55),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

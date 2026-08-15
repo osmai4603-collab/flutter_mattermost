@@ -75,10 +75,12 @@ class WebsocketDbSyncService {
           .write(CachedChannelsCompanion(type: Value(event.type)));
     } else if (event is ChannelViewedEvent) {
       // Update last viewed at for the current user
-      await (_db.update(_db.cachedChannelMembers)
-            ..where((t) => t.channelId.equals(event.channelId)))
-          .write(CachedChannelMembersCompanion(
-              lastViewedAt: Value(event.lastViewedAt)));
+      if (event.lastViewedAt != null) {
+        await (_db.update(_db.cachedChannelMembers)
+              ..where((t) => t.channelId.equals(event.channelId)))
+            .write(CachedChannelMembersCompanion(
+                lastViewedAt: Value(event.lastViewedAt!)));
+      }
     } else if (event is UserUpdatedEvent) {
       // Update cached user
       final user = event.userJson;

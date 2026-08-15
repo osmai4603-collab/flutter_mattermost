@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/captions_bloc.dart';
-import 'package:flutter_mattermost/core/calls/calls_manager.dart';
 
 class LiveCaptionsOverlay extends StatelessWidget {
   const LiveCaptionsOverlay({super.key});

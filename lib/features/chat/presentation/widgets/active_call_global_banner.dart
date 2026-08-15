@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/full_call_screen.dart';
 
@@ -70,13 +69,14 @@ class ActiveCallGlobalBanner extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: Colors.green.shade800,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const FullCallScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const FullCallScreen()),
                   );
                 },
                 child: const Text('العودة للمكالمة'),
