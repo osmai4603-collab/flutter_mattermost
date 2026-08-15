@@ -1,6 +1,6 @@
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_shell.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_shell_layout.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_mattermost/features/chat/presentation/channel_screen.dart';
+import 'package:flutter_mattermost/features/channels/presentation/pages/channel_page.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/threads_page.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/saved_messages_page.dart';
 
@@ -23,7 +23,7 @@ abstract class ChatRoutes {
 
 final channelRoute = StatefulShellRoute.indexedStack(
   builder: (context, state, navigationShell) {
-    return ChannelShell(navigationShell: navigationShell);
+    return ChannelShellLayout(navigationShell: navigationShell);
   },
   branches: [StatefulShellBranch(routes: _routes)],
 );

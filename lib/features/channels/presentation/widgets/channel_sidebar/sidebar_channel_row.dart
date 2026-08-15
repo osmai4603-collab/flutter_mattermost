@@ -39,7 +39,7 @@ class SidebarChannelRow extends StatefulWidget {
 }
 
 class _SidebarChannelRowState extends State<SidebarChannelRow> {
-  bool _hovered = false;
+  bool isHovered = false;
 
   /// هل النص مقصوص فعلياً؟ — يُظهر tooltip بالاسم الكامل فقط عند الاقتطاع
   /// (مطابق enableToolTipIfNeeded في sidebar_channel_link.tsx).
@@ -74,8 +74,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
       maxLines: 1,
       ellipsis: '…',
     )..layout(maxWidth: size.width);
-    final truncated =
-        painter.didExceedMaxLines || painter.width > size.width;
+    final truncated = painter.didExceedMaxLines || painter.width > size.width;
     if (truncated != _isTruncated) {
       setState(() => _isTruncated = truncated);
     }
@@ -90,8 +89,8 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
     final isArchived = channel.deleteAt > 0;
 
     return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
+      onEnter: (_) => setState(() => isHovered = true),
+      onExit: (_) => setState(() => isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         key: widget.rowKey,
@@ -102,42 +101,46 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: DesignTokens.sidebarRowHeight,
-          padding: DesignTokens.sidebarRowPadding,
           color: widget.isSelected
               ? theme.sidebarText.withValues(alpha: 0.08)
-              : _hovered
+              : isHovered
               ? theme.sidebarTextHoverBg
               : Colors.transparent,
           child: Stack(
+            alignment: AlignmentDirectional.centerStart,
             children: [
               // خط نشط عمودي 4px (SidebarLink.active::before)
               if (widget.isSelected)
-                Positioned(
-                  left: 0,
+                PositionedDirectional(
+                  start: 0,
                   top: 0,
                   bottom: 0,
-                  child: Container(
-                    width: 4,
-                    decoration: BoxDecoration(
-                      color: theme.sidebarTextActiveBorder,
-                      borderRadius: BorderRadius.circular(
-                        DesignTokens.radiusSm,
-                      ),
-                    ),
+                  child: VerticalDivider(
+                    thickness: 1.50,
+                    width: 0,
+                    color: theme.sidebarTextActiveBorder,
                   ),
                 ),
-              // القناة المكتومة تُعتَّم (مطابق .muted في webapp).
               Opacity(
                 opacity: widget.isMuted ? 0.5 : 1,
                 child: Row(
                   children: [
-                    _ChannelIcon(
-                      type: channel.type,
-                      active: hasUnreads || widget.isSelected,
-                      theme: theme,
-                      archived: isArchived,
-                    ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 24),
+                    if (channel.type == .open)
+                      Image.asset(
+                        'assets/images/channel_icon.png',
+                        width: 16,
+                        fit: .cover,
+                        color: theme.sidebarText.withValues(alpha: 0.64),
+                      ),
+                    if (channel.type != .open)
+                      _ChannelIcon(
+                        type: channel.type,
+                        active: hasUnreads || widget.isSelected,
+                        theme: theme,
+                        archived: isArchived,
+                      ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: Tooltip(
                         message: _isTruncated ? channel.displayName : '',
@@ -151,9 +154,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                             decoration: isArchived
                                 ? TextDecoration.lineThrough
                                 : null,
-                            color: hasUnreads
-                                ? theme.sidebarUnreadText
-                                : theme.sidebarText,
+                            color: theme.sidebarText.withValues(alpha: 0.65),
                             fontWeight: hasUnreads || widget.isSelected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -193,9 +194,12 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                     const SizedBox(width: 2),
                     // قائمة القناة تظهر عند التمرير فقط (مثل sidebar-menu في webapp).
                     AnimatedOpacity(
-                      opacity: _hovered ? 1 : 0,
+                      opacity: isHovered ? 1 : 0,
                       duration: const Duration(milliseconds: 100),
-                      child: ChannelRowMenu(channel: channel),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4.0),
+                        child: ChannelRowMenu(channel: channel),
+                      ),
                     ),
                   ],
                 ),

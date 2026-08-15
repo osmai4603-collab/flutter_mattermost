@@ -37,11 +37,11 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 64),
       child: Container(
-        width: 560,
-        height: 380,
+        width: 650,
+        height: 500,
         decoration: BoxDecoration(
           color: theme.centerChannelBg,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.25),
@@ -51,7 +51,26 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
           ],
         ),
         child: Column(
+          crossAxisAlignment: .start,
           children: [
+            SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Find Channels',
+                style: TextStyle(fontSize: 22, fontWeight: .bold),
+              ),
+            ),
+            SizedBox(height: 4),
+            Padding(
+              padding: .symmetric(horizontal: 16),
+              child: Text(
+                'Type to find a channel, Use UP/DOWN to browse, ENTER to select, ESC to dismiss.',
+
+                style: TextStyle(fontSize: 14, fontWeight: .w300),
+              ),
+            ),
+            SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
@@ -60,34 +79,45 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
                 onChanged: (value) => setState(() => _query = value),
                 style: TextStyle(color: theme.centerChannelColor),
                 decoration: InputDecoration(
-                  hintText: l10n.quickSwitcherPlaceholder,
-                  hintStyle: TextStyle(
-                    color: theme.centerChannelColor.withValues(alpha: 0.5),
-                  ),
+                  // hintText: l10n.quickSwitcherPlaceholder,
+                  // hintStyle: TextStyle(
+                  //   color: theme.centerChannelColor.withValues(alpha: 0.5),
+                  // ),
+                  contentPadding: .all(6),
                   prefixIcon: Icon(
                     Icons.search,
+                    size: 20,
                     color: theme.centerChannelColor.withValues(alpha: 0.5),
                   ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
+                      width: 0.50,
                       color: theme.centerChannelColor.withValues(alpha: 0.2),
                     ),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
+                      width: 0.50,
                       color: theme.centerChannelColor.withValues(alpha: 0.2),
                     ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: theme.buttonBg),
+                    borderSide: BorderSide(color: theme.buttonBg, width: 1.50),
                   ),
                 ),
               ),
             ),
-            const Divider(height: 1),
+            const Divider(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'RECENT',
+                style: TextStyle(fontSize: 14, fontWeight: .w300),
+              ),
+            ),
             Expanded(
               child: BlocBuilder<ChannelBloc, ChannelState>(
                 builder: (context, state) {
@@ -133,13 +163,33 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
                         Padding(
                           padding: const EdgeInsets.all(24),
                           child: Center(
-                            child: Text(
-                              l10n.quickSwitcherNoResults,
-                              style: TextStyle(
-                                color: theme.centerChannelColor.withValues(
-                                  alpha: 0.5,
+                            child: Column(
+                              spacing: 16,
+                              children: [
+                                Image.asset(
+                                  'assets/images/result.png',
+                                  width: 100,
+                                  fit: .cover,
                                 ),
-                              ),
+                                Text(
+                                  'No result for "$_query"',
+                                  style: TextStyle(
+                                    color: theme.centerChannelColor,
+                                    fontSize: 22,
+                                    fontWeight: .bold,
+                                  ),
+                                ),
+                                Text(
+                                  'Check the spelling or try another search.',
+                                  style: TextStyle(
+                                    color: theme.centerChannelColor.withValues(
+                                      alpha: 0.5,
+                                    ),
+                                    fontSize: 14,
+                                    fontWeight: .w400,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -174,11 +224,17 @@ class _ResultTile extends StatelessWidget {
       child: ListTile(
         dense: true,
         selected: isSelected,
-        leading: Icon(
-          channel.type == ChannelType.private ? Icons.lock_outline : Icons.tag,
-          size: 18,
-          color: theme.centerChannelColor.withValues(alpha: 0.7),
-        ),
+        leading: channel.type == .open
+            ? Image.asset(
+                'assets/images/channel_icon.png',
+                fit: .cover,
+                width: 20,
+              )
+            : Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: theme.centerChannelColor.withValues(alpha: 0.7),
+              ),
         title: Text(
           channel.displayName,
           style: TextStyle(color: theme.centerChannelColor, fontSize: 13),

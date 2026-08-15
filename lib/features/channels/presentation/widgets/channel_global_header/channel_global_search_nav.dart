@@ -4,7 +4,7 @@ import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/user_guide_dropdown.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_global_header/user_guide_dropdown.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/quick_switcher.dart';
 
 /// مربع البحث في منتصف الـ header (webapp NewSearch -> Quick Switch).
@@ -60,7 +60,9 @@ class ChannelGlobalSearchNav extends StatelessWidget {
                             context,
                             id: ModalIdentifiers.keyboardShortcuts,
                           ),
-                          borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+                          borderRadius: BorderRadius.circular(
+                            DesignTokens.radiusSm,
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(4),
                             child: Icon(

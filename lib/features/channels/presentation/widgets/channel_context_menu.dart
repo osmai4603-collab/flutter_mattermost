@@ -49,6 +49,18 @@ List<MatterMenuItem> buildChannelMenuItems(
   final canManage = isCreator || isChannelAdmin;
 
   final items = <MatterMenuItem>[
+    MatterMenuItem(
+      id: 'new_window',
+      label: 'Open in a new window',
+      icon: Icon(Icons.content_copy, size: 18),
+    ),
+    MatterMenuItem.divider(),
+
+    MatterMenuItem(
+      id: 'mark_as_unread',
+      label: 'Mark as Unread',
+      icon: Icon(Icons.content_copy, size: 18),
+    ),
     // ==== التنظيم ====
     MatterMenuItem(
       id: 'favorite',
@@ -70,13 +82,6 @@ List<MatterMenuItem> buildChannelMenuItems(
         );
       },
     ),
-    MatterMenuItem(
-      id: 'move_to',
-      label: l10n.sidebar_leftSidebar_channel_menuMoveTo,
-      icon: const Icon(Icons.drive_file_move_outlined, size: 18),
-      submenu: _moveToItems(context, channel, loaded),
-    ),
-    MatterMenuItem.divider(),
     // ==== التنبيهات ====
     MatterMenuItem(
       id: 'mute',
@@ -93,47 +98,34 @@ List<MatterMenuItem> buildChannelMenuItems(
         );
       },
     ),
-    if (!isDirect && !isGroup)
-      MatterMenuItem(
-        id: 'notifications',
-        label: l10n.channelNotificationsPreferences,
-        icon: const Icon(Icons.notifications_none_outlined, size: 18),
-        onTap: () {
-          showDialog<void>(
-            context: context,
-            builder: (_) => ChannelNotificationsModal(channel: channel),
-          );
-        },
-      ),
+    MatterMenuItem.divider(),
+    MatterMenuItem(
+      id: 'move_to',
+      label: l10n.sidebar_leftSidebar_channel_menuMoveTo,
+      icon: const Icon(Icons.drive_file_move_outlined, size: 18),
+      submenu: _moveToItems(context, channel, loaded),
+    ),
+    MatterMenuItem.divider(),
+    MatterMenuItem(
+      id: 'copy_link',
+      label: l10n.sidebar_leftSidebar_channel_menuCopyLink,
+      icon: const Icon(Icons.link, size: 18),
+      onTap: () => _copyLink(context, channel),
+    ),
+    MatterMenuItem(
+      id: 'add_members',
+      label: l10n.sidebar_leftSidebar_channel_menuAddMembers,
+      icon: const Icon(Icons.group, size: 18),
+      onTap: () {
+        showDialog<void>(
+          context: context,
+          builder: (_) => ChannelNotificationsModal(channel: channel),
+        );
+      },
+    ),
     MatterMenuItem.divider(),
     // ==== المشاركة والمعلومات ====
     // رسائل DM/GM لا تملك رابط قناة ضمن فريق — لا يُعرض بند نسخ الرابط لها.
-    if (!isDirect && !isGroup)
-      MatterMenuItem(
-        id: 'copy_link',
-        label: l10n.sidebar_leftSidebar_channel_menuCopyLink,
-        icon: const Icon(Icons.link, size: 18),
-        onTap: () => _copyLink(context, channel),
-      ),
-    MatterMenuItem(
-      id: 'view_info',
-      label: l10n.channelHeaderViewInfo,
-      icon: const Icon(Icons.info_outline, size: 18),
-      onTap: () => _showChannelInfo(context, channel),
-    ),
-    if (canManage && !isDirect && !isGroup)
-      MatterMenuItem(
-        id: 'edit_channel',
-        label: l10n.channel_settingsModalTitle,
-        icon: const Icon(Icons.edit_outlined, size: 18),
-        onTap: () {
-          showDialog<void>(
-            context: context,
-            builder: (_) => ChannelSettingsModal(channel: channel),
-          );
-        },
-      ),
-    MatterMenuItem.divider(),
     // ==== خروج (حمراء) ====
     MatterMenuItem(
       id: 'leave',
@@ -144,14 +136,6 @@ List<MatterMenuItem> buildChannelMenuItems(
       danger: true,
       onTap: () => _confirmLeave(context, channel),
     ),
-    if (canManage && !isDirect && !isGroup && !isArchived)
-      MatterMenuItem(
-        id: 'archive',
-        label: l10n.channel_settingsModalArchiveTitle.replaceAll('?', ''),
-        icon: const Icon(Icons.archive_outlined, size: 18),
-        danger: true,
-        onTap: () => _confirmArchive(context, channel),
-      ),
   ];
 
   return items;
@@ -164,31 +148,26 @@ List<MatterMenuItem> _moveToItems(
   ChannelsLoadedState? loaded,
 ) {
   final l10n = AppLocalizations.of(context);
-  final customCategories =
-      loaded?.categories
-          .where((c) => c.type == ChannelCategoryType.custom)
-          .toList() ??
-      const [];
-
-  final newCategoryItem = MatterMenuItem(
-    id: 'move_new_category',
-    label: l10n.sidebar_leftSidebar_channel_menuMoveToNewCategory,
-    icon: const Icon(Icons.create_new_folder_outlined, size: 18),
-    onTap: () => _promptCreateCategory(context, channel, loaded),
-  );
-
-  if (customCategories.isEmpty) return [newCategoryItem];
-
   return [
-    for (final category in customCategories)
-      MatterMenuItem(
-        id: 'move_${category.id}',
-        label: category.displayName,
-        icon: const Icon(Icons.folder_outlined, size: 18),
-        onTap: () => _moveTo(context, channel, category.id, loaded),
-      ),
+    MatterMenuItem(
+      id: 'favorites',
+      label: 'Favorites',
+      icon: const Icon(Icons.star_outline, size: 18),
+      onTap: () => _promptCreateCategory(context, channel, loaded),
+    ),
+    MatterMenuItem(
+      id: 'channels',
+      label: 'Channels',
+      icon: const Icon(Icons.folder_outlined, size: 18),
+      onTap: () => _promptCreateCategory(context, channel, loaded),
+    ),
     MatterMenuItem.divider(),
-    newCategoryItem,
+    MatterMenuItem(
+      id: 'move_new_category',
+      label: l10n.sidebar_leftSidebar_channel_menuMoveToNewCategory,
+      icon: const Icon(Icons.create_new_folder_outlined, size: 18),
+      onTap: () => _promptCreateCategory(context, channel, loaded),
+    ),
   ];
 }
 
@@ -227,7 +206,7 @@ class ChannelRowMenu extends StatelessWidget {
         width: 24,
         height: 24,
         child: Icon(
-          Icons.more_horiz,
+          Icons.more_vert,
           size: iconSize,
           color: iconColor ?? theme.sidebarText.withValues(alpha: 0.7),
         ),

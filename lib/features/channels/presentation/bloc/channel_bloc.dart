@@ -1146,7 +1146,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     final previous = current;
     final updated = current.categories
         .map(
-          (c) => c.id == event.categoryId ? c.copyWith(sorting: event.sorting) : c,
+          (c) =>
+              c.id == event.categoryId ? c.copyWith(sorting: event.sorting) : c,
         )
         .toList();
     emit(

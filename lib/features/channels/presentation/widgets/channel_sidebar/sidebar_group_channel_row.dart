@@ -5,7 +5,7 @@ import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/sidebar_category.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 
 /// صف محادثة جماعية (GM) في LHS — مطابق sidebar_group_channel.tsx في webapp:
 /// أيقونة عداد الأعضاء (status--group) + اسم المجموعة من الخادم (display_name)
@@ -100,7 +100,7 @@ class _SidebarGroupChannelRowState extends State<SidebarGroupChannelRow> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: DesignTokens.sidebarRowHeight,
-          padding: DesignTokens.sidebarRowPadding,
+          padding: EdgeInsets.symmetric(vertical: 8),
           color: widget.isSelected
               ? theme.sidebarText.withValues(alpha: 0.08)
               : _hovered

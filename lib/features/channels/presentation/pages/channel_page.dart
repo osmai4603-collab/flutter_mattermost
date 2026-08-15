@@ -199,8 +199,9 @@ class _ChannelPageState extends State<ChannelPage> {
         );
         final others = members.where((m) => m.userId != myId).toList();
         if (others.isNotEmpty) {
-          final user = await getIt<UserRepository>()
-              .getUserById(others.first.userId);
+          final user = await getIt<UserRepository>().getUserById(
+            others.first.userId,
+          );
           deactivated = user.deleteAt > 0;
         }
       } catch (_) {}
@@ -259,7 +260,9 @@ class _ChannelPageState extends State<ChannelPage> {
               restricted: _isRestrictedDm,
             ),
             closeLabel: _isRestrictedDm
-                ? AppLocalizations.of(context).center_panelNoSharedTeamCloseChannel
+                ? AppLocalizations.of(
+                    context,
+                  ).center_panelNoSharedTeamCloseChannel
                 : AppLocalizations.of(context).center_panelArchivedCloseChannel,
             onClose: _closeChannel,
           )
@@ -326,7 +329,10 @@ class _ArchivedBar extends StatelessWidget {
             onPressed: onClose,
             style: FilledButton.styleFrom(
               visualDensity: VisualDensity.compact,
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: Text(closeLabel),
           ),

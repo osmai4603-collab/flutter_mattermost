@@ -589,172 +589,180 @@ class _PostItemState extends State<PostItem> {
               ? theme.centerChannelColor.withValues(alpha: 0.04)
               : Colors.transparent,
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Stack(
+          alignment: AlignmentDirectional.topEnd,
           children: [
-            GestureDetector(
-              onTap: () => showUserProfile(context, post.userId),
-              child: ProfilePicture(
-                username: username,
-                avatarUrl: avatarUrl,
-                status: widget.isReply ? null : status,
-                size: widget.isReply ? 24 : 32,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (widget.showFullHeader || widget.isReply)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: GestureDetector(
-                              onTap: () =>
-                                  showUserProfile(context, post.userId),
-                              child: Text(
-                                username,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: theme.centerChannelColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: widget.isReply ? 13 : 14,
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (isBot) ...[
-                            const SizedBox(width: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.centerChannelColor.withValues(
-                                  alpha: 0.08,
-                                ),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                              child: Text(
-                                'BOT',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.centerChannelColor.withValues(
-                                    alpha: 0.6,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () => showUserProfile(context, post.userId),
+                  child: ProfilePicture(
+                    username: username,
+                    avatarUrl: avatarUrl,
+                    status: widget.isReply ? null : status,
+                    size: widget.isReply ? 24 : 32,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (widget.showFullHeader || widget.isReply)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      showUserProfile(context, post.userId),
+                                  child: Text(
+                                    username,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: theme.centerChannelColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: widget.isReply ? 13 : 14,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
-                          const SizedBox(width: 6),
-                          Tooltip(
-                            message: fullTime,
-                            child: Text(
-                              time,
-                              style: TextStyle(
-                                fontSize: 11.5,
-                                color: theme.centerChannelColor.withValues(
-                                  alpha: 0.45,
+                              if (isBot) ...[
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.centerChannelColor.withValues(
+                                      alpha: 0.08,
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: Text(
+                                    'BOT',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                      color: theme.centerChannelColor
+                                          .withValues(alpha: 0.6),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                          ),
-                          if (widget.isPinned) ...[
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.push_pin,
-                              size: 12,
-                              color: theme.centerChannelColor.withValues(
-                                alpha: 0.45,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  if (post.deleteAt > 0)
-                    Text(
-                      l10n.postDeleted,
-                      style: TextStyle(
-                        color: theme.centerChannelColor.withValues(alpha: 0.5),
-                        fontSize: 14,
-                        fontStyle: FontStyle.italic,
-                        height: 1.35,
-                      ),
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (CallStateTiles.isCallPost(post))
-                          CallPostTile(post: post)
-                        else ...[
-                          MarkdownMessage(text: post.message),
-                          if (post.editAt > 0)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: InkWell(
-                                onTap: () => context.read<RhsBloc>().add(
-                                  OpenEditHistoryEvent(post.id),
-                                ),
-                                borderRadius: BorderRadius.circular(4),
+                              ],
+                              const SizedBox(width: 6),
+                              Tooltip(
+                                message: fullTime,
                                 child: Text(
-                                  l10n.postEdited,
+                                  time,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontStyle: FontStyle.italic,
+                                    fontSize: 11.5,
                                     color: theme.centerChannelColor.withValues(
                                       alpha: 0.45,
                                     ),
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: theme.centerChannelColor
-                                        .withValues(alpha: 0.3),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
-                      ],
-                    ),
-                  if (widget.filesList.isNotEmpty)
-                    PostAttachmentPreview(files: widget.filesList),
-                  if (widget.replyCount > 0)
-                    InkWell(
-                      onTap: () {
-                        context.read<RhsBloc>().add(
-                          OpenThreadEvent(post.id, post.channelId),
-                        );
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Text(
-                          '${widget.replyCount} ${widget.replyCount == 1 ? l10n.repliesCount1 : l10n.repliesCountN(widget.replyCount)}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.linkColor,
-                            fontWeight: FontWeight.w500,
+                              if (widget.isPinned) ...[
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.push_pin,
+                                  size: 12,
+                                  color: theme.centerChannelColor.withValues(
+                                    alpha: 0.45,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                      ),
+                      if (post.deleteAt > 0)
+                        Text(
+                          l10n.postDeleted,
+                          style: TextStyle(
+                            color: theme.centerChannelColor.withValues(
+                              alpha: 0.5,
+                            ),
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            height: 1.35,
+                          ),
+                        )
+                      else
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (CallStateTiles.isCallPost(post))
+                              CallPostTile(post: post)
+                            else ...[
+                              MarkdownMessage(text: post.message),
+                              if (post.editAt > 0)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: InkWell(
+                                    onTap: () => context.read<RhsBloc>().add(
+                                      OpenEditHistoryEvent(post.id),
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Text(
+                                      l10n.postEdited,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontStyle: FontStyle.italic,
+                                        color: theme.centerChannelColor
+                                            .withValues(alpha: 0.45),
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: theme
+                                            .centerChannelColor
+                                            .withValues(alpha: 0.3),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ],
+                        ),
+                      if (widget.filesList.isNotEmpty)
+                        PostAttachmentPreview(files: widget.filesList),
+                      if (widget.replyCount > 0)
+                        InkWell(
+                          onTap: () {
+                            context.read<RhsBloc>().add(
+                              OpenThreadEvent(post.id, post.channelId),
+                            );
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Text(
+                              '${widget.replyCount} ${widget.replyCount == 1 ? l10n.repliesCount1 : l10n.repliesCountN(widget.replyCount)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.linkColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (_hovered && post.deleteAt == 0)
+                  PositionedDirectional(
+                    child: _PostActions(
+                      post: post,
+                      isFlagged: widget.isFlagged,
+                      isPinned: widget.isPinned,
+                      isReply: widget.isReply,
+                      canDelete: canDelete,
+                      canEdit: isMine,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            if (_hovered && post.deleteAt == 0)
-              _PostActions(
-                post: post,
-                isFlagged: widget.isFlagged,
-                isPinned: widget.isPinned,
-                isReply: widget.isReply,
-                canDelete: canDelete,
-                canEdit: isMine,
-              ),
           ],
         ),
       ),
@@ -791,135 +799,189 @@ class _PostActions extends StatelessWidget {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (!isReply)
-          _ActionIcon(
-            icon: Icons.mode_comment_outlined,
-            tooltip: l10n.postMenuReply,
-            onTap: () {
-              context.read<RhsBloc>().add(
-                OpenThreadEvent(post.id, post.channelId),
-              );
-            },
-          ),
-        _ActionIcon(
-          icon: isFlagged ? Icons.flag : Icons.flag_outlined,
-          tooltip: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
-          color: isFlagged ? theme.errorTextColor : null,
-          onTap: () {
-            context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
-          },
-        ),
-        PopupMenuButton<String>(
-          itemBuilder: (_) => [
-            PopupMenuItem(
-              value: 'reply',
-              child: Row(
-                spacing: 8,
-                children: [
-                  const Icon(Icons.mode_comment_outlined, size: 18),
-                  Text(l10n.postMenuReply),
-                ],
+    return Card(
+      color: ColorScheme.of(context).surface,
+      margin: .zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: .circular(6),
+        side: BorderSide(color: theme.buttonColor),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            InkWell(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.asset('assets/images/emoji/1f919.png', width: 22),
               ),
-              onTap: () {
-                context.read<RhsBloc>().add(
-                  OpenThreadEvent(post.id, post.channelId),
-                );
-              },
+
+              onTap: () {},
             ),
-            PopupMenuItem(
-              value: 'copy',
-              child: Row(
-                children: [
-                  const Icon(Icons.copy, size: 18),
-                  Text(l10n.postMenuCopy),
-                ],
+            InkWell(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Image.asset('assets/images/emoji/1f600.png', width: 22),
               ),
-              onTap: () => Clipboard.setData(ClipboardData(text: post.message)),
+              onTap: () {},
             ),
-            PopupMenuItem(
-              value: 'copy_link',
-              // label: 'Copy Link',
-              child: Row(
-                spacing: 8,
-                children: [const Icon(Icons.link, size: 18), Text('Copy Link')],
+            InkWell(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.check_box_rounded, color: Colors.green[700]),
               ),
-              onTap: () {
-                final serverUrl = getIt<ServerManager>().activeServerUrl;
-                final link = '$serverUrl/_redirect/pl/${post.id}';
-                Clipboard.setData(ClipboardData(text: link));
-              },
+              onTap: () {},
             ),
-            PopupMenuItem(
-              value: 'flag',
-              // label: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(isFlagged ? Icons.flag : Icons.flag_outlined, size: 18),
-                  Text(isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag),
-                ],
+            InkWell(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.bookmark_border),
               ),
+              onTap: () {},
+            ),
+            InkWell(
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Text('🫥'),
+              ),
+              onTap: () {},
+            ),
+            if (!isReply)
+              _ActionIcon(
+                icon: Icons.mode_comment_outlined,
+                tooltip: l10n.postMenuReply,
+                onTap: () {
+                  context.read<RhsBloc>().add(
+                    OpenThreadEvent(post.id, post.channelId),
+                  );
+                },
+              ),
+            _ActionIcon(
+              icon: isFlagged ? Icons.flag : Icons.flag_outlined,
+              tooltip: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
+              color: isFlagged ? theme.errorTextColor : null,
               onTap: () {
                 context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
               },
             ),
-            PopupMenuItem(
-              value: 'pin',
-              // label: isPinned ? l10n.postMenuUnpin : l10n.postMenuPin,
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(
-                    isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                    size: 18,
+            PopupMenuButton<String>(
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  value: 'reply',
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      const Icon(Icons.mode_comment_outlined, size: 18),
+                      Text(l10n.postMenuReply),
+                    ],
                   ),
-                  Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
-                ],
-              ),
-              onTap: () {
-                context.read<PostBloc>().add(TogglePinPostEvent(post.id));
-              },
-            ),
-            if (canEdit)
-              PopupMenuItem(
-                value: 'edit',
-                // label: l10n.postMenuEdit,
-                child: Row(
-                  spacing: 8,
-                  children: [
-                    const Icon(Icons.edit_outlined, size: 18),
-                    Text(l10n.postMenuEdit),
-                  ],
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
                 ),
-                onTap: () => _startComposerEdit(context),
-              ),
-            if (canDelete)
-              PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    const Icon(Icons.delete_outline, size: 18),
-                    Text(
-                      l10n.postMenuDelete,
-                      style: TextStyle(color: Colors.red),
+                PopupMenuItem(
+                  value: 'copy',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.copy, size: 18),
+                      Text(l10n.postMenuCopy),
+                    ],
+                  ),
+                  onTap: () =>
+                      Clipboard.setData(ClipboardData(text: post.message)),
+                ),
+                PopupMenuItem(
+                  value: 'copy_link',
+                  // label: 'Copy Link',
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      const Icon(Icons.link, size: 18),
+                      Text('Copy Link'),
+                    ],
+                  ),
+                  onTap: () {
+                    final serverUrl = getIt<ServerManager>().activeServerUrl;
+                    final link = '$serverUrl/_redirect/pl/${post.id}';
+                    Clipboard.setData(ClipboardData(text: link));
+                  },
+                ),
+                PopupMenuItem(
+                  value: 'flag',
+                  // label: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        isFlagged ? Icons.flag : Icons.flag_outlined,
+                        size: 18,
+                      ),
+                      Text(isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag),
+                    ],
+                  ),
+                  onTap: () {
+                    context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
+                  },
+                ),
+                PopupMenuItem(
+                  value: 'pin',
+                  // label: isPinned ? l10n.postMenuUnpin : l10n.postMenuPin,
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                        size: 18,
+                      ),
+                      Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
+                    ],
+                  ),
+                  onTap: () {
+                    context.read<PostBloc>().add(TogglePinPostEvent(post.id));
+                  },
+                ),
+                if (canEdit)
+                  PopupMenuItem(
+                    value: 'edit',
+                    // label: l10n.postMenuEdit,
+                    child: Row(
+                      spacing: 8,
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 18),
+                        Text(l10n.postMenuEdit),
+                      ],
                     ),
-                  ],
-                ),
-                // danger: true,
-                // separatorBefore: true,
-                onTap: () => _confirmDelete(context),
+                    onTap: () => _startComposerEdit(context),
+                  ),
+                if (canDelete)
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete_outline, size: 18),
+                        Text(
+                          l10n.postMenuDelete,
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ],
+                    ),
+                    // danger: true,
+                    // separatorBefore: true,
+                    onTap: () => _confirmDelete(context),
+                  ),
+              ],
+              child: _ActionIcon(
+                icon: Icons.more_horiz,
+                tooltip: l10n.channelHeaderMore,
+                onTap: null,
               ),
+            ),
           ],
-          child: _ActionIcon(
-            icon: Icons.more_horiz,
-            tooltip: l10n.channelHeaderMore,
-            onTap: null,
-          ),
         ),
-      ],
+      ),
     );
   }
 

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/channel_global_header.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_global_header/channel_global_header.dart';
 import 'package:flutter_mattermost/core/shortcuts/app_shortcuts.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/call_widget.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/incoming_call_banner.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/quick_switcher.dart';
@@ -22,18 +22,19 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 /// عند توسعة RHS (overlay) يغطي منطقة المحتوى كاملة فوق المركز.
 /// يستضيف (في Stack يغطي الجسم كاملاً) بطاقة المكالمة النشطة القابلة
 /// للتحريك CallWidgetOverlay — عرضها يتبع عرض الـ LHS عبر ValueNotifier.
-class ChannelShell extends StatefulWidget {
+class ChannelShellLayout extends StatefulWidget {
   final StatefulNavigationShell navigationShell;
 
-  const ChannelShell({super.key, required this.navigationShell});
+  const ChannelShellLayout({super.key, required this.navigationShell});
 
   @override
-  State<ChannelShell> createState() => _ChannelShellState();
+  State<ChannelShellLayout> createState() => _ChannelShellLayoutState();
 }
 
-class _ChannelShellState extends State<ChannelShell> {
-  final ValueNotifier<double> _lhsWidth =
-      ValueNotifier(DesignTokens.lhsDefaultWidth);
+class _ChannelShellLayoutState extends State<ChannelShellLayout> {
+  final ValueNotifier<double> _lhsWidth = ValueNotifier(
+    DesignTokens.lhsDefaultWidth,
+  );
 
   @override
   void dispose() {
@@ -85,10 +86,7 @@ class _ChannelShellState extends State<ChannelShell> {
                           rhsState is RhsPanelState && rhsState.isExpanded;
                       return Container(
                         color: theme.sidebarBg,
-                        margin: EdgeInsetsDirectional.only(
-                          end: 4,
-                          bottom: 8,
-                        ),
+                        margin: EdgeInsetsDirectional.only(end: 4, bottom: 8),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
@@ -131,9 +129,7 @@ class _ChannelShellState extends State<ChannelShell> {
             // بطاقة المكالمة النشطة فوق كل شيء — قابلة للتحريك داخل
             // نافذة التطبيق، افتراضياً أسفل-يسار فوق منطقة الـ sidebar
             // (بنفس عرضه). تختفي تلقائياً عند انتهاء المكالمة.
-            Positioned.fill(
-              child: CallWidgetOverlay(lhsWidth: _lhsWidth),
-            ),
+            Positioned.fill(child: CallWidgetOverlay(lhsWidth: _lhsWidth)),
           ],
         ),
       ),
@@ -196,10 +192,7 @@ class _ResizableLhsState extends State<_ResizableLhs> {
               onHorizontalDragUpdate: (details) {
                 _updateWidth(
                   (_width + details.delta.dx)
-                      .clamp(
-                        DesignTokens.lhsMinWidth,
-                        DesignTokens.lhsMaxWidth,
-                      )
+                      .clamp(DesignTokens.lhsMinWidth, DesignTokens.lhsMaxWidth)
                       .toDouble(),
                 );
               },

@@ -370,7 +370,7 @@ class _MenuOverlayPanelState extends State<_MenuOverlayPanel> {
                     item.label,
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w400,
                       color: item.danger
                           ? theme.errorTextColor
                           : theme.centerChannelColor,

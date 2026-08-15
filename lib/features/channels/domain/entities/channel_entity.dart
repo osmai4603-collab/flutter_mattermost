@@ -36,21 +36,21 @@ class ChannelEntity extends Entity {
 
   @override
   List<Object?> get props => [
-        id,
-        createAt,
-        updateAt,
-        deleteAt,
-        teamId,
-        type,
-        displayName,
-        name,
-        header,
-        purpose,
-        lastPostAt,
-        totalMsgCount,
-        extraUpdateAt,
-        creatorId,
-      ];
+    id,
+    createAt,
+    updateAt,
+    deleteAt,
+    teamId,
+    type,
+    displayName,
+    name,
+    header,
+    purpose,
+    lastPostAt,
+    totalMsgCount,
+    extraUpdateAt,
+    creatorId,
+  ];
 
   @override
   ChannelEntity copyWith({

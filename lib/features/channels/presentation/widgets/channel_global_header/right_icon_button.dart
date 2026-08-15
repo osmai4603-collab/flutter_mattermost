@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_header/channel_global_header.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_global_header/channel_global_header.dart';
 
 /// زر أيقونة في الـ header (16px) — يطابق header_icon_button.scss:
 /// padding 6px، radius 4، opacity النص 0.56، hover 0.08/0.72.
@@ -11,7 +11,8 @@ class RightIconButton extends StatefulWidget {
   final bool toggled;
   final VoidCallback onTap;
 
-  const RightIconButton({super.key, 
+  const RightIconButton({
+    super.key,
     required this.icon,
     required this.tooltip,
     required this.toggled,
@@ -21,7 +22,6 @@ class RightIconButton extends StatefulWidget {
   @override
   State<RightIconButton> createState() => _RightIconButtonState();
 }
-
 
 class _RightIconButtonState extends State<RightIconButton> {
   bool _hovered = false;
@@ -63,4 +63,3 @@ class _RightIconButtonState extends State<RightIconButton> {
     );
   }
 }
-

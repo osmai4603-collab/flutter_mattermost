@@ -10,7 +10,7 @@ import 'package:flutter_mattermost/features/app/presentation/pages/app_settings_
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/direct_channels_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/keyboard_shortcuts_modal.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/create_new_channel.dart';
+import 'package:flutter_mattermost/features/channels/presentation/pages/create_new_channel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/widgets/invitation_modal.dart';
@@ -150,7 +150,9 @@ class _BrowseChannelsModalState extends State<_BrowseChannelsModal> {
                       ListTile(
                         dense: true,
                         leading: Icon(
-                          channel.type == ChannelType.private ? Icons.lock_outline : Icons.tag,
+                          channel.type == ChannelType.private
+                              ? Icons.lock_outline
+                              : Icons.tag,
                           size: 18,
                           color: theme.centerChannelColor.withValues(
                             alpha: 0.6,

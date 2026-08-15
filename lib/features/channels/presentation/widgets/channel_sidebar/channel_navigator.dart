@@ -42,7 +42,7 @@ class ChannelNavigator extends StatelessWidget {
                         ? l10n.sidebarLeftShowAllChannels
                         : l10n.sidebarLeftFilterByUnread,
                     child: Icon(
-                      Icons.visibility_outlined,
+                      Icons.sort_rounded,
                       size: 14,
                       color: unreadsOnly
                           ? theme.sidebarTextActiveColor

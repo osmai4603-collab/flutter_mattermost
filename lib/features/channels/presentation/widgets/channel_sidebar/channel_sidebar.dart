@@ -2,6 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_navigator.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar_header.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direct_message_category_widget.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direction_message_item_widget.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
@@ -16,9 +22,6 @@ import 'package:flutter_mattermost/features/channels/domain/entities/channel_ent
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_navigator.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/sidebar_category.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/sidebar_header.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/unread_channel_indicator.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -441,7 +444,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
       color: theme.sidebarBg,
       child: Column(
         children: [
-          const SidebarHeader(),
+          const ChannelSidebarHeader(),
           const ChannelNavigator(),
           Expanded(
             child: Stack(
@@ -452,7 +455,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   children: [
                     _GlobalSectionLink(
-                      icon: Icons.forum_outlined,
+                      icon: Icons.message_outlined,
                       label: l10n.globalThreadsSidebarLink,
                       onTap: () {
                         final teamName = _teamName(context);
@@ -461,16 +464,16 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                         }
                       },
                     ),
-                    _GlobalSectionLink(
-                      icon: Icons.bookmark_border,
-                      label: l10n.sidebar_right_menuFlagged,
-                      onTap: () {
-                        final teamName = _teamName(context);
-                        if (teamName != null) {
-                          context.go('/$teamName/saved');
-                        }
-                      },
-                    ),
+                    // _GlobalSectionLink(
+                    //   icon: Icons.bookmark_border,
+                    //   label: l10n.sidebar_right_menuFlagged,
+                    //   onTap: () {
+                    //     final teamName = _teamName(context);
+                    //     if (teamName != null) {
+                    //       context.go('/$teamName/saved');
+                    //     }
+                    //   },
+                    // ),
                     const SizedBox(height: 8),
                     for (final (categoryId, title, list) in sections)
                       if (list.isNotEmpty)
@@ -481,7 +484,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                           rows: list,
                         ),
                     if (dmChannels.isNotEmpty)
-                      _DmCategory(
+                      DirectMessageCategoryWidget(
                         categoryId: dmCategoryId,
                         dmCategory: dmCategory,
                         channels: dmChannels,
@@ -637,512 +640,6 @@ class _GlobalSectionLink extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// فئة الرسائل المباشرة — صفوف بأفاتار/حالة المستخدم (متصل/غائب/عدم إزعاج/غير متصل)
-/// وتحميل الحالات عبر UserStatusBloc.
-class _DmCategory extends StatefulWidget {
-  final String categoryId;
-
-  /// فئة الرسائل المباشرة من الخادم (قد تكون غائبة عند عدم وجودها).
-  final ChannelCategoryEntity? dmCategory;
-  final List<ChannelEntity> channels;
-  final Map<String, ChannelUnreadCounts> unreadCounts;
-  final String? selectedChannelId;
-  final String currentUserId;
-  final Set<String> mutedChannelIds;
-  final Key Function(ChannelEntity)? rowKeyBuilder;
-  final void Function(ChannelEntity) onChannelTap;
-  final void Function(String channelId, String fromCategoryId) onMoveChannel;
-
-  const _DmCategory({
-    required this.categoryId,
-    this.dmCategory,
-    required this.channels,
-    required this.unreadCounts,
-    required this.selectedChannelId,
-    required this.currentUserId,
-    this.mutedChannelIds = const {},
-    this.rowKeyBuilder,
-    required this.onChannelTap,
-    required this.onMoveChannel,
-  });
-
-  @override
-  State<_DmCategory> createState() => _DmCategoryState();
-}
-
-class _DmCategoryState extends State<_DmCategory> {
-  @override
-  void initState() {
-    super.initState();
-    _requestStatuses();
-    _requestProfiles();
-  }
-
-  @override
-  void didUpdateWidget(covariant _DmCategory oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.channels != oldWidget.channels) {
-      _requestStatuses();
-      _requestProfiles();
-    }
-  }
-
-  void _requestStatuses() {
-    final userIds = <String>{
-      for (final ch in widget.channels)
-        ...dmCounterpartIds(ch, widget.currentUserId),
-    };
-    if (userIds.isEmpty) return;
-    context.read<UserStatusBloc>().add(LoadUserStatusesEvent(userIds.toList()));
-  }
-
-  /// تحميل ملفات المستخدمين المقابلين لحل أسماء قنوات DM
-  /// (الخادم يعيد display_name فارغاً للرسائل المباشرة).
-  void _requestProfiles() {
-    final userIds = <String>{
-      for (final ch in widget.channels)
-        ...dmCounterpartIds(ch, widget.currentUserId),
-    };
-    if (userIds.isEmpty) return;
-    context.read<UserProfileBloc>().add(
-      LoadProfilesByIdsEvent(userIds.toList()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
-
-    return BlocBuilder<UserStatusBloc, UserStatusState>(
-      builder: (context, statusState) {
-        final statuses = statusState is UserStatusesLoadedState
-            ? statusState.statuses
-            : const <String, UserStatus>{};
-        return BlocBuilder<UserProfileBloc, UserProfileState>(
-          builder: (context, profileState) {
-            final profiles = <String, UserEntity>{};
-            if (profileState is UserProfileLoadedState) {
-              for (final user in profileState.profiles) {
-                profiles[user.id] = user;
-              }
-              if (profileState.myProfile != null) {
-                profiles['me'] = profileState.myProfile!;
-              }
-            }
-            return BlocBuilder<LhsBloc, LhsState>(
-              builder: (context, lhs) {
-                final collapsed =
-                    lhs is LhsSearchState &&
-                    lhs.collapsedCategories.contains(widget.categoryId);
-
-                // يقبل إفلات القنوات من الفئات الأخرى إلى قسم الرسائل المباشرة.
-                return DragTarget<SidebarCategoryDragData>(
-                  onWillAcceptWithDetails: (details) =>
-                      details.data.fromCategoryId != widget.categoryId,
-                  onAcceptWithDetails: (details) => widget.onMoveChannel(
-                    details.data.channelId,
-                    details.data.fromCategoryId,
-                  ),
-                  builder: (context, candidateData, rejectedData) {
-                    final isDropTarget = candidateData.isNotEmpty;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        InkWell(
-                          onTap: () => context.read<LhsBloc>().add(
-                            ToggleCategoryCollapsedEvent(widget.categoryId),
-                          ),
-                          child: Container(
-                            height: 32,
-                            padding: const EdgeInsets.only(left: 16, right: 12),
-                            child: Row(
-                              children: [
-                                AnimatedRotation(
-                                  turns: collapsed ? -0.25 : 0,
-                                  duration: const Duration(milliseconds: 180),
-                                  child: Icon(
-                                    Icons.chevron_right,
-                                    size: 16,
-                                    color: theme.sidebarText.withValues(
-                                      alpha: 0.64,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    l10n.sidebarDirectMessages,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: theme.sidebarText.withValues(
-                                        alpha: 0.64,
-                                      ),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.8,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeInOut,
-                          alignment: Alignment.topCenter,
-                          child: collapsed
-                              ? const SizedBox(width: double.infinity)
-                              : Container(
-                                  decoration: isDropTarget
-                                      ? BoxDecoration(
-                                          color: theme.sidebarText.withValues(
-                                            alpha: 0.06,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                        )
-                                      : null,
-                                  child: Column(
-                                    children: [
-                                      for (final channel in _sortedChannels(
-                                        profiles,
-                                      ))
-                                        _DmRow(
-                                          channel: channel,
-                                          isMuted: widget.mutedChannelIds
-                                              .contains(channel.id),
-                                          rowKey: widget.rowKeyBuilder?.call(
-                                            channel,
-                                          ),
-                                          status: _statusFor(
-                                            channel,
-                                            widget.currentUserId,
-                                            statuses,
-                                          ),
-                                          user: _counterpartFor(
-                                            channel,
-                                            widget.currentUserId,
-                                            profiles,
-                                          ),
-                                          unread:
-                                              widget.unreadCounts[channel.id],
-                                          isSelected:
-                                              channel.id ==
-                                              widget.selectedChannelId,
-                                          onTap: () =>
-                                              widget.onChannelTap(channel),
-                                          draggableFrom: widget.categoryId,
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// ترتيب قنوات DM وفقًا لـ [CategorySorting] لفئة الرسائل المباشرة
-  /// (الافتراضي recent كالجذر في webapp — `getCurrentUserId` وحالة الافتراضي),
-  /// مع حل الأسماء عبر [profiles] للترتيب الأبجدي.
-  List<ChannelEntity> _sortedChannels(Map<String, UserEntity> profiles) {
-    final channels = List<ChannelEntity>.of(widget.channels);
-    switch (widget.dmCategory?.sorting ?? CategorySorting.recent) {
-      case CategorySorting.alpha:
-        channels.sort((a, b) {
-          final ua = _counterpartFor(a, widget.currentUserId, profiles);
-          final ub = _counterpartFor(b, widget.currentUserId, profiles);
-          final na =
-              (a.displayName.isNotEmpty
-                      ? a.displayName
-                      : (ua != null &&
-                                '${ua.firstName} ${ua.lastName}'
-                                    .trim()
-                                    .isNotEmpty
-                            ? '${ua.firstName} ${ua.lastName}'.trim()
-                            : ua?.username ?? a.name))
-                  .toLowerCase();
-          final nb =
-              (b.displayName.isNotEmpty
-                      ? b.displayName
-                      : (ub != null &&
-                                '${ub.firstName} ${ub.lastName}'
-                                    .trim()
-                                    .isNotEmpty
-                            ? '${ub.firstName} ${ub.lastName}'.trim()
-                            : ub?.username ?? b.name))
-                  .toLowerCase();
-          return na.compareTo(nb);
-        });
-      case CategorySorting.recent:
-        channels.sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt));
-      case CategorySorting.manual:
-      case CategorySorting.defaultSorting:
-        final channelIds = widget.dmCategory?.channelIds ?? const <String>[];
-        channels.sort(
-          (a, b) =>
-              channelIds.indexOf(a.id).compareTo(channelIds.indexOf(b.id)),
-        );
-    }
-    return channels;
-  }
-
-  UserStatus? _statusFor(
-    ChannelEntity channel,
-    String currentUserId,
-    Map<String, UserStatus> statuses,
-  ) {
-    final ids = dmCounterpartIds(channel, currentUserId);
-    for (final id in ids) {
-      final status = statuses[id];
-      if (status != null) return status;
-    }
-    // محادثة مع النفس — حالة المستخدم الحالي.
-    if (ids.isEmpty) return statuses['me'];
-    return null;
-  }
-
-  /// المستخدم المقابل في محادثة DM (null لمحادثة النفس/عدم التحميل بعد).
-  UserEntity? _counterpartFor(
-    ChannelEntity channel,
-    String currentUserId,
-    Map<String, UserEntity> profiles,
-  ) {
-    final ids = dmCounterpartIds(channel, currentUserId);
-    for (final id in ids) {
-      final user = profiles[id];
-      if (user != null) return user;
-    }
-    if (ids.isEmpty) return profiles['me'];
-    return null;
-  }
-}
-
-/// صف DM مع حالة المستخدم — مطابق sidebar_channel.tsx مع status indicator،
-/// وقائمة قناة (⋯ عند التمرير أو النقر اليميني) مثل بقية القنوات.
-class _DmRow extends StatefulWidget {
-  final ChannelEntity channel;
-  final UserStatus? status;
-
-  /// المستخدم المقابل لحل اسم المحادثة (الخادم يترك display_name فارغاً).
-  final UserEntity? user;
-  final ChannelUnreadCounts? unread;
-  final bool isSelected;
-  final bool isMuted;
-  final Key? rowKey;
-  final VoidCallback onTap;
-  final String draggableFrom;
-
-  const _DmRow({
-    required this.channel,
-    required this.status,
-    required this.user,
-    required this.unread,
-    required this.isSelected,
-    this.isMuted = false,
-    this.rowKey,
-    required this.onTap,
-    required this.draggableFrom,
-  });
-
-  @override
-  State<_DmRow> createState() => _DmRowState();
-}
-
-class _DmRowState extends State<_DmRow> {
-  bool _hovered = false;
-
-  /// اسم المحادثة: displayName من الخادم (GM) أو اسم المستخدم المقابل (DM)
-  /// بالصيغة المتبعة في الواجهة: الاسم الكامل ثم @username عند غيابه.
-  String get _label {
-    final channel = widget.channel;
-    if (channel.displayName.isNotEmpty) return channel.displayName;
-    final u = widget.user;
-    if (u != null) {
-      final full = '${u.firstName} ${u.lastName}'.trim();
-      if (full.isNotEmpty) return full;
-      return u.username;
-    }
-    return channel.name;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final hasUnreads = widget.unread?.hasUnreads ?? false;
-    final hasMentions = (widget.unread?.mentions ?? 0) > 0;
-
-    // نفس نوع بيانات السحب المستخدم في SidebarCategory ليعمل الإفلات
-    // المتبادل بين قسم DM والفئات الأخرى (النقل يحدث عند DragTarget.onAccept).
-    return LongPressDraggable<SidebarCategoryDragData>(
-      data: SidebarCategoryDragData(
-        channelId: widget.channel.id,
-        fromCategoryId: widget.draggableFrom,
-      ),
-      key: widget.rowKey,
-      feedback: Material(
-        color: Colors.transparent,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.sidebarBg,
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: Text(
-            _label,
-            style: TextStyle(color: theme.sidebarText, fontSize: 14),
-          ),
-        ),
-      ),
-      childWhenDragging: Opacity(
-        opacity: 0.3,
-        child: _content(theme, hasUnreads, hasMentions),
-      ),
-      child: _content(theme, hasUnreads, hasMentions),
-    );
-  }
-
-  Widget _content(MattermostColors theme, bool hasUnreads, bool hasMentions) {
-    final channel = widget.channel;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onSecondaryTapDown: (details) {
-          showChannelContextMenu(context, channel, details.globalPosition);
-        },
-        child: Opacity(
-          opacity: widget.isMuted ? 0.5 : 1,
-          child: Container(
-            height: 32,
-            padding: const EdgeInsets.only(
-              left: 19,
-              right: 16,
-              bottom: 7,
-              top: 7,
-            ),
-            color: widget.isSelected
-                ? theme.sidebarText.withValues(alpha: 0.08)
-                : _hovered
-                ? theme.sidebarTextHoverBg
-                : Colors.transparent,
-            child: Row(
-              children: [
-                Container(
-                  width: 14,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: hasUnreads
-                        ? theme.sidebarUnreadText
-                        : theme.sidebarText.withValues(alpha: 0.7),
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _statusColor(theme),
-                        border: Border.all(color: theme.sidebarBg, width: 1),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: hasUnreads
-                          ? theme.sidebarUnreadText
-                          : theme.sidebarText,
-                      fontWeight: hasUnreads || widget.isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                if (hasMentions)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.mentionBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${widget.unread!.mentions}',
-                      style: TextStyle(
-                        color: theme.mentionColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  )
-                else if (hasUnreads)
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: theme.sidebarUnreadText,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                const SizedBox(width: 2),
-                AnimatedOpacity(
-                  opacity: _hovered ? 1 : 0,
-                  duration: const Duration(milliseconds: 100),
-                  child: ChannelRowMenu(channel: channel, iconSize: 16),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _statusColor(MattermostColors theme) {
-    switch (widget.status) {
-      case UserStatus.online:
-        return theme.onlineIndicator;
-      case UserStatus.away:
-        return theme.awayIndicator;
-      case UserStatus.dnd:
-        return theme.dndIndicator;
-      case UserStatus.offline:
-        return theme.sidebarText.withValues(alpha: 0.3);
-      case null:
-        return theme.sidebarText.withValues(alpha: 0.7);
-    }
   }
 }
 
