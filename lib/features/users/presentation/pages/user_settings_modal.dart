@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_preferences_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/settings_tabs.dart';
 
 /// تبويبات نافذة الإعدادات — مطابقة UserSettingsTabs في webapp.
@@ -21,7 +24,7 @@ extension UserSettingsTabLabels on UserSettingsTab {
     UserSettingsTab.display => l10n.settingsDisplayTitle,
     UserSettingsTab.sidebar => l10n.settingsSidebarTitle,
     UserSettingsTab.advanced => l10n.settingsAdvancedTitle,
-    UserSettingsTab.security => 'Sucurity',
+    UserSettingsTab.security => l10n.userSettingsModalSecurity,
   };
 
   IconData get icon => switch (this) {
@@ -54,9 +57,19 @@ class _UserSettingsModalState extends State<UserSettingsModal> {
   late UserSettingsTab _selectedTab = widget.initialTab;
 
   @override
+  void initState() {
+    super.initState();
+    // تحميل أحدث بيانات الملف الشخصي وتفضيلات المستخدم من السيرفر عند فتح النافذة.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<UserProfileBloc>().add(LoadMyProfileEvent());
+      context.read<UserPreferencesBloc>().add(LoadPreferencesEvent());
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final l10n = AppLocalizations.of(context);
 
     return Center(
       child: Material(

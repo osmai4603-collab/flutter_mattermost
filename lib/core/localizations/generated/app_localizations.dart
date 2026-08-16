@@ -72815,6 +72815,12 @@ abstract class AppLocalizations {
   /// **'Notifies everyone online in this channel'**
   String get autocompleteMentionHere;
 
+  /// No description provided for @autocompleteMentionOutOfChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in this channel'**
+  String get autocompleteMentionOutOfChannel;
+
   /// No description provided for @autocompleteRoleAdmin.
   ///
   /// In en, this message translates to:

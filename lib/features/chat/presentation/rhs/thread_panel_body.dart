@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/message_list.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 
 /// جسم لوحة Thread داخل RHS — يُركّب داخل [RhsBody].
 /// (يستخرج من ThreadPanel السابق الذي كان يحمل العرض نفسه.)
@@ -32,6 +33,14 @@ class ThreadPanelBody extends StatelessWidget {
           }
         }
 
+        final myUserId =
+            context.read<UserProfileBloc>().state is UserProfileLoadedState
+            ? (context.read<UserProfileBloc>().state as UserProfileLoadedState)
+                      .myProfile
+                      ?.id ??
+                  'me'
+            : 'me';
+
         return Column(
           children: [
             if (isArchived) _ArchivedWarning(),
@@ -40,7 +49,11 @@ class ThreadPanelBody extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 8),
                 children: [
                   if (threadState.rootPost != null)
-                    PostItem(post: threadState.rootPost!, showFullHeader: true),
+                    PostItem(
+                      post: threadState.rootPost!,
+                      showFullHeader: true,
+                      myUserId: myUserId,
+                    ),
                   const Divider(height: 24),
                   if (threadState.loading)
                     const Padding(
@@ -48,7 +61,7 @@ class ThreadPanelBody extends StatelessWidget {
                       child: Center(child: CircularProgressIndicator()),
                     ),
                   for (final reply in threadState.replies)
-                    PostItem(post: reply, isReply: true),
+                    PostItem(post: reply, isReply: true, myUserId: myUserId),
                   if (threadState.rootPost == null &&
                       threadState.replies.isEmpty &&
                       !threadState.loading)

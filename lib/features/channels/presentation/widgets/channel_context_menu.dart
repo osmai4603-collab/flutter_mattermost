@@ -9,10 +9,13 @@ import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/channel_invite_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/channel_notifications_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/channel_settings_modal.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
 /// يبني بنود قائمة قناة الشريط الجانبي — مطابق sidebar_channel_menu.tsx:
@@ -58,8 +61,11 @@ List<MatterMenuItem> buildChannelMenuItems(
 
     MatterMenuItem(
       id: 'mark_as_unread',
-      label: 'Mark as Unread',
-      icon: Icon(Icons.content_copy, size: 18),
+      label: l10n.sidebar_leftSidebar_channel_menuMarkAsUnread,
+      icon: const Icon(Icons.mark_email_unread_outlined, size: 18),
+      onTap: () {
+        context.read<ChannelBloc>().add(MarkChannelAsUnreadEvent(channel.id));
+      },
     ),
     // ==== التنظيم ====
     MatterMenuItem(
@@ -119,13 +125,52 @@ List<MatterMenuItem> buildChannelMenuItems(
       onTap: () {
         showDialog<void>(
           context: context,
+          builder: (_) => ChannelInviteModal(channel: channel),
+        );
+      },
+    ),
+    // ==== المشاركة والمعلومات ====
+    // رسائل DM/GM لا تملك رابط قناة ضمن فريق — لا يُعرض بند نسخ الرابط لها.
+    MatterMenuItem(
+      id: 'view_channel_info',
+      label: l10n.channelHeaderChannelInfo,
+      icon: const Icon(Icons.info_outline, size: 18),
+      onTap: () => _showChannelInfo(context, channel),
+    ),
+    // تعديل القناة (الاسم/الغرض/الرأس/الخصوصية) — للقنوات العادية وللإدارة فقط.
+    if (!isDirect && !isGroup && canManage)
+      MatterMenuItem(
+        id: 'edit_channel',
+        label: l10n.sidebar_leftSidebar_channel_menuEditChannel,
+        icon: const Icon(Icons.settings_outlined, size: 18),
+        onTap: () {
+          showDialog<void>(
+            context: context,
+            builder: (_) => ChannelSettingsModal(channel: channel),
+          );
+        },
+      ),
+    MatterMenuItem(
+      id: 'notification_preferences',
+      label: l10n.channel_info_rhsMenuNotification_preferences,
+      icon: const Icon(Icons.notifications_outlined, size: 18),
+      onTap: () {
+        showDialog<void>(
+          context: context,
           builder: (_) => ChannelNotificationsModal(channel: channel),
         );
       },
     ),
+    // أرشفة القناة — للقنوات العادية وللإدارة فقط (مطابق archiveChannel في webapp).
+    if (!isDirect && !isGroup && canManage)
+      MatterMenuItem(
+        id: 'archive',
+        label: l10n.channel_headerDelete,
+        icon: const Icon(Icons.archive_outlined, size: 18),
+        danger: true,
+        onTap: () => _confirmArchive(context, channel),
+      ),
     MatterMenuItem.divider(),
-    // ==== المشاركة والمعلومات ====
-    // رسائل DM/GM لا تملك رابط قناة ضمن فريق — لا يُعرض بند نسخ الرابط لها.
     // ==== خروج (حمراء) ====
     MatterMenuItem(
       id: 'leave',
@@ -141,26 +186,54 @@ List<MatterMenuItem> buildChannelMenuItems(
   return items;
 }
 
-/// بنود «نقل إلى...»: الفئات المخصصة + إنشاء فئة جديدة فوراً.
+/// بنود «نقل إلى...»: كل فئات المستخدم ديناميكياً (المفضلة/القنوات/المخصصة)
+/// مع استثناء الفئة الحالية والفئات غير المتوافقة مع نوع القناة،
+/// ثم بند «فئة جديدة» لإنشاء فئة ونقل القناة إليها فوراً.
 List<MatterMenuItem> _moveToItems(
   BuildContext context,
   ChannelEntity channel,
   ChannelsLoadedState? loaded,
 ) {
   final l10n = AppLocalizations.of(context);
-  return [
-    MatterMenuItem(
-      id: 'favorites',
-      label: 'Favorites',
-      icon: const Icon(Icons.star_outline, size: 18),
-      onTap: () => _promptCreateCategory(context, channel, loaded),
-    ),
-    MatterMenuItem(
-      id: 'channels',
-      label: 'Channels',
-      icon: const Icon(Icons.folder_outlined, size: 18),
-      onTap: () => _promptCreateCategory(context, channel, loaded),
-    ),
+  final isDirect =
+      channel.type == ChannelType.direct || channel.type == ChannelType.group;
+  final draggedType = isDirect
+      ? DraggingChannelType.directMessage
+      : DraggingChannelType.channel;
+  final categories = loaded?.categories ?? const <ChannelCategoryEntity>[];
+  final currentCategoryId = categories
+      .where((c) => c.channelIds.contains(channel.id))
+      .map((c) => c.id)
+      .firstOrNull;
+  final hasFavorites = categories.any(
+    (c) => c.type == ChannelCategoryType.favorites,
+  );
+
+  final items = <MatterMenuItem>[
+    for (final category in categories)
+      if (category.id != currentCategoryId &&
+          !isSidebarDropDisabled(category.type, draggedType))
+        MatterMenuItem(
+          id: 'move_${category.id}',
+          label: _categoryLabel(category, l10n),
+          icon: Icon(_categoryIcon(category.type), size: 18),
+          onTap: () {
+            if (category.type == ChannelCategoryType.favorites) {
+              _moveToFavorites(context, channel, loaded);
+            } else {
+              _moveTo(context, channel, category.id, loaded);
+            }
+          },
+        ),
+    // المفضلة قد لا تكون موجودة كفئة على الخادم بعد — ننشئها عبر ToggleFavorite
+    // (يبني الفئة ويضيف القناة داخلها، مطابق enableFavorites في webapp).
+    if (!hasFavorites)
+      MatterMenuItem(
+        id: 'move_favorites',
+        label: l10n.sidebarCategoryFavorites,
+        icon: const Icon(Icons.star_outline, size: 18),
+        onTap: () => _moveToFavorites(context, channel, loaded),
+      ),
     MatterMenuItem.divider(),
     MatterMenuItem(
       id: 'move_new_category',
@@ -169,6 +242,60 @@ List<MatterMenuItem> _moveToItems(
       onTap: () => _promptCreateCategory(context, channel, loaded),
     ),
   ];
+  return items;
+}
+
+/// اسم الفئة المعروض في قائمة «نقل إلى...» — الاسم الافتراضي المعرّف
+/// للفئات القياسية عند غياب displayName من الخادم.
+String _categoryLabel(ChannelCategoryEntity category, AppLocalizations l10n) {
+  if (category.displayName.isNotEmpty) return category.displayName;
+  switch (category.type) {
+    case ChannelCategoryType.favorites:
+      return l10n.sidebarCategoryFavorites;
+    case ChannelCategoryType.directMessages:
+      return l10n.sidebarDirectMessages;
+    case ChannelCategoryType.channels:
+      return l10n.sidebarChannels;
+    case ChannelCategoryType.custom:
+    case ChannelCategoryType.managed:
+      return l10n.sidebarChannels;
+  }
+}
+
+IconData _categoryIcon(ChannelCategoryType type) {
+  switch (type) {
+    case ChannelCategoryType.favorites:
+      return Icons.star_outline;
+    case ChannelCategoryType.directMessages:
+      return Icons.chat_bubble_outline;
+    case ChannelCategoryType.channels:
+      return Icons.tag;
+    case ChannelCategoryType.custom:
+      return Icons.folder_outlined;
+    case ChannelCategoryType.managed:
+      return Icons.admin_panel_settings_outlined;
+  }
+}
+
+/// نقل القناة إلى فئة المفضلة — تستخدم ToggleFavoriteEvent لأنها تبني
+/// فئة المفضلة تلقائياً عند غيابها (مطابق toggleFavorite في webapp).
+void _moveToFavorites(
+  BuildContext context,
+  ChannelEntity channel,
+  ChannelsLoadedState? loaded,
+) {
+  if (loaded == null) return;
+  final teamState = context.read<TeamBloc>().state;
+  final teamId = teamState is TeamsLoadedState
+      ? teamState.selectedTeam?.id ?? ''
+      : '';
+  context.read<ChannelBloc>().add(
+    ToggleFavoriteEvent(
+      channelId: channel.id,
+      userId: loaded.userId,
+      teamId: teamId,
+    ),
+  );
 }
 
 /// فتح قائمة سياقية عند مؤشر الفأرة (نقر يميني على صف القناة).

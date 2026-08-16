@@ -406,6 +406,18 @@ List<String> mentionKeysFrom(UserEntity user) {
       .toList();
 }
 
+/// كل مفاتيح الإشارة — نظير `getCurrentUserMentionKeys` في webapp:
+/// مثل [mentionKeysFrom] لكن مع إبقاء التنبيهات العامة @channel/@all/@here
+/// عندما يكون notify_props.channel مفعّلاً — تُستخدم لتظليل خلفية الرسالة
+/// التي تذكر المستخدم الحالي (Post Mention Highlight).
+List<String> allMentionKeysFrom(UserEntity user) {
+  final keys = mentionKeysFrom(user);
+  if (user.notifyProps['channel'] == 'true') {
+    keys.addAll(const ['@channel', '@all', '@here']);
+  }
+  return keys;
+}
+
 /// استعلام البحث — مطابق showMentions في webapp:
 /// يجمع المفاتيح ويفصلها بمسافات (مع مسافة نهائية) ويرسل is_or_search=true.
 String mentionKeysQuery(List<String> keys) => '${keys.join(' ').trim()} ';

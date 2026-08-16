@@ -145,6 +145,19 @@ String getMentionDisplayName({
   return username;
 }
 
+/// هل يذكر النص أيّاً من مفاتيح الإشارة المحددة؟ — نظير فحص
+/// `Post Mention Highlight` في webapp: يطابق `@key` أو `key` مباشرة
+/// خارج كتل الكود والروابط (عبر [mentionableText]).
+bool textMentionsKeys(String text, List<String> keys) {
+  if (text.isEmpty || keys.isEmpty) return false;
+  final mentionable = mentionableText(text);
+  final pattern = RegExp(
+    keys.map((k) => '(?:@?${RegExp.escape(k)})').join('|'),
+    caseSensitive: false,
+  );
+  return pattern.hasMatch(mentionable);
+}
+
 /// يستخرج جميع المنشنات `@name` مع مواقعها (بما فيها @all/@channel/@here) —
 /// يتجاهل المنشنات داخل كتل الكود والأكواد السطرية.
 List<MentionOccurrence> parseMentionsInText(String text) {

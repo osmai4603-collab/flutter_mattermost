@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
@@ -20,12 +21,105 @@ class QuickSwitcher extends StatefulWidget {
 
 class _QuickSwitcherState extends State<QuickSwitcher> {
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   String _query = '';
+
+  /// فهرس العنصر المحدد بلوحة المفاتيح (UP/DOWN) — يتحرك ضمن نتائج البحث.
+  int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.onKeyEvent = _onKeyEvent;
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    _scrollController.dispose();
+    _focusNode.dispose();
     super.dispose();
+  }
+
+  /// نتائج البحث الحالية — تُقرأ من حالة الـ Bloc في نفس اللحظة
+  /// (تستخدمها دالة معالجة المفاتيح وفي عرض القائمة معاً).
+  List<ChannelEntity> _results() {
+    final state = context.read<ChannelBloc>().state;
+    final channels = state is ChannelsLoadedState
+        ? state.channels
+        : const <ChannelEntity>[];
+    final q = _query.toLowerCase();
+    return [
+      for (final ch in channels)
+        if (q.isEmpty ||
+            ch.displayName.toLowerCase().contains(q) ||
+            ch.name.toLowerCase().contains(q))
+          ch,
+    ];
+  }
+
+  /// فتح القناة المحددة والانتقال إليها (نفس منطق onTap السابق للصفوف).
+  void _openChannel(ChannelEntity channel) {
+    context.read<ChannelBloc>().add(SelectChannelEvent(channel));
+    final teamName = context.read<TeamBloc>().state is TeamsLoadedState
+        ? (context.read<TeamBloc>().state as TeamsLoadedState)
+              .selectedTeam
+              ?.name
+        : null;
+    if (teamName != null) {
+      context.go('/$teamName/channels/${channel.name}');
+    }
+    widget.onClose();
+  }
+
+  /// تنقل بلوحة المفاتيح داخل النتائج: UP/DOWN لتحريك التحديد،
+  /// ENTER لفتح القناة المحددة، ESC للإغلاق.
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final results = _results();
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowDown:
+        if (results.isEmpty) return KeyEventResult.ignored;
+        setState(() {
+          _selectedIndex = (_selectedIndex + 1) % results.length;
+        });
+        _scrollToSelected();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.arrowUp:
+        if (results.isEmpty) return KeyEventResult.ignored;
+        setState(() {
+          _selectedIndex = (_selectedIndex - 1 + results.length) %
+              results.length;
+        });
+        _scrollToSelected();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.enter:
+        if (results.isEmpty) return KeyEventResult.ignored;
+        _openChannel(results[_selectedIndex]);
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.escape:
+        widget.onClose();
+        return KeyEventResult.handled;
+      default:
+        return KeyEventResult.ignored;
+    }
+  }
+
+  /// يمرر القائمة ليبقى العنصر المحدد بلوحة المفاتيح ظاهراً
+  /// (ارتفاع الصف ثابت = 48 في itemExtent).
+  void _scrollToSelected() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final target = (_selectedIndex * 48.0).clamp(
+      0.0,
+      position.maxScrollExtent,
+    );
+    _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 100),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
@@ -75,8 +169,12 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
               padding: const EdgeInsets.all(16),
               child: TextField(
                 controller: _controller,
+                focusNode: _focusNode,
                 autofocus: true,
-                onChanged: (value) => setState(() => _query = value),
+                onChanged: (value) => setState(() {
+                  _query = value;
+                  _selectedIndex = 0;
+                }),
                 style: TextStyle(color: theme.centerChannelColor),
                 decoration: InputDecoration(
                   // hintText: l10n.quickSwitcherPlaceholder,
@@ -121,13 +219,10 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
             Expanded(
               child: BlocBuilder<ChannelBloc, ChannelState>(
                 builder: (context, state) {
+                  final q = _query.toLowerCase();
                   final channels = state is ChannelsLoadedState
                       ? state.channels
                       : const <ChannelEntity>[];
-                  final selected = state is ChannelsLoadedState
-                      ? state.selectedChannel
-                      : null;
-                  final q = _query.toLowerCase();
                   final results = [
                     for (final ch in channels)
                       if (q.isEmpty ||
@@ -135,63 +230,50 @@ class _QuickSwitcherState extends State<QuickSwitcher> {
                           ch.name.toLowerCase().contains(q))
                         ch,
                   ];
-                  return ListView(
-                    children: [
-                      for (final channel in results)
-                        _ResultTile(
-                          channel: channel,
-                          isSelected: channel.id == selected?.id,
-                          onTap: () {
-                            context.read<ChannelBloc>().add(
-                              SelectChannelEvent(channel),
-                            );
-                            final teamName =
-                                context.read<TeamBloc>().state
-                                    is TeamsLoadedState
-                                ? (context.read<TeamBloc>().state
-                                          as TeamsLoadedState)
-                                      .selectedTeam
-                                      ?.name
-                                : null;
-                            if (teamName != null) {
-                              context.go('/$teamName/channels/${channel.name}');
-                            }
-                            widget.onClose();
-                          },
-                        ),
-                      if (results.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Center(
-                            child: Column(
-                              spacing: 16,
-                              children: [
-                                Image.asset(
-                                  'assets/images/result.png',
-                                  width: 100,
-                                  fit: .cover,
-                                ),
-                                Text(
-                                  'No result for "$_query"',
-                                  style: TextStyle(
-                                    color: theme.centerChannelColor,
-                                    fontSize: 22,
-                                    fontWeight: .bold,
-                                  ),
-                                ),
-                                Text(
-                                  'Check the spelling or try another search.',
-                                  style: TextStyle(
-                                    color: theme.centerChannelColor.withValues(
-                                      alpha: 0.5,
-                                    ),
-                                    fontSize: 14,
-                                    fontWeight: .w400,
-                                  ),
-                                ),
-                              ],
+                  if (results.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Column(
+                          spacing: 16,
+                          children: [
+                            Image.asset(
+                              'assets/images/result.png',
+                              width: 100,
+                              fit: .cover,
                             ),
-                          ),
+                            Text(
+                              'No result for "$_query"',
+                              style: TextStyle(
+                                color: theme.centerChannelColor,
+                                fontSize: 22,
+                                fontWeight: .bold,
+                              ),
+                            ),
+                            Text(
+                              'Check the spelling or try another search.',
+                              style: TextStyle(
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.5,
+                                ),
+                                fontSize: 14,
+                                fontWeight: .w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                  return ListView(
+                    controller: _scrollController,
+                    itemExtent: 48,
+                    children: [
+                      for (var i = 0; i < results.length; i++)
+                        _ResultTile(
+                          channel: results[i],
+                          isSelected: i == _selectedIndex,
+                          onTap: () => _openChannel(results[i]),
                         ),
                     ],
                   );
@@ -241,6 +323,7 @@ class _ResultTile extends StatelessWidget {
         ),
         onTap: onTap,
         hoverColor: theme.centerChannelColor.withValues(alpha: 0.05),
+        selectedTileColor: theme.centerChannelColor.withValues(alpha: 0.06),
       ),
     );
   }

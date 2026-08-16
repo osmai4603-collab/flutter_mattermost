@@ -11888,6 +11888,7 @@
   "autocompleteMentionAll": "يُخطر الجميع في هذه القناة",
   "autocompleteMentionChannel": "يُخطر الجميع في هذه القناة",
   "autocompleteMentionHere": "يُخطر الجميع المتصلين في هذه القناة",
+  "autocompleteMentionOutOfChannel": "خارج هذه القناة",
   "autocompleteRoleAdmin": "مسؤول",
   "autocompleteCommandHeaderDesc": "تعديل ترويسة القناة",
   "autocompleteCommandPurposeDesc": "تعديل غرض القناة",

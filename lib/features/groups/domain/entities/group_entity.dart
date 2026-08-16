@@ -13,6 +13,10 @@ class GroupEntity extends Entity {
   final bool hasSyncables;
   final int memberCount;
 
+  /// هل يمكن الإشارة إلى المجموعة بمنشن `@group-name`؟
+  /// (نظير `allow_reference` في webapp — مطلوب لتفعيل Group Mentions.)
+  final bool allowReference;
+
   const GroupEntity({
     this.id = '',
     this.name = '',
@@ -25,6 +29,7 @@ class GroupEntity extends Entity {
     this.deleteAt = 0,
     this.hasSyncables = false,
     this.memberCount = 0,
+    this.allowReference = false,
   });
 
   @override
@@ -40,6 +45,7 @@ class GroupEntity extends Entity {
         deleteAt,
         hasSyncables,
         memberCount,
+        allowReference,
       ];
 
   @override
@@ -55,6 +61,7 @@ class GroupEntity extends Entity {
     int? deleteAt,
     bool? hasSyncables,
     int? memberCount,
+    bool? allowReference,
   }) {
     return GroupEntity(
       id: id ?? this.id,
@@ -68,6 +75,7 @@ class GroupEntity extends Entity {
       deleteAt: deleteAt ?? this.deleteAt,
       hasSyncables: hasSyncables ?? this.hasSyncables,
       memberCount: memberCount ?? this.memberCount,
+      allowReference: allowReference ?? this.allowReference,
     );
   }
 

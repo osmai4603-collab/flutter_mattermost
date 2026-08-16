@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:meta/meta.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
+import 'package:flutter_mattermost/features/channels/data/models/channel_bookmark_model.dart';
 import 'package:flutter_mattermost/features/channels/data/models/channel_model.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_bookmark_entity.dart';
 import 'package:flutter_mattermost/features/chat/data/models/post_model.dart';
 import 'package:flutter_mattermost/features/chat/data/models/reaction_model.dart';
 import 'package:injectable/injectable.dart';
@@ -136,10 +138,7 @@ class UserPresenceEvent extends TypedWebSocketEvent {
 class UserUpdatedEvent extends TypedWebSocketEvent {
   final Map<String, dynamic> userJson;
 
-  UserUpdatedEvent({
-    required this.userJson,
-    required super.seq,
-  });
+  UserUpdatedEvent({required this.userJson, required super.seq});
 }
 
 class UserTypingEvent extends TypedWebSocketEvent {
@@ -187,6 +186,54 @@ class ThreadReadChangedEvent extends TypedWebSocketEvent {
   });
 }
 
+/// إضافة إشارة مرجعية في قناة (bookmark_added) — يحدّث الشريط لحظياً.
+class BookmarkAddedEvent extends TypedWebSocketEvent {
+  final ChannelBookmarkEntity bookmark;
+  final String channelId;
+
+  BookmarkAddedEvent({
+    required this.bookmark,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
+/// تعديل إشارة مرجعية في قناة (bookmark_edited).
+class BookmarkEditedEvent extends TypedWebSocketEvent {
+  final ChannelBookmarkEntity bookmark;
+  final String channelId;
+
+  BookmarkEditedEvent({
+    required this.bookmark,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
+/// حذف إشارة مرجعية في قناة (bookmark_deleted).
+class BookmarkDeletedEvent extends TypedWebSocketEvent {
+  final String bookmarkId;
+  final String channelId;
+
+  BookmarkDeletedEvent({
+    required this.bookmarkId,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
+/// تغيير ترتيب الإشارات المرجعية في قناة (bookmark_sorted) — يعيد القائمة كاملة.
+class BookmarkSortedEvent extends TypedWebSocketEvent {
+  final List<ChannelBookmarkEntity> bookmarks;
+  final String channelId;
+
+  BookmarkSortedEvent({
+    required this.bookmarks,
+    required this.channelId,
+    required super.seq,
+  });
+}
+
 /// مسودة جديدة/محدّثة من جهاز آخر (draft_created / draft_updated).
 class DraftUpsertedEvent extends TypedWebSocketEvent {
   final Map<String, dynamic> draftJson;
@@ -222,7 +269,12 @@ class HelloEvent extends TypedWebSocketEvent {
   final String connectionId;
   final String serverVersion;
   final String serverHostname;
-  HelloEvent({required this.connectionId, required this.serverVersion, required this.serverHostname, required super.seq});
+  HelloEvent({
+    required this.connectionId,
+    required this.serverVersion,
+    required this.serverHostname,
+    required super.seq,
+  });
 }
 
 class WebSocketReconnectedEvent extends TypedWebSocketEvent {
@@ -233,7 +285,7 @@ class WebSocketReconnectedEvent extends TypedWebSocketEvent {
 class WebSocketSequenceGapEvent extends TypedWebSocketEvent {
   final int expectedSeq;
   final int receivedSeq;
-  
+
   WebSocketSequenceGapEvent({
     required this.expectedSeq,
     required this.receivedSeq,
@@ -251,7 +303,13 @@ class PostUnreadEvent extends TypedWebSocketEvent {
   final int msgCount;
   final int mentionCount;
   final int lastViewedAt;
-  PostUnreadEvent({required this.channelId, required this.msgCount, required this.mentionCount, required this.lastViewedAt, required super.seq});
+  PostUnreadEvent({
+    required this.channelId,
+    required this.msgCount,
+    required this.mentionCount,
+    required this.lastViewedAt,
+    required super.seq,
+  });
 }
 
 class CallEndedEvent extends TypedWebSocketEvent {
@@ -263,49 +321,84 @@ class CallUserJoinedEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final String channelId;
-  CallUserJoinedEvent({required this.userId, required this.sessionId, required this.channelId, required super.seq});
+  CallUserJoinedEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.channelId,
+    required super.seq,
+  });
 }
 
 class CallUserLeftEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final String channelId;
-  CallUserLeftEvent({required this.userId, required this.sessionId, required this.channelId, required super.seq});
+  CallUserLeftEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.channelId,
+    required super.seq,
+  });
 }
 
 class CallUserMuteEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final bool muted;
-  CallUserMuteEvent({required this.userId, required this.sessionId, required this.muted, required super.seq});
+  CallUserMuteEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.muted,
+    required super.seq,
+  });
 }
 
 class CallUserVoiceEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final bool voiceActive;
-  CallUserVoiceEvent({required this.userId, required this.sessionId, required this.voiceActive, required super.seq});
+  CallUserVoiceEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.voiceActive,
+    required super.seq,
+  });
 }
 
 class CallScreenShareEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final bool sharing;
-  CallScreenShareEvent({required this.userId, required this.sessionId, required this.sharing, required super.seq});
+  CallScreenShareEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.sharing,
+    required super.seq,
+  });
 }
 
 class CallRaiseHandEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final bool raised;
-  CallRaiseHandEvent({required this.userId, required this.sessionId, required this.raised, required super.seq});
+  CallRaiseHandEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.raised,
+    required super.seq,
+  });
 }
 
 class CallUserVideoEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final bool videoOn;
-  CallUserVideoEvent({required this.userId, required this.sessionId, required this.videoOn, required super.seq});
+  CallUserVideoEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.videoOn,
+    required super.seq,
+  });
 }
 
 class CallUserReactedEvent extends TypedWebSocketEvent {
@@ -315,20 +408,37 @@ class CallUserReactedEvent extends TypedWebSocketEvent {
   final String emojiLiteral;
   final int timestamp;
   final bool reacted;
-  CallUserReactedEvent({required this.userId, required this.sessionId, required this.emojiName, required this.emojiLiteral, required this.timestamp, required this.reacted, required super.seq});
+  CallUserReactedEvent({
+    required this.userId,
+    required this.sessionId,
+    required this.emojiName,
+    required this.emojiLiteral,
+    required this.timestamp,
+    required this.reacted,
+    required super.seq,
+  });
 }
 
 class CallHostChangedEvent extends TypedWebSocketEvent {
   final String hostId;
   final String callId;
   final String channelId;
-  CallHostChangedEvent({required this.hostId, required this.callId, required this.channelId, required super.seq});
+  CallHostChangedEvent({
+    required this.hostId,
+    required this.callId,
+    required this.channelId,
+    required super.seq,
+  });
 }
 
 class CallJobStateEvent extends TypedWebSocketEvent {
   final String callId;
   final Map<String, dynamic> jobState;
-  CallJobStateEvent({required this.callId, required this.jobState, required super.seq});
+  CallJobStateEvent({
+    required this.callId,
+    required this.jobState,
+    required super.seq,
+  });
 }
 
 class CallCaptionEvent extends TypedWebSocketEvent {
@@ -336,20 +446,35 @@ class CallCaptionEvent extends TypedWebSocketEvent {
   final String userId;
   final String sessionId;
   final String text;
-  CallCaptionEvent({required this.channelId, required this.userId, required this.sessionId, required this.text, required super.seq});
+  CallCaptionEvent({
+    required this.channelId,
+    required this.userId,
+    required this.sessionId,
+    required this.text,
+    required super.seq,
+  });
 }
 
 class CallRecordingStateEvent extends TypedWebSocketEvent {
   final String callId;
   final String channelId;
   final bool recording;
-  CallRecordingStateEvent({required this.callId, required this.channelId, required this.recording, required super.seq});
+  CallRecordingStateEvent({
+    required this.callId,
+    required this.channelId,
+    required this.recording,
+    required super.seq,
+  });
 }
 
 class CallStateEvent extends TypedWebSocketEvent {
   final String callEventName;
   final Map<String, dynamic> data;
-  CallStateEvent({required this.callEventName, required this.data, required super.seq});
+  CallStateEvent({
+    required this.callEventName,
+    required this.data,
+    required super.seq,
+  });
 }
 
 class WebRTCSignalingEvent extends TypedWebSocketEvent {
@@ -498,8 +623,7 @@ class WebSocketClientManager {
         }
 
         final data = (decoded['data'] as Map<String, dynamic>?) ?? {};
-        final broadcast =
-            (decoded['broadcast'] as Map<String, dynamic>?) ?? {};
+        final broadcast = (decoded['broadcast'] as Map<String, dynamic>?) ?? {};
         final teamId = broadcast['team_id'] as String? ?? '';
 
         switch (eventName) {
@@ -513,7 +637,8 @@ class WebSocketClientManager {
                 seq: seq,
               ),
             );
-            if (_lastConnectionId.isNotEmpty && _lastConnectionId != connectionId) {
+            if (_lastConnectionId.isNotEmpty &&
+                _lastConnectionId != connectionId) {
               _typedEventStreamController.add(
                 WebSocketReconnectedEvent(fullResync: true, seq: seq),
               );
@@ -526,7 +651,9 @@ class WebSocketClientManager {
                 channelId: data['channel_id'] as String? ?? '',
                 msgCount: (data['msg_count'] as num?)?.toInt() ?? 0,
                 mentionCount: (data['mention_count'] as num?)?.toInt() ?? 0,
-                lastViewedAt: int.tryParse(data['last_viewed_at']?.toString() ?? '0') ?? 0,
+                lastViewedAt:
+                    int.tryParse(data['last_viewed_at']?.toString() ?? '0') ??
+                    0,
                 seq: seq,
               ),
             );
@@ -661,10 +788,7 @@ class WebSocketClientManager {
                 ? jsonDecode(userRaw) as Map<String, dynamic>
                 : (data['user'] as Map<String, dynamic>? ?? {});
             _typedEventStreamController.add(
-              UserUpdatedEvent(
-                userJson: userJson,
-                seq: seq,
-              ),
+              UserUpdatedEvent(userJson: userJson, seq: seq),
             );
             break;
           case 'typing':
@@ -693,12 +817,37 @@ class WebSocketClientManager {
                 threadId: data['thread_id'] as String? ?? '',
                 channelId: data['channel_id'] as String? ?? '',
                 timestamp: (data['timestamp'] as num?)?.toInt() ?? 0,
-                unreadMentions:
-                    (data['unread_mentions'] as num?)?.toInt() ?? 0,
+                unreadMentions: (data['unread_mentions'] as num?)?.toInt() ?? 0,
                 unreadReplies: (data['unread_replies'] as num?)?.toInt() ?? 0,
                 seq: seq,
               ),
             );
+            break;
+          case 'bookmark_added':
+            _handleBookmarkUpsert(BookmarkAddedEvent.new, data, broadcast, seq);
+            break;
+          case 'bookmark_edited':
+            _handleBookmarkUpsert(
+              BookmarkEditedEvent.new,
+              data,
+              broadcast,
+              seq,
+            );
+            break;
+          case 'bookmark_deleted':
+            _typedEventStreamController.add(
+              BookmarkDeletedEvent(
+                bookmarkId: data['id'] as String? ?? '',
+                channelId:
+                    broadcast['channel_id'] as String? ??
+                    data['channel_id'] as String? ??
+                    '',
+                seq: seq,
+              ),
+            );
+            break;
+          case 'bookmark_sorted':
+            _handleBookmarkSorted(data, broadcast, seq);
             break;
           case 'draft_created':
           case 'draft_updated':
@@ -720,11 +869,22 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_call_start':
             _typedEventStreamController.add(
               CallStartedEvent(
-                callId: data['id'] as String? ?? data['call_id'] as String? ?? '',
-                channelId: data['channelID'] as String? ?? data['channel_id'] as String? ?? '',
+                callId:
+                    data['id'] as String? ?? data['call_id'] as String? ?? '',
+                channelId:
+                    data['channelID'] as String? ??
+                    data['channel_id'] as String? ??
+                    '',
                 threadId: data['thread_id'] as String? ?? '',
-                ownerId: data['owner_id'] as String? ?? data['host_id'] as String? ?? '',
-                startAt: data['start_at'] != null ? DateTime.fromMillisecondsSinceEpoch((data['start_at'] as num).toInt()) : null,
+                ownerId:
+                    data['owner_id'] as String? ??
+                    data['host_id'] as String? ??
+                    '',
+                startAt: data['start_at'] != null
+                    ? DateTime.fromMillisecondsSinceEpoch(
+                        (data['start_at'] as num).toInt(),
+                      )
+                    : null,
                 seq: seq,
               ),
             );
@@ -732,7 +892,10 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_call_end':
             _typedEventStreamController.add(
               CallEndedEvent(
-                channelId: broadcast['channel_id'] as String? ?? data['channel_id'] as String? ?? '',
+                channelId:
+                    broadcast['channel_id'] as String? ??
+                    data['channel_id'] as String? ??
+                    '',
                 seq: seq,
               ),
             );
@@ -740,9 +903,16 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_joined':
             _typedEventStreamController.add(
               CallUserJoinedEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                channelId: broadcast['channel_id'] as String? ?? data['channel_id'] as String? ?? data['channelID'] as String? ?? '',
+                channelId:
+                    broadcast['channel_id'] as String? ??
+                    data['channel_id'] as String? ??
+                    data['channelID'] as String? ??
+                    '',
                 seq: seq,
               ),
             );
@@ -750,9 +920,16 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_left':
             _typedEventStreamController.add(
               CallUserLeftEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                channelId: broadcast['channel_id'] as String? ?? data['channel_id'] as String? ?? data['channelID'] as String? ?? '',
+                channelId:
+                    broadcast['channel_id'] as String? ??
+                    data['channel_id'] as String? ??
+                    data['channelID'] as String? ??
+                    '',
                 seq: seq,
               ),
             );
@@ -761,7 +938,10 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_unmuted':
             _typedEventStreamController.add(
               CallUserMuteEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
                 muted: eventName == 'custom_com.mattermost.calls_user_muted',
                 seq: seq,
@@ -772,9 +952,13 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_voice_off':
             _typedEventStreamController.add(
               CallUserVoiceEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                voiceActive: eventName == 'custom_com.mattermost.calls_user_voice_on',
+                voiceActive:
+                    eventName == 'custom_com.mattermost.calls_user_voice_on',
                 seq: seq,
               ),
             );
@@ -783,9 +967,13 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_screen_off':
             _typedEventStreamController.add(
               CallScreenShareEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                sharing: eventName == 'custom_com.mattermost.calls_user_screen_on',
+                sharing:
+                    eventName == 'custom_com.mattermost.calls_user_screen_on',
                 seq: seq,
               ),
             );
@@ -794,9 +982,13 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_unraise_hand':
             _typedEventStreamController.add(
               CallRaiseHandEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                raised: eventName == 'custom_com.mattermost.calls_user_raise_hand',
+                raised:
+                    eventName == 'custom_com.mattermost.calls_user_raise_hand',
                 seq: seq,
               ),
             );
@@ -805,9 +997,13 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_video_off':
             _typedEventStreamController.add(
               CallUserVideoEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                videoOn: eventName == 'custom_com.mattermost.calls_user_video_on',
+                videoOn:
+                    eventName == 'custom_com.mattermost.calls_user_video_on',
                 seq: seq,
               ),
             );
@@ -815,10 +1011,19 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_user_reacted':
             _typedEventStreamController.add(
               CallUserReactedEvent(
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
-                emojiName: (data['emoji'] as Map<String, dynamic>?)?['name'] as String? ?? '',
-                emojiLiteral: (data['emoji'] as Map<String, dynamic>?)?['literal'] as String? ?? '',
+                emojiName:
+                    (data['emoji'] as Map<String, dynamic>?)?['name']
+                        as String? ??
+                    '',
+                emojiLiteral:
+                    (data['emoji'] as Map<String, dynamic>?)?['literal']
+                        as String? ??
+                    '',
                 timestamp: (data['timestamp'] as num?)?.toInt() ?? 0,
                 reacted: true,
                 seq: seq,
@@ -828,9 +1033,18 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_call_host_changed':
             _typedEventStreamController.add(
               CallHostChangedEvent(
-                hostId: data['host_id'] as String? ?? data['hostID'] as String? ?? '',
-                callId: data['call_id'] as String? ?? data['callID'] as String? ?? '',
-                channelId: broadcast['channel_id'] as String? ?? data['channel_id'] as String? ?? '',
+                hostId:
+                    data['host_id'] as String? ??
+                    data['hostID'] as String? ??
+                    '',
+                callId:
+                    data['call_id'] as String? ??
+                    data['callID'] as String? ??
+                    '',
+                channelId:
+                    broadcast['channel_id'] as String? ??
+                    data['channel_id'] as String? ??
+                    '',
                 seq: seq,
               ),
             );
@@ -838,7 +1052,10 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_call_job_state':
             _typedEventStreamController.add(
               CallJobStateEvent(
-                callId: data['call_id'] as String? ?? data['callID'] as String? ?? '',
+                callId:
+                    data['call_id'] as String? ??
+                    data['callID'] as String? ??
+                    '',
                 jobState: data['jobState'] as Map<String, dynamic>? ?? {},
                 seq: seq,
               ),
@@ -847,8 +1064,14 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_caption':
             _typedEventStreamController.add(
               CallCaptionEvent(
-                channelId: data['channel_id'] as String? ?? data['channelID'] as String? ?? '',
-                userId: data['user_id'] as String? ?? data['userID'] as String? ?? '',
+                channelId:
+                    data['channel_id'] as String? ??
+                    data['channelID'] as String? ??
+                    '',
+                userId:
+                    data['user_id'] as String? ??
+                    data['userID'] as String? ??
+                    '',
                 sessionId: data['session_id'] as String? ?? '',
                 text: data['text'] as String? ?? '',
                 seq: seq,
@@ -858,8 +1081,14 @@ class WebSocketClientManager {
           case 'custom_com.mattermost.calls_recording_state':
             _typedEventStreamController.add(
               CallRecordingStateEvent(
-                callId: data['call_id'] as String? ?? data['callID'] as String? ?? '',
-                channelId: data['channel_id'] as String? ?? data['channelID'] as String? ?? '',
+                callId:
+                    data['call_id'] as String? ??
+                    data['callID'] as String? ??
+                    '',
+                channelId:
+                    data['channel_id'] as String? ??
+                    data['channelID'] as String? ??
+                    '',
                 recording: data['recording'] as bool? ?? false,
                 seq: seq,
               ),
@@ -871,10 +1100,16 @@ class WebSocketClientManager {
               _typedEventStreamController.add(
                 WebRTCSignalingEvent(data: data, seq: seq),
               );
-            } else if (eventName.startsWith('custom_com.mattermost.calls_host_') || eventName == 'custom_com.mattermost.calls_call_state') {
+            } else if (eventName.startsWith(
+                  'custom_com.mattermost.calls_host_',
+                ) ||
+                eventName == 'custom_com.mattermost.calls_call_state') {
               _typedEventStreamController.add(
                 CallStateEvent(
-                  callEventName: eventName.replaceFirst('custom_com.mattermost.calls_', ''),
+                  callEventName: eventName.replaceFirst(
+                    'custom_com.mattermost.calls_',
+                    '',
+                  ),
                   data: data,
                   seq: seq,
                 ),
@@ -968,4 +1203,77 @@ class WebSocketClientManager {
     if (raw is Map<String, dynamic>) return raw;
     return null;
   }
+
+  ChannelBookmarkEntity? _parseBookmark(Map<String, dynamic> data) {
+    final raw = data['bookmark'];
+    if (raw is String && raw.isNotEmpty) {
+      final json = jsonDecode(raw) as Map<String, dynamic>;
+      return ChannelBookmarkModel.fromMap(json).toEntity();
+    }
+    if (raw is Map<String, dynamic>) {
+      return ChannelBookmarkModel.fromMap(raw).toEntity();
+    }
+    return null;
+  }
+
+  /// يبني أحداث bookmark_added / bookmark_edited الموحدة.
+  void _handleBookmarkUpsert(
+    _BookmarkUpsertEvent ctor,
+    Map<String, dynamic> data,
+    Map<String, dynamic> broadcast,
+    int seq,
+  ) {
+    final bookmark = _parseBookmark(data);
+    if (bookmark == null) return;
+    final channelId = broadcast['channel_id'] as String? ?? bookmark.channelId;
+    final event = ctor(bookmark: bookmark, channelId: channelId, seq: seq);
+    _typedEventStreamController.add(event);
+  }
+
+  void _handleBookmarkSorted(
+    Map<String, dynamic> data,
+    Map<String, dynamic> broadcast,
+    int seq,
+  ) {
+    final raw = data['bookmarks'];
+    List<ChannelBookmarkEntity> bookmarks;
+    if (raw is String && raw.isNotEmpty) {
+      final list = jsonDecode(raw) as List<dynamic>;
+      bookmarks = list
+          .map(
+            (e) => ChannelBookmarkModel.fromMap(
+              e as Map<String, dynamic>,
+            ).toEntity(),
+          )
+          .toList();
+    } else if (raw is List<dynamic>) {
+      bookmarks = raw
+          .map(
+            (e) => ChannelBookmarkModel.fromMap(
+              e as Map<String, dynamic>,
+            ).toEntity(),
+          )
+          .toList();
+    } else {
+      return;
+    }
+    _typedEventStreamController.add(
+      BookmarkSortedEvent(
+        bookmarks: bookmarks,
+        channelId:
+            broadcast['channel_id'] as String? ??
+            data['channel_id'] as String? ??
+            '',
+        seq: seq,
+      ),
+    );
+  }
 }
+
+/// دالة إنشاء مشتركة لأحداث bookmark_added / bookmark_edited.
+typedef _BookmarkUpsertEvent =
+    TypedWebSocketEvent Function({
+      required ChannelBookmarkEntity bookmark,
+      required String channelId,
+      required int seq,
+    });

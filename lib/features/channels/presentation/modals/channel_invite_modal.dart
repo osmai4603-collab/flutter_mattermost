@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -20,7 +21,10 @@ import '../../../../core/theme/mattermost_colors.dart';
 /// دعوة أعضاء لقناة محددة — مطابق ChannelInviteModal في webapp:
 /// إدخال بريد إلكتروني + إرسال دعوة للقناة الحالية.
 class ChannelInviteModal extends StatefulWidget {
-  const ChannelInviteModal({super.key});
+  /// القناة المستهدفة — عند غيابها تُستخدم القناة المحددة حالياً.
+  final ChannelEntity? channel;
+
+  const ChannelInviteModal({super.key, this.channel});
 
   @override
   State<ChannelInviteModal> createState() => _ChannelInviteModalState();
@@ -93,6 +97,7 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
   }
 
   String? _channelId() {
+    if (widget.channel != null) return widget.channel!.id;
     final state = context.read<ChannelBloc>().state;
     if (state is! ChannelsLoadedState) return null;
     return state.selectedChannel?.id;

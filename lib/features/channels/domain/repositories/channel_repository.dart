@@ -127,6 +127,28 @@ abstract class ChannelRepository {
   Future<List<String>> getChannelCategoryOrder(String teamId, String userId);
   Future<List<ChannelBookmarkEntity>> getChannelBookmarks(String channelId);
 
+  /// إضافة إشارة مرجعية — يطابق POST /channels/{channel_id}/bookmarks.
+  Future<ChannelBookmarkEntity> createChannelBookmark(
+    String channelId, {
+    String? linkUrl,
+    String? postId,
+    String? fileId,
+    String? emoji,
+    String? label,
+  });
+
+  /// تعديل إشارة مرجعية — يطابق PATCH /channels/{channel_id}/bookmarks/{id}.
+  Future<ChannelBookmarkEntity> updateChannelBookmark(
+    String channelId,
+    String bookmarkId, {
+    String? linkUrl,
+    String? label,
+    String? emoji,
+  });
+
+  /// حذف إشارة مرجعية — يطابق DELETE /channels/{channel_id}/bookmarks/{id}.
+  Future<void> deleteChannelBookmark(String channelId, String bookmarkId);
+
   /// الفرق المشتركة بين أعضاء محادثة مباشرة/جماعية — مطابق
   /// GET /channels/{channel_id}/common_teams في webapp. تُستخدم لفحص
   /// Restricted DM: إذا كانت القائمة فارغة فلا يشارك الطرفان أي فريق.

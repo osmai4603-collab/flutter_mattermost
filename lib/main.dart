@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:flutter_mattermost/app/config/desktop_window.dart';
 import 'package:flutter_mattermost/app/routes/app_router.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
@@ -27,6 +28,9 @@ void main() async {
 
   // Initialize Desktop Window Manager settings
   await DesktopWindowConfig.initialize();
+
+  // Initialize media playback (media_kit for video/audio in messages).
+  MediaKit.ensureInitialized();
 
   // Initialize GetIt dependency injection
   await configureDependencies();

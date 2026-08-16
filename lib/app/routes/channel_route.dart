@@ -1,6 +1,7 @@
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_shell_layout.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/features/channels/presentation/pages/channel_page.dart';
+import 'package:flutter_mattermost/features/chat/presentation/pages/drafts_page.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/threads_page.dart';
 import 'package:flutter_mattermost/features/chat/presentation/pages/saved_messages_page.dart';
 
@@ -19,6 +20,7 @@ abstract class ChatRoutes {
   static const String globalThreads = '/:team/threads';
   static const String globalThreadsThread = '/:team/threads/:threadId';
   static const String savedMessages = '/:team/saved';
+  static const String drafts = '/:team/drafts';
 }
 
 final channelRoute = StatefulShellRoute.indexedStack(
@@ -70,6 +72,11 @@ final List<RouteBase> _routes = [
     path: ChatRoutes.savedMessages,
     builder: (context, state) =>
         SavedMessagesPage(teamName: state.pathParameters['team']),
+  ),
+  GoRoute(
+    path: ChatRoutes.drafts,
+    builder: (context, state) =>
+        DraftsPage(teamId: state.pathParameters['team']),
   ),
   GoRoute(
     path: ChatRoutes.team,

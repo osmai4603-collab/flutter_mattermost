@@ -1,11 +1,88 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/code_block_widget.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_mentions.dart';
+import 'package:flutter_mattermost/features/groups/domain/repositories/groups_repository.dart';
+import 'package:flutter_mattermost/features/groups/presentation/widgets/group_popover.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/users/domain/repositories/user_repository.dart';
+import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_modal.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-Widget _safeMarkdownBody({required String data, required MarkdownStyleSheet styleSheet}) {
+/// فتح بطاقة المستخدم عند الضغط على `@username` داخل نص الرسالة.
+Future<void> openUserMention(BuildContext context, String username) async {
+  final lower = username.toLowerCase();
+  if (lower == 'all' || lower == 'channel' || lower == 'here') return;
+  try {
+    final user = await getIt<UserRepository>().getUserByUsername(username);
+    if (!context.mounted) return;
+    await showUserProfile(context, user.id);
+  } catch (_) {
+    // مستخدم غير موجود أو فشل الشبكة: تجاهل صامت.
+  }
+}
+
+/// فتح بطاقة المجموعة عند الضغط على `@group-name` داخل نص الرسالة.
+Future<void> openGroupMention(BuildContext context, String groupName) async {
+  try {
+    final groups = await getIt<GroupsRepository>().getGroupsByNames([
+      groupName,
+    ]);
+    if (groups.isEmpty) return;
+    if (!context.mounted) return;
+    await showGroupPopover(context, groups.first);
+  } catch (_) {
+    // المجموعة غير موجودة أو الخادم لا يدعم Group Mentions: تجاهل صامت.
+  }
+}
+
+/// الانتقال إلى قناة عند الضغط على `~channel` داخل نص الرسالة.
+Future<void> openChannelMention(BuildContext context, String channelName) async {
+  try {
+    final teamState = context.read<TeamBloc>().state;
+    final teamName = teamState is TeamsLoadedState
+        ? teamState.selectedTeam?.name
+        : null;
+    if (teamName == null) return;
+    if (!context.mounted) return;
+    context.go('/$teamName/channels/$channelName');
+  } catch (_) {
+    // لا يوجد فريق محدد أو سياق توجيه: تجاهل صامت.
+  }
+}
+
+/// خيار قائمة المهام `- [ ]`/`- [x]` — مربع اختيار مخصص بلون الرابط.
+Widget _buildTaskCheckbox(bool checked, Color color) {
+  return Container(
+    width: 14,
+    height: 14,
+    decoration: BoxDecoration(
+      color: checked ? color : Colors.transparent,
+      borderRadius: BorderRadius.circular(3),
+      border: Border.all(color: color.withValues(alpha: 0.85), width: 1.3),
+    ),
+    child: checked
+        ? const Icon(Icons.check_rounded, size: 11, color: Colors.white)
+        : null,
+  );
+}
+
+Widget _safeMarkdownBody({
+  required String data,
+  required MarkdownStyleSheet styleSheet,
+  ValueChanged<String>? onMentionTap,
+  ValueChanged<String>? onGroupMentionTap,
+  ValueChanged<String>? onChannelTap,
+  required Widget Function(bool) checkboxBuilder,
+  String currentUsername = '',
+  String? currentUserId,
+}) {
   return MarkdownBody(
     data: data.trim().isEmpty ? ' ' : data,
     onTapLink: (text, href, title) {
@@ -15,10 +92,22 @@ Widget _safeMarkdownBody({required String data, required MarkdownStyleSheet styl
         unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
       }
     },
-    builders: {'pre': CodeBlockElementBuilder()},
+    extensionSet: markdownExtensionSet,
+    builders: {
+      'pre': CodeBlockElementBuilder(),
+      'mention': MentionElementBuilder(
+        onTap: onMentionTap,
+        onGroupTap: onGroupMentionTap,
+        currentUsername: currentUsername,
+        currentUserId: currentUserId,
+      ),
+      'channel': ChannelMentionElementBuilder(onTap: onChannelTap),
+    },
+    checkboxBuilder: checkboxBuilder,
     styleSheet: styleSheet,
     softLineBreak: true,
     selectable: false,
+    listItemCrossAxisAlignment: MarkdownListItemCrossAxisAlignment.start,
   );
 }
 
@@ -27,20 +116,45 @@ class MarkdownMessage extends StatelessWidget {
   final TextStyle? style;
   final int? maxLines;
 
-  const MarkdownMessage({super.key, required this.text, this.style, this.maxLines});
+  /// استدعاء عند الضغط على `@username` — يُمرَّر اسم المستخدم (بدون `@`).
+  /// الافتراضي: فتح بطاقة المستخدم عبر [openUserMention].
+  final ValueChanged<String>? onMentionTap;
+
+  /// استدعاء عند الضغط على `@group-name` — يُمرَّر اسم المجموعة (بدون `@`).
+  /// الافتراضي: فتح بطاقة المجموعة عبر [openGroupMention].
+  final ValueChanged<String>? onGroupMentionTap;
+
+  /// استدعاء عند الضغط على `~channel` — يُمرَّر اسم القناة (بدون `~`).
+  /// الافتراضي: الانتقال إلى القناة عبر [openChannelMention].
+  final ValueChanged<String>? onChannelTap;
+
+  const MarkdownMessage({
+    super.key,
+    required this.text,
+    this.style,
+    this.maxLines,
+    this.onMentionTap,
+    this.onGroupMentionTap,
+    this.onChannelTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<MattermostColors>();
     final textColor = theme?.centerChannelColor ?? Theme.of(context).colorScheme.onSurface;
     final linkColor = theme?.linkColor ?? Theme.of(context).colorScheme.primary;
-    final mutedBackground = theme?.centerChannelColor.withValues(alpha: 0.08) ??
-        Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.08);
     final strongBackground = theme?.centerChannelColor.withValues(alpha: 0.12) ??
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12);
     final quoteBackground = theme?.centerChannelColor.withValues(alpha: 0.05) ??
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05);
     final codeBlockBackground = const Color(0xFF111827);
+
+    // بيانات الحساب الحالي لتظليل منشن المستخدم نفسه داخل النص.
+    final authState = context.read<AuthBloc>().state;
+    final currentUser = authState is AuthenticatedState ? authState.user : null;
+    final currentUsername = currentUser?.username ?? '';
+    final currentUserId = currentUser?.id;
+
     if (text.trim().isEmpty) {
       return const SizedBox.shrink();
     }
@@ -127,6 +241,7 @@ class MarkdownMessage extends StatelessWidget {
       tableBorder: TableBorder.all(
         color: textColor.withValues(alpha: 0.18),
       ),
+      tableColumnWidth: const IntrinsicColumnWidth(),
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: textColor.withValues(alpha: 0.14), width: 1),
@@ -143,6 +258,15 @@ class MarkdownMessage extends StatelessWidget {
       );
     }
 
-    return _safeMarkdownBody(data: text, styleSheet: markdownStyleSheet);
+    return _safeMarkdownBody(
+      data: text,
+      styleSheet: markdownStyleSheet,
+      onMentionTap: onMentionTap ?? (username) => openUserMention(context, username),
+      onGroupMentionTap: onGroupMentionTap ?? (group) => openGroupMention(context, group),
+      onChannelTap: onChannelTap ?? (channel) => openChannelMention(context, channel),
+      currentUsername: currentUsername,
+      currentUserId: currentUserId,
+      checkboxBuilder: (checked) => _buildTaskCheckbox(checked, linkColor),
+    );
   }
 }

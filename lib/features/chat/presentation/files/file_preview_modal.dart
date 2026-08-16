@@ -8,6 +8,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/media_attachment_player.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// معاينة الملف — مطابقة FilePreviewModal في webapp (المرحلة 2):
@@ -194,9 +195,21 @@ class _FilePreviewModalState extends State<FilePreviewModal> {
   }
 
   Widget _buildPreview(AppLocalizations l10n) {
-    return GestureDetector(
-      onTap: () {},
-      child: _isImage ? _buildImagePreview() : _buildGenericPreview(l10n),
+    if (_isImage) return _buildImagePreview();
+    if (_isVideo || _isAudio) return _buildMediaPreview();
+    return _buildGenericPreview(l10n);
+  }
+
+  /// تشغيل الفيديو/الصوت داخل الشاشة المكبرة (نظير webapp).
+  Widget _buildMediaPreview() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: MediaAttachmentPlayer(
+        key: ValueKey(_file.id),
+        file: _file,
+        autoPlay: true,
+        dark: true,
+      ),
     );
   }
 

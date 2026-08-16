@@ -2,14 +2,17 @@ import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/typing_remote_data_source.dart';
+import 'package:flutter_mattermost/features/chat/data/models/file_info_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
+import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 
 // Events
 abstract class PostEvent extends Equatable {
@@ -99,6 +102,38 @@ class RealtimeTypingEvent extends PostEvent {
   List<Object?> get props => [userId, channelId];
 }
 
+/// تحديث حالة متابعة محادثة من WebSocket (thread_follow_changed).
+class RealtimeThreadFollowChangedEvent extends PostEvent {
+  final String threadId;
+  final bool following;
+  const RealtimeThreadFollowChangedEvent(this.threadId, this.following);
+  @override
+  List<Object?> get props => [threadId, following];
+}
+
+/// تحديث عدادات قراءة محادثة من WebSocket (thread_read_changed).
+class RealtimeThreadReadChangedEvent extends PostEvent {
+  final String threadId;
+  final int unreadReplies;
+  const RealtimeThreadReadChangedEvent(this.threadId, this.unreadReplies);
+  @override
+  List<Object?> get props => [threadId, unreadReplies];
+}
+
+/// متابعة/إلغاء متابعة محادثة من تذييل الرسالة (ThreadFooter).
+class ToggleThreadFollowEvent extends PostEvent {
+  final String channelId;
+  final String threadId;
+  final bool follow;
+  const ToggleThreadFollowEvent({
+    required this.channelId,
+    required this.threadId,
+    required this.follow,
+  });
+  @override
+  List<Object?> get props => [channelId, threadId, follow];
+}
+
 class SendTypingEvent extends PostEvent {
   final String channelId;
   final String? parentId;
@@ -179,6 +214,12 @@ class PostsLoadedState extends PostsState {
   final Set<String> pinnedIds;
   final String? focusPostId;
 
+  /// حالة متابعة المحادثات (root post id ← isFollowing) لعرض تذييل الرسالة.
+  final Map<String, bool> threadFollowing;
+
+  /// عدد الردود غير المقروءة لكل محادثة (root post id ← count).
+  final Map<String, int> threadUnreadReplies;
+
   const PostsLoadedState({
     required this.channelId,
     required this.posts,
@@ -189,6 +230,8 @@ class PostsLoadedState extends PostsState {
     this.files = const {},
     this.pinnedIds = const {},
     this.focusPostId,
+    this.threadFollowing = const {},
+    this.threadUnreadReplies = const {},
   });
 
   /// الرسائل الرئيسية (غير المتصلة) بترتيب الأحدث إلى الأقدم.
@@ -224,6 +267,8 @@ class PostsLoadedState extends PostsState {
     Map<String, List<FileInfoEntity>>? files,
     Set<String>? pinnedIds,
     String? focusPostId,
+    Map<String, bool>? threadFollowing,
+    Map<String, int>? threadUnreadReplies,
   }) => PostsLoadedState(
     channelId: channelId,
     posts: posts ?? this.posts,
@@ -234,6 +279,8 @@ class PostsLoadedState extends PostsState {
     files: files ?? this.files,
     pinnedIds: pinnedIds ?? this.pinnedIds,
     focusPostId: focusPostId ?? this.focusPostId,
+    threadFollowing: threadFollowing ?? this.threadFollowing,
+    threadUnreadReplies: threadUnreadReplies ?? this.threadUnreadReplies,
   );
 
   @override
@@ -247,6 +294,8 @@ class PostsLoadedState extends PostsState {
     files,
     pinnedIds,
     focusPostId,
+    threadFollowing,
+    threadUnreadReplies,
   ];
 }
 
@@ -290,6 +339,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     on<ToggleReactionEvent>(_onToggleReaction);
     on<RealtimeReactionEvent>(_onRealtimeReaction);
     on<SendTypingEvent>(_onSendTyping);
+    on<RealtimeThreadFollowChangedEvent>(_onRealtimeThreadFollowChanged);
+    on<RealtimeThreadReadChangedEvent>(_onRealtimeThreadReadChanged);
+    on<ToggleThreadFollowEvent>(_onToggleThreadFollow);
     on<_ClearTypingEvent>(_onClearTyping);
 
     _listenToWebSocketEvents();
@@ -324,6 +376,12 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         add(RealtimeTypingEvent(event.userId, event.channelId));
       } else if (event is ReactionChangedEvent) {
         add(RealtimeReactionEvent(event.reaction, event.added));
+      } else if (event is ThreadFollowChangedEvent) {
+        add(RealtimeThreadFollowChangedEvent(event.threadId, event.following));
+      } else if (event is ThreadReadChangedEvent) {
+        add(
+          RealtimeThreadReadChangedEvent(event.threadId, event.unreadReplies),
+        );
       }
     });
   }
@@ -368,13 +426,43 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     final withFiles = current.posts.where((p) => p.fileIds.isNotEmpty).toList();
     if (withFiles.isNotEmpty) {
       final files = <String, List<FileInfoEntity>>{};
-      await Future.wait(
-        withFiles.map((p) async {
+      final resolvedFromMetadata = <String>{};
+
+      // 1) استخراج معلومات الملفات مباشرة من post.metadata.files
+      // (نظير webapp الذي يستخدم metadata.files دون طلبات HTTP إضافية).
+      for (final post in withFiles) {
+        final metadataFiles = post.metadata?.files;
+        if (metadataFiles == null || metadataFiles.isEmpty) continue;
+        final list = <FileInfoEntity>[];
+        for (final map in metadataFiles) {
           try {
-            files[p.id] = await _postRepository.getFilesForPost(p.id);
+            final info = FileInfoModel.fromMap(
+              Map<String, dynamic>.from(map),
+            ).toEntity();
+            if (info.id.isEmpty) continue;
+            list.add(info);
           } catch (_) {}
-        }),
-      );
+        }
+        if (list.isNotEmpty) {
+          files[post.id] = list;
+          resolvedFromMetadata.add(post.id);
+        }
+      }
+
+      // 2) مسودة احتياطية فقط للمنشورات التي تفتقد metadata.files.
+      final needNetwork = withFiles
+          .where((p) => !resolvedFromMetadata.contains(p.id))
+          .toList();
+      if (needNetwork.isNotEmpty) {
+        await Future.wait(
+          needNetwork.map((p) async {
+            try {
+              files[p.id] = await _postRepository.getFilesForPost(p.id);
+            } catch (_) {}
+          }),
+        );
+      }
+
       if (state is PostsLoadedState) {
         emit((state as PostsLoadedState).copyWith(files: files));
       }
@@ -709,6 +797,73 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         reactions: {...current.reactions, event.reaction.postId: next},
       ),
     );
+  }
+
+  /// thread_follow_changed من WebSocket — يحدّث زر المتابعة في تذييل الرسالة.
+  void _onRealtimeThreadFollowChanged(
+    RealtimeThreadFollowChangedEvent event,
+    Emitter<PostsState> emit,
+  ) {
+    final current = state;
+    if (current is! PostsLoadedState) return;
+    emit(
+      current.copyWith(
+        threadFollowing: {
+          ...current.threadFollowing,
+          event.threadId: event.following,
+        },
+      ),
+    );
+  }
+
+  /// thread_read_changed من WebSocket — يحدّث نقطة الردود غير المقروءة.
+  void _onRealtimeThreadReadChanged(
+    RealtimeThreadReadChangedEvent event,
+    Emitter<PostsState> emit,
+  ) {
+    final current = state;
+    if (current is! PostsLoadedState) return;
+    emit(
+      current.copyWith(
+        threadUnreadReplies: {
+          ...current.threadUnreadReplies,
+          event.threadId: event.unreadReplies,
+        },
+      ),
+    );
+  }
+
+  /// متابعة/إلغاء متابعة محادثة من تذييل الرسالة — يطابق
+  /// followThread/unfollowThread في webapp (PUT/DELETE .../following).
+  Future<void> _onToggleThreadFollow(
+    ToggleThreadFollowEvent event,
+    Emitter<PostsState> emit,
+  ) async {
+    final current = state;
+    if (current is! PostsLoadedState) return;
+    final channelState = _channelBloc.state;
+    final teamId = channelState is ChannelsLoadedState
+        ? channelState.selectedChannel?.teamId ?? ''
+        : '';
+    final userId = (await _secureStorage.getUserId()) ?? 'me';
+    try {
+      final threadsRepository = getIt<ThreadsRepository>();
+      if (event.follow) {
+        await threadsRepository.followThread(userId, teamId, event.threadId);
+      } else {
+        await threadsRepository.unfollowThread(userId, teamId, event.threadId);
+      }
+      emit(
+        current.copyWith(
+          threadFollowing: {
+            ...current.threadFollowing,
+            event.threadId: event.follow,
+          },
+        ),
+      );
+    } catch (_) {
+      // يحافظ على الحالة عند فشل الشبكة.
+    }
   }
 
   @override

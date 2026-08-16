@@ -9,6 +9,7 @@ abstract class GroupsRepository {
     int perPage = 60,
     String? q,
     bool includeMemberCount = false,
+    bool filterAllowReference = false,
   });
 
   Future<List<GroupEntity>> getGroupsByNames(List<String> names);

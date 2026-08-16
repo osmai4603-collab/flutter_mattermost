@@ -206,8 +206,7 @@ class ChannelRepositoryImpl implements ChannelRepository {
     String userId,
     String teamId,
     String categoryId,
-  ) =>
-      _categoriesDataSource.deleteChannelCategory(userId, teamId, categoryId);
+  ) => _categoriesDataSource.deleteChannelCategory(userId, teamId, categoryId);
 
   @override
   Future<List<ChannelMemberEntity>> getChannelMembers(
@@ -310,6 +309,48 @@ class ChannelRepositoryImpl implements ChannelRepository {
     final bookmarks = await _bookmarksDataSource.getChannelBookmarks(channelId);
     return bookmarks.map((b) => b.toEntity()).toList();
   }
+
+  @override
+  Future<ChannelBookmarkEntity> createChannelBookmark(
+    String channelId, {
+    String? linkUrl,
+    String? postId,
+    String? fileId,
+    String? emoji,
+    String? label,
+  }) async {
+    final model = await _bookmarksDataSource.createChannelBookmark(
+      channelId,
+      linkUrl: linkUrl,
+      postId: postId,
+      fileId: fileId,
+      emoji: emoji,
+      label: label,
+    );
+    return model.toEntity();
+  }
+
+  @override
+  Future<ChannelBookmarkEntity> updateChannelBookmark(
+    String channelId,
+    String bookmarkId, {
+    String? linkUrl,
+    String? label,
+    String? emoji,
+  }) async {
+    final model = await _bookmarksDataSource.updateChannelBookmark(
+      channelId,
+      bookmarkId,
+      linkUrl: linkUrl,
+      label: label,
+      emoji: emoji,
+    );
+    return model.toEntity();
+  }
+
+  @override
+  Future<void> deleteChannelBookmark(String channelId, String bookmarkId) =>
+      _bookmarksDataSource.deleteChannelBookmark(channelId, bookmarkId);
 
   @override
   Future<List<String>> getGroupMessageMembersCommonTeams(String channelId) =>

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -34,6 +33,14 @@ class LoginSubmittedEvent extends AuthEvent {
 }
 
 class LogoutRequestedEvent extends AuthEvent {}
+
+/// تحديث بيانات المستخدم الحالي في الجلسة بعد تعديلها من نافذة الإعدادات.
+class AuthUserUpdatedEvent extends AuthEvent {
+  final UserEntity user;
+  const AuthUserUpdatedEvent(this.user);
+  @override
+  List<Object?> get props => [user];
+}
 
 // States
 abstract class AuthState extends Equatable {
@@ -89,6 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<LoginSubmittedEvent>(_onLoginSubmitted);
     on<LogoutRequestedEvent>(_onLogoutRequested);
+    on<AuthUserUpdatedEvent>(_onAuthUserUpdated);
 
     WidgetsBinding.instance.addObserver(this);
 
@@ -189,6 +197,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     _deltaSyncService.stop();
     _webSocketClientManager.disconnect();
     emit(UnauthenticatedState());
+  }
+
+  void _onAuthUserUpdated(
+    AuthUserUpdatedEvent event,
+    Emitter<AuthState> emit,
+  ) {
+    final current = state;
+    if (current is AuthenticatedState) {
+      emit(AuthenticatedState(event.user));
+    }
   }
 
   @override

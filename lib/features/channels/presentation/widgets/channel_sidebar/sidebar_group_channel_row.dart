@@ -100,90 +100,107 @@ class _SidebarGroupChannelRowState extends State<SidebarGroupChannelRow> {
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: DesignTokens.sidebarRowHeight,
-          padding: EdgeInsets.symmetric(vertical: 8),
           color: widget.isSelected
               ? theme.sidebarText.withValues(alpha: 0.08)
               : _hovered
               ? theme.sidebarTextHoverBg
               : Colors.transparent,
-          child: Opacity(
-            opacity: widget.isMuted ? 0.5 : 1,
-            child: Row(
-              children: [
-                // أيقونة المجموعة: عداد أعضاء بدل الصورة الرمزية (status--group).
-                Container(
-                  width: 16,
-                  height: 16,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: hasUnreads
-                        ? theme.sidebarUnreadText
-                        : theme.sidebarText.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '$_membersCount',
-                    style: TextStyle(
-                      color: theme.sidebarBg,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+          child: Stack(
+            alignment: AlignmentDirectional.centerStart,
+            children: [
+              // خط نشط عمودي 4px (نفس SidebarChannelRow/DM rows).
+              if (widget.isSelected)
+                PositionedDirectional(
+                  start: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: VerticalDivider(
+                    thickness: 1.50,
+                    width: 0,
+                    color: theme.sidebarTextActiveBorder,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    channel.displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: hasUnreads
-                          ? theme.sidebarUnreadText
-                          : theme.sidebarText,
-                      fontWeight: hasUnreads || widget.isSelected
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                if (hasMentions)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.mentionBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${widget.unread!.mentions}',
-                      style: TextStyle(
-                        color: theme.mentionColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+              Opacity(
+                opacity: widget.isMuted ? 0.5 : 1,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 24),
+                    // أيقونة المجموعة: عداد أعضاء بدل الصورة الرمزية (status--group).
+                    Container(
+                      width: 16,
+                      height: 16,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: hasUnreads
+                            ? theme.sidebarUnreadText
+                            : theme.sidebarText.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '$_membersCount',
+                        style: TextStyle(
+                          color: theme.sidebarBg,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
-                  )
-                else if (hasUnreads)
-                  Container(
-                    width: 7,
-                    height: 7,
-                    decoration: BoxDecoration(
-                      color: theme.sidebarUnreadText,
-                      shape: BoxShape.circle,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        channel.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: hasUnreads
+                              ? theme.sidebarUnreadText
+                              : theme.sidebarText,
+                          fontWeight: hasUnreads || widget.isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
                     ),
-                  ),
-                const SizedBox(width: 2),
-                AnimatedOpacity(
-                  opacity: _hovered ? 1 : 0,
-                  duration: const Duration(milliseconds: 100),
-                  child: ChannelRowMenu(channel: channel, iconSize: 16),
+                    const SizedBox(width: 4),
+                    if (hasMentions)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.mentionBg,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${widget.unread!.mentions}',
+                          style: TextStyle(
+                            color: theme.mentionColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    else if (hasUnreads)
+                      Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: theme.sidebarUnreadText,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    const SizedBox(width: 2),
+                    AnimatedOpacity(
+                      opacity: _hovered ? 1 : 0,
+                      duration: const Duration(milliseconds: 100),
+                      child: ChannelRowMenu(channel: channel, iconSize: 16),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

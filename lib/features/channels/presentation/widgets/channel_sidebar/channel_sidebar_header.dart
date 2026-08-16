@@ -11,6 +11,8 @@ import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// رأس الشريط الجانبي — مطابق sidebar_header.tsx في webapp:
@@ -140,16 +142,11 @@ class _AddChannelMenu extends StatelessWidget {
           id: 'create_category',
           label: 'Create new category',
           icon: const Icon(Icons.add_box_outlined, size: 18),
-          onTap: () {
-            ModalRegistry.open(
-              context,
-              id: ModalIdentifiers.moreDirectChannels,
-            );
-          },
+          onTap: () => _showCreateCategoryDialog(context),
         ),
         MatterMenuItem.divider(),
         MatterMenuItem(
-          id: 'create_category',
+          id: 'invite_people',
           label: 'Invite people',
           subtitle: 'Add people to the team',
           icon: const Icon(Icons.person_add_outlined, size: 18),
@@ -175,6 +172,54 @@ class _AddChannelMenu extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  /// نافذة «فئة جديدة» — مطابقة _showCreateDialog في category_menu.dart:
+  /// تنشئ فئة مخصصة فارغة تُلحق نهاية قائمة الفئات.
+  Future<void> _showCreateCategoryDialog(BuildContext context) async {
+    final channelBloc = context.read<ChannelBloc>();
+    final teamState = context.read<TeamBloc>().state;
+    final teamId = teamState is TeamsLoadedState
+        ? teamState.selectedTeam?.id ?? ''
+        : '';
+    final channelState = channelBloc.state;
+    final userId = channelState is ChannelsLoadedState
+        ? channelState.userId
+        : '';
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.create_category_modalCreateCategory),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(4)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: theme.linkColor),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.postEditCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(controller.text),
+            child: Text(l10n.create_category_modalCreate),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    final value = name?.trim() ?? '';
+    if (value.isEmpty || userId.isEmpty || teamId.isEmpty) return;
+    channelBloc.add(
+      CreateCategoryEvent(displayName: value, userId: userId, teamId: teamId),
     );
   }
 }

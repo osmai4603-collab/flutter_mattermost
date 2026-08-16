@@ -36,4 +36,21 @@ abstract class UserRepository {
 
   Future<List<PreferenceEntity>> getMyPreferences();
   Future<void> saveMyPreferences(List<PreferenceEntity> preferences);
+  Future<void> deleteMyPreferences(List<PreferenceEntity> preferences);
+
+  Future<UserEntity> updateMyProfile({
+    String? firstName,
+    String? lastName,
+    String? nickname,
+    String? position,
+    String? locale,
+  });
+  Future<UserEntity> updateMyNotifyProps(Map<String, dynamic> notifyProps);
+  Future<void> uploadProfileImage(String userId, String filePath);
+  Future<void> updatePassword(
+    String userId,
+    String currentPassword,
+    String newPassword,
+  );
+  Future<void> updateMyMfa({required bool activate, String? code});
 }

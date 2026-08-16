@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
-import 'package:flutter_mattermost/core/network/server_manager.dart';
-import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/chat/presentation/files/file_display_utils.dart';
 import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/auth_cached_image.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/media_attachment_player.dart';
 
-/// يعرض مرفقات الرسالة (الصور والملفات) بشكل تفاعلي.
+/// يعرض مرفقات الرسالة (الصور والملفات والوسائط) بشكل تفاعلي.
 class PostAttachmentPreview extends StatelessWidget {
   final List<FileInfoEntity> files;
 
@@ -15,8 +16,17 @@ class PostAttachmentPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (files.isEmpty) return const SizedBox.shrink();
 
-    final images = files.where((f) => _isImage(f.extension)).toList();
-    final otherFiles = files.where((f) => !_isImage(f.extension)).toList();
+    final images = files.where((f) => isImageExtension(f.extension)).toList();
+    final media = files
+        .where((f) => isMediaExtension(f.extension) && !isImageExtension(f.extension))
+        .toList();
+    final otherFiles = files
+        .where(
+          (f) =>
+              !isImageExtension(f.extension) &&
+              !isMediaExtension(f.extension),
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -25,6 +35,15 @@ class PostAttachmentPreview extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: _ImageGrid(files: images, allFiles: files),
+          ),
+        if (media.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: media.map((f) => MediaAttachmentPlayer(file: f)).toList(),
+            ),
           ),
         if (otherFiles.isNotEmpty)
           Padding(
@@ -41,11 +60,6 @@ class PostAttachmentPreview extends StatelessWidget {
           ),
       ],
     );
-  }
-
-  bool _isImage(String ext) {
-    final e = ext.toLowerCase();
-    return e == 'png' || e == 'jpg' || e == 'jpeg' || e == 'gif' || e == 'webp';
   }
 }
 
@@ -96,26 +110,17 @@ class _SingleImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final serverUrl = getIt<ServerManager>().activeServerUrl;
-    final imageUrl = '$serverUrl/api/v4/files/${file.id}';
-
     return GestureDetector(
       onTap: () => _showPreview(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxHeight: 300),
-          child: Image.network(
-            imageUrl,
+          child: AuthCachedImage(
+            url: fileApiUrl(file),
             fit: BoxFit.contain,
-            loadingBuilder: (context, child, progress) {
-              if (progress == null) return child;
-              return const SizedBox(
-                height: 100,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            },
-            errorBuilder: (context, error, stack) => const Icon(Icons.broken_image),
+            errorBuilder: (context, error, stack) =>
+                const Icon(Icons.broken_image),
           ),
         ),
       ),
@@ -139,15 +144,12 @@ class _Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final serverUrl = getIt<ServerManager>().activeServerUrl;
-    final thumbUrl = '$serverUrl/api/v4/files/${file.id}/thumbnail';
-
     return GestureDetector(
       onTap: () => _showPreview(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: Image.network(
-          thumbUrl,
+        child: AuthCachedImage(
+          url: fileApiUrl(file, suffix: '/thumbnail'),
           fit: BoxFit.cover,
           errorBuilder: (context, error, stack) => const Icon(Icons.image),
         ),

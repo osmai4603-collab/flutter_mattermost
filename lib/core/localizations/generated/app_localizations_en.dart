@@ -46709,6 +46709,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Notifies everyone online in this channel';
 
   @override
+  String get autocompleteMentionOutOfChannel => 'Not in this channel';
+
+  @override
   String get autocompleteRoleAdmin => 'Admin';
 
   @override

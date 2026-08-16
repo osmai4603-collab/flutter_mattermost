@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/matter_button.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
@@ -22,8 +23,15 @@ import 'package:flutter_mattermost/features/users/presentation/pages/user_profil
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/rhs/mentions_panel.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_list.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
 
 import 'package:flutter_mattermost/features/chat/presentation/widgets/post_attachment_preview.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_thread_footer.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/add_channel_bookmark_dialog.dart';
 import 'package:intl/intl.dart';
 
 /// قائمة الرسائل الافتراضية (أحدث الرسائل في الأسفل).
@@ -257,13 +265,16 @@ class _PostListBodyState extends State<_PostListBody> {
         : const <UserEntity>[];
     final byId = {for (final p in profiles) p.id: p};
 
-    final myUserId =
-        context.read<UserProfileBloc>().state is UserProfileLoadedState
-        ? (context.read<UserProfileBloc>().state as UserProfileLoadedState)
-                  .myProfile
-                  ?.id ??
-              'me'
-        : 'me';
+    final profState = context.read<UserProfileBloc>().state;
+    final myProfile = profState is UserProfileLoadedState
+        ? profState.myProfile
+        : null;
+    final myUserId = myProfile?.id ?? 'me';
+    // مفاتيح الإشارة للمستخدم الحالي — مطابقة showMentions/getCurrentUserMentionKeys
+    // في webapp؛ تُستخدم لتظليل خلفية الرسائل التي تذكره.
+    final myMentionKeys = myProfile == null
+        ? const <String>[]
+        : allMentionKeysFrom(myProfile);
 
     final channelState = context.watch<ChannelBloc>().state;
     int lastViewedAt = 0;
@@ -337,6 +348,28 @@ class _PostListBodyState extends State<_PostListBody> {
     DateTime? previousDay;
     bool newMessagesLineShown = false;
 
+    // بيانات تذييل المحادثة (ThreadFooter): المشاركون + وقت آخر رد
+    // مستنتجان من نطاق الرسائل المحمّل في تمريرة واحدة.
+    final rootLastReplyAt = <String, int>{};
+    final rootParticipantIds = <String, Set<String>>{};
+    for (final p in state.posts) {
+      if (p.rootId.isEmpty) continue;
+      final ids = rootParticipantIds.putIfAbsent(p.rootId, () => {});
+      ids.add(p.userId);
+      final last = rootLastReplyAt[p.rootId];
+      if (last == null || p.createAt > last) {
+        rootLastReplyAt[p.rootId] = p.createAt;
+      }
+    }
+
+    // تضمين مؤلّف الرسالة الجذرية نفسه في قائمة المشاركين (ترتيب النطاق قد
+    // يضع الجذر قبل أو بعد ردوده، لذا نمرّ مرة ثانية).
+    for (final p in state.posts) {
+      if (p.rootId.isEmpty) {
+        rootParticipantIds[p.id]?.add(p.userId);
+      }
+    }
+
     // posts are sorted latest to oldest (reverse: true)
     for (int i = 0; i < state.posts.length; i++) {
       final post = state.posts[i];
@@ -362,6 +395,19 @@ class _PostListBodyState extends State<_PostListBody> {
       }
 
       final isFocused = post.id == state.focusPostId;
+      final isRoot = post.rootId.isEmpty;
+
+      // هل الرسالة تذكر المستخدم الحالي؟ (تظليل خلفية الرسالة — Post Mention
+      // Highlight في webapp عبر مطابقة النص مع مفاتيح الإشارة).
+      final isMentioned = textMentionsKeys(post.message, myMentionKeys);
+
+      final ids = isRoot ? rootParticipantIds[post.id] : null;
+      final threadParticipants = <UserEntity>[
+        if (ids != null)
+          for (final id in ids)
+            if (id != 'current_user' && byId[id] != null) byId[id]!,
+      ];
+
       final item = PostItem(
         key: isFocused ? _focusKey : null,
         post: post,
@@ -371,9 +417,14 @@ class _PostListBodyState extends State<_PostListBody> {
         isPinned: state.isPinned(post.id),
         reactions: state.reactionsFor(post.id),
         filesList: state.filesFor(post.id),
-        replyCount: post.rootId.isEmpty ? state.replyCountFor(post.id) : 0,
-        isReply: post.rootId.isNotEmpty,
+        replyCount: isRoot ? state.replyCountFor(post.id) : 0,
+        isReply: !isRoot,
         isNew: isNew,
+        isMentioned: isMentioned,
+        threadParticipants: threadParticipants,
+        threadLastReplyAt: isRoot ? (rootLastReplyAt[post.id] ?? 0) : 0,
+        threadIsFollowing: state.threadFollowing[post.id] ?? false,
+        threadUnreadReplies: state.threadUnreadReplies[post.id] ?? 0,
       );
       items.add(
         isFocused
@@ -527,6 +578,21 @@ class PostItem extends StatefulWidget {
   final bool showFullHeader;
   final bool isNew;
 
+  /// هل تذكر الرسالة المستخدم الحالي؟ (تظليل خلفية الرسالة).
+  final bool isMentioned;
+
+  /// المشاركون في المحادثة (لرسائل الجذر) لعرض تذييل ThreadFooter.
+  final List<UserEntity> threadParticipants;
+
+  /// وقت آخر رد في المحادثة (ملي ثانية).
+  final int threadLastReplyAt;
+
+  /// هل يتابع المستخدم المحادثة؟
+  final bool threadIsFollowing;
+
+  /// عدد الردود غير المقروءة في المحادثة.
+  final int threadUnreadReplies;
+
   const PostItem({
     super.key,
     required this.post,
@@ -540,6 +606,11 @@ class PostItem extends StatefulWidget {
     this.isReply = false,
     this.showFullHeader = true,
     this.isNew = false,
+    this.isMentioned = false,
+    this.threadParticipants = const [],
+    this.threadLastReplyAt = 0,
+    this.threadIsFollowing = false,
+    this.threadUnreadReplies = 0,
   });
 
   @override
@@ -585,9 +656,7 @@ class _PostItemState extends State<PostItem> {
           widget.isReply ? 2 : 4,
         ),
         decoration: BoxDecoration(
-          color: _hovered
-              ? theme.centerChannelColor.withValues(alpha: 0.04)
-              : Colors.transparent,
+          color: _postBackgroundColor(theme),
         ),
         child: Stack(
           alignment: AlignmentDirectional.topEnd,
@@ -728,25 +797,33 @@ class _PostItemState extends State<PostItem> {
                         ),
                       if (widget.filesList.isNotEmpty)
                         PostAttachmentPreview(files: widget.filesList),
-                      if (widget.replyCount > 0)
-                        InkWell(
-                          onTap: () {
+                      if (!widget.isReply && widget.replyCount > 0)
+                        PostThreadFooter(
+                          replyCount: widget.replyCount,
+                          participants: widget.threadParticipants,
+                          lastReplyAt: widget.threadLastReplyAt,
+                          isFollowing: widget.threadIsFollowing,
+                          unreadReplies: widget.threadUnreadReplies,
+                          onOpenThread: () {
                             context.read<RhsBloc>().add(
                               OpenThreadEvent(post.id, post.channelId),
                             );
                           },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Text(
-                              '${widget.replyCount} ${widget.replyCount == 1 ? l10n.repliesCount1 : l10n.repliesCountN(widget.replyCount)}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: theme.linkColor,
-                                fontWeight: FontWeight.w500,
+                          onToggleFollow: () {
+                            context.read<PostBloc>().add(
+                              ToggleThreadFollowEvent(
+                                channelId: post.channelId,
+                                threadId: post.id,
+                                follow: !widget.threadIsFollowing,
                               ),
-                            ),
-                          ),
+                            );
+                          },
                         ),
+                      ReactionList(
+                        postId: post.id,
+                        reactions: widget.reactions,
+                        myUserId: widget.myUserId,
+                      ),
                     ],
                   ),
                 ),
@@ -774,6 +851,16 @@ class _PostItemState extends State<PostItem> {
     final h = dt.hour.toString().padLeft(2, '0');
     final m = dt.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  /// خلفية الرسالة: تظليل mention للمستخدم الحالي + لون التمرير.
+  Color _postBackgroundColor(MattermostColors theme) {
+    final base = widget.isMentioned
+        ? theme.mentionHighlightBgMixed
+        : Colors.transparent;
+    if (!_hovered) return base;
+    final hover = theme.centerChannelColor.withValues(alpha: 0.04);
+    return Color.alphaBlend(hover, base);
   }
 }
 
@@ -811,41 +898,28 @@ class _PostActions extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            InkWell(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Image.asset('assets/images/emoji/1f919.png', width: 22),
+            for (final emoji in const ['👍', '❤️', '😂'])
+              InkWell(
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: emojiWidget(emoji, size: 20),
+                ),
+                onTap: () {
+                  context.read<PostBloc>().add(
+                    ToggleReactionEvent(post.id, emoji),
+                  );
+                },
               ),
-
-              onTap: () {},
-            ),
-            InkWell(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Image.asset('assets/images/emoji/1f600.png', width: 22),
-              ),
-              onTap: () {},
-            ),
-            InkWell(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Icon(Icons.check_box_rounded, color: Colors.green[700]),
-              ),
-              onTap: () {},
-            ),
-            InkWell(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Icon(Icons.bookmark_border),
-              ),
-              onTap: () {},
-            ),
-            InkWell(
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Text('🫥'),
-              ),
-              onTap: () {},
+            _ActionIcon(
+              icon: Icons.add_reaction,
+              tooltip: l10n.reactionAdd,
+              onTap: () async {
+                final selected = await showReactionPicker(context);
+                if (selected == null || !context.mounted) return;
+                context.read<PostBloc>().add(
+                  ToggleReactionEvent(post.id, selected),
+                );
+              },
             ),
             if (!isReply)
               _ActionIcon(
@@ -908,6 +982,17 @@ class _PostActions extends StatelessWidget {
                     final link = '$serverUrl/_redirect/pl/${post.id}';
                     Clipboard.setData(ClipboardData(text: link));
                   },
+                ),
+                PopupMenuItem(
+                  value: 'bookmark',
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      const Icon(Icons.bookmark_add_outlined, size: 18),
+                      Text(l10n.channel_bookmarksAddBookmark),
+                    ],
+                  ),
+                  onTap: () => _addBookmark(context),
                 ),
                 PopupMenuItem(
                   value: 'flag',
@@ -982,6 +1067,19 @@ class _PostActions extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  /// إضافة المنشور الحالي كإشارة مرجعية في قناته — يفتح نافذة
+  /// إضافة الإشارة معبّأة برابط المنشور (مطابق إضافة bookmark من
+  /// قائمة خيارات المنشور في webapp).
+  void _addBookmark(BuildContext context) {
+    final serverUrl = getIt<ServerManager>().activeServerUrl;
+    final link = '$serverUrl/_redirect/pl/${post.id}';
+    showAddChannelBookmarkDialog(
+      context,
+      channelId: post.channelId,
+      prefillLink: link,
     );
   }
 
@@ -1089,57 +1187,6 @@ class _ActionIcon extends StatelessWidget {
             icon,
             size: 16,
             color: color ?? theme.centerChannelColor.withValues(alpha: 0.55),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReactionChip extends StatelessWidget {
-  final String postId;
-  final MapEntry<String, List<ReactionEntity>> entry;
-  final String myUserId;
-
-  const _ReactionChip({
-    required this.postId,
-    required this.entry,
-    required this.myUserId,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final mine = entry.value.any((r) => r.userId == myUserId);
-
-    return Tooltip(
-      message: entry.value.map((r) => r.userId).join(', '),
-      child: InkWell(
-        onTap: () {
-          context.read<PostBloc>().add(ToggleReactionEvent(postId, entry.key));
-        },
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-          decoration: BoxDecoration(
-            color: mine
-                ? theme.linkColor.withValues(alpha: 0.1)
-                : Colors.transparent,
-            border: Border.all(
-              color: mine
-                  ? theme.linkColor.withValues(alpha: 0.5)
-                  : theme.centerChannelColor.withValues(alpha: 0.2),
-            ),
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            '${entry.key} ${entry.value.length}',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: mine
-                  ? theme.linkColor
-                  : theme.centerChannelColor.withValues(alpha: 0.8),
-            ),
           ),
         ),
       ),

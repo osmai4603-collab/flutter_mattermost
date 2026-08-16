@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/features/channels/data/datasources/channels_r
 import 'package:flutter_mattermost/features/chat/data/datasources/emoji_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplete/autocomplete_item.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/commands/slash_commands_registry.dart';
+import 'package:flutter_mattermost/features/groups/data/datasources/groups_remote_data_source.dart';
 import 'package:flutter_mattermost/features/integrations/data/datasources/commands_remote_data_source.dart';
 import 'package:flutter_mattermost/features/users/data/datasources/user_status_remote_data_source.dart';
 import 'package:flutter_mattermost/features/users/data/datasources/users_remote_data_source.dart';
@@ -46,50 +47,84 @@ class AutocompleteService {
 
   // ─────────────────────────── @mentions ───────────────────────────
 
-  /// بحث المستخدمين + التنبيهات الخاصة (@all/@channel/@here) المطابقة.
+  /// بحث المستخدمين + المجموعات + التنبيهات الخاصة (@all/@channel/@here)
+  /// المطابقة. الترتيب مطابق لـ AtMentionProvider في webapp:
+  /// أعضاء القناة → Group Mentions → Special Mentions → خارج القناة.
   Future<List<AutocompleteItem>> searchMentions(String query) async {
     final key = 'mention:$query';
     final cached = _cachedList(key);
     if (cached != null) return cached;
 
     final result = <AutocompleteItem>[];
+
+    try {
+      final acResult = await getIt<UsersRemoteDataSource>()
+          .autocompleteUsersWithOutOfChannel(
+            query,
+            channelId: channelId.isEmpty ? null : channelId,
+          );
+      if (acResult.users.isNotEmpty) {
+        final statuses = await _fetchStatuses(
+          acResult.users.take(10).map((u) => u.id).toList(),
+        );
+        final inChannel = <AutocompleteItem>[];
+        final outOfChannel = <AutocompleteItem>[];
+        for (final u in acResult.users) {
+          final item = AutocompleteItem(
+            kind: AutocompleteKind.mention,
+            userId: u.id,
+            title: getMentionDisplayName(
+              username: u.username,
+              nickname: u.nickname,
+              firstName: u.firstName,
+              lastName: u.lastName,
+            ),
+            subtitle: '@${u.username}',
+            insertText: '@${u.username} ',
+            status: statuses[u.id],
+            roles: u.roles,
+            outOfChannel: acResult.outOfChannelIds.contains(u.id),
+          );
+          (item.outOfChannel ? outOfChannel : inChannel).add(item);
+        }
+        result.addAll(inChannel);
+
+        // Group Mentions بين أعضاء القناة ومن هم خارجها — مطابق ترتيب webapp
+        // (Members → Groups → Special Mentions → Non Members).
+        try {
+          final groups = await getIt<GroupsRemoteDataSource>().getGroups(
+            q: query,
+            perPage: 10,
+            includeMemberCount: true,
+            filterAllowReference: true,
+          );
+          for (final g in groups) {
+            if (g.name.isEmpty) continue;
+            result.add(
+              AutocompleteItem.group(
+                id: g.id,
+                name: g.name,
+                displayName: g.displayName,
+                memberCount: g.memberCount,
+              ),
+            );
+          }
+        } catch (_) {
+          // الخادم لا يدعم group mentions أو فشل الشبكة: تجاهل صامت.
+        }
+
+        result.addAll(outOfChannel);
+      }
+    } catch (_) {
+      // فشل الشبكة: نكمل بدون نتائج المستخدمين.
+    }
+
+    // التنبيهات الخاصة بعد المجموعات — مطابق ترتيب webapp.
     for (final special in const ['all', 'channel', 'here']) {
       if (special.startsWith(query)) {
         // الوصف يُحل في الويدجت عبر الترجمة (l10n).
         result.add(AutocompleteItem.specialMention(special, ''));
       }
-    }
-
-    try {
-      final users = await getIt<UsersRemoteDataSource>().autocompleteUsers(
-        query,
-        channelId: channelId.isEmpty ? null : channelId,
-      );
-      if (users.isNotEmpty) {
-        final statuses = await _fetchStatuses(
-          users.take(10).map((u) => u.id).toList(),
-        );
-        result.addAll(
-          users.map(
-            (u) => AutocompleteItem(
-              kind: AutocompleteKind.mention,
-              userId: u.id,
-              title: getMentionDisplayName(
-                username: u.username,
-                nickname: u.nickname,
-                firstName: u.firstName,
-                lastName: u.lastName,
-              ),
-              subtitle: '@${u.username}',
-              insertText: '@${u.username} ',
-              status: statuses[u.id],
-              roles: u.roles,
-            ),
-          ),
-        );
-      }
-    } catch (_) {
-      // فشل الشبكة: نكتفي بالتنبيهات الخاصة.
     }
 
     _store(key, result);

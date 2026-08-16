@@ -138,6 +138,23 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
             ),
           ),
         );
+      case AutocompleteKind.group:
+        return Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppTheme.of(
+              context,
+            ).centerChannelColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.group_outlined,
+            size: 18,
+            color: AppTheme.of(context).linkColor,
+          ),
+        );
     }
   }
 
@@ -213,6 +230,11 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
                             item.kind == AutocompleteKind.mention &&
                             !item.special &&
                             _isAdmin(item.roles),
+                        showOutOfChannelBadge:
+                            item.kind == AutocompleteKind.mention &&
+                            !item.special &&
+                            item.outOfChannel,
+                        outOfChannelTooltip: l10n.autocompleteMentionOutOfChannel,
                         onHover: () => widget.controller.selectIndex(index),
                         onTap: () => widget.controller.insertAt(index),
                       );
@@ -237,6 +259,8 @@ class _AutocompleteCell extends StatelessWidget {
   final String subtitle;
   final Widget leading;
   final bool showAdminBadge;
+  final bool showOutOfChannelBadge;
+  final String outOfChannelTooltip;
   final VoidCallback onHover;
   final VoidCallback onTap;
 
@@ -247,6 +271,8 @@ class _AutocompleteCell extends StatelessWidget {
     required this.subtitle,
     required this.leading,
     required this.showAdminBadge,
+    required this.showOutOfChannelBadge,
+    required this.outOfChannelTooltip,
     required this.onHover,
     required this.onTap,
   });
@@ -308,6 +334,29 @@ class _AutocompleteCell extends StatelessWidget {
                         Icons.verified,
                         size: 10,
                         color: theme.linkColor,
+                      ),
+                    ],
+                    if (showOutOfChannelBadge) ...[
+                      const SizedBox(width: 2),
+                      Tooltip(
+                        message: outOfChannelTooltip,
+                        child: Icon(
+                          Icons.person_add_alt_1,
+                          size: 10,
+                          color: theme.centerChannelColor.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                    if (item.kind == AutocompleteKind.group &&
+                        item.groupMemberCount > 0) ...[
+                      const SizedBox(width: 2),
+                      Text(
+                        '${item.groupMemberCount}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: theme.linkColor,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ],

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
+import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
@@ -192,6 +194,24 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                         ),
                       ),
                     const SizedBox(width: 2),
+                    // مؤشر المسودة ✏️ — يظهر عندما توجد مسودة محفوظة لهذه
+                    // القناة (مطابق draft_indicator في sidebar_channel_link.tsx).
+                    ListenableBuilder(
+                      listenable: getIt<DraftStorageService>(),
+                      builder: (context, _) {
+                        final hasDraft =
+                            getIt<DraftStorageService>().hasDraft(channel.id);
+                        if (!hasDraft) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 4),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 12,
+                            color: theme.sidebarText.withValues(alpha: 0.6),
+                          ),
+                        );
+                      },
+                    ),
                     // قائمة القناة تظهر عند التمرير فقط (مثل sidebar-menu في webapp).
                     AnimatedOpacity(
                       opacity: isHovered ? 1 : 0,

@@ -24,6 +24,7 @@ import 'package:flutter_mattermost/features/chat/presentation/widgets/emoji_pick
 import 'package:flutter_mattermost/features/chat/presentation/widgets/file_upload_overlay.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/system/domain/repositories/system_repository.dart';
 
 /// المحرر المتقدم — يربط [ComposerController] بمكونات الواجهة:
 /// شريط التنسيق، منتقي الإيموجي، رفع الملفات (مع سحب وإسقاط)،
@@ -119,6 +120,7 @@ class _MessageEditorState extends State<MessageEditor> {
       final uploadController = FileUploadController(
         draft: draft,
         filesDataSource: getIt<FilesRemoteDataSource>(),
+        systemRepository: getIt<SystemRepository>(),
       );
       final composer = ComposerController(
         draft: draft,

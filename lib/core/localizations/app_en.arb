@@ -11888,6 +11888,7 @@
   "autocompleteMentionAll": "Notifies everyone in this channel",
   "autocompleteMentionChannel": "Notifies everyone in this channel",
   "autocompleteMentionHere": "Notifies everyone online in this channel",
+  "autocompleteMentionOutOfChannel": "Not in this channel",
   "autocompleteRoleAdmin": "Admin",
   "autocompleteCommandHeaderDesc": "Edit the channel header",
   "autocompleteCommandPurposeDesc": "Edit the channel purpose",

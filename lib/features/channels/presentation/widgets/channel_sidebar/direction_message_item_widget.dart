@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
@@ -7,6 +11,7 @@ import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dar
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 
@@ -241,8 +246,28 @@ class _DirectionMessageItemWidgetState
                         ),
                       ),
                     const SizedBox(width: 2),
-                    if (isHovered)
+                    // مؤشر المسودة ✏️ — نفس سلوك صف القنوات العادية.
+                    ListenableBuilder(
+                      listenable: getIt<DraftStorageService>(),
+                      builder: (context, _) {
+                        final hasDraft =
+                            getIt<DraftStorageService>().hasDraft(channel.id);
+                        if (!hasDraft) return const SizedBox.shrink();
+                        return Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 4),
+                          child: Icon(
+                            Icons.edit_outlined,
+                            size: 12,
+                            color: theme.sidebarText.withValues(alpha: 0.6),
+                          ),
+                        );
+                      },
+                    ),
+                    // زر الإغلاق السريع X + قائمة القناة عند التمرير فقط.
+                    if (isHovered) ...[
+                      _CloseDmButton(channel: channel, theme: theme),
                       ChannelRowMenu(channel: channel, iconSize: 16),
+                    ],
                   ],
                 ),
               ),
@@ -266,5 +291,40 @@ class _DirectionMessageItemWidgetState
       case null:
         return theme.sidebarText.withValues(alpha: 0.7);
     }
+  }
+}
+
+/// زر الإغلاق السريع للمحادثة المباشرة (X) — يظهر عند التمرير على الصف
+/// ويُزيل المحادثة من القائمة (مطابق closeDirectMessage في webapp).
+class _CloseDmButton extends StatelessWidget {
+  final ChannelEntity channel;
+  final MattermostColors theme;
+
+  const _CloseDmButton({required this.channel, required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Tooltip(
+      message: l10n.center_panelDirectCloseDirectMessage,
+      child: InkWell(
+        onTap: () {
+          final state = context.read<ChannelBloc>().state;
+          final userId = state is ChannelsLoadedState ? state.userId : '';
+          context.read<ChannelBloc>().add(
+            LeaveChannelEvent(channelId: channel.id, userId: userId),
+          );
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(
+            Icons.close,
+            size: 14,
+            color: theme.sidebarText.withValues(alpha: 0.64),
+          ),
+        ),
+      ),
+    );
   }
 }

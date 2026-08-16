@@ -1,13 +1,17 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/i18n/app_settings_cubit.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/core/widgets/matter_button.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/preference_entity.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_preferences_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 /// محتوى تبويبات إعدادات المستخدم — مطابقة user_settings/* في webapp:
@@ -333,66 +337,222 @@ class SettingsTextFieldRow extends StatelessWidget {
   }
 }
 
+String _notifyString(Map<String, dynamic> notifyProps, String key,
+    String fallback) {
+  final v = notifyProps[key];
+  if (v == null || v.toString().isEmpty) return fallback;
+  return v.toString();
+}
+
 /// ===== تبويب الملف الشخصي (webapp user_settings_general) =====
-class ProfileSettingsTab extends StatelessWidget {
+class ProfileSettingsTab extends StatefulWidget {
   const ProfileSettingsTab({super.key});
+
+  @override
+  State<ProfileSettingsTab> createState() => _ProfileSettingsTabState();
+}
+
+class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
+  final _usernameController = TextEditingController();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _nicknameController = TextEditingController();
+  final _positionController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  bool _saving = false;
+  bool _loadedOnce = false;
+  bool _uploaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = _currentUser();
+    _syncFromUser(user);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<UserProfileBloc>().add(LoadMyProfileEvent());
+    });
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _nicknameController.dispose();
+    _positionController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  UserEntity? _currentUser() {
+    final authState = context.read<AuthBloc>().state;
+    return authState is AuthenticatedState ? authState.user : null;
+  }
+
+  void _syncFromUser(UserEntity? user) {
+    if (user == null) return;
+    _usernameController.text = user.username;
+    _firstNameController.text = user.firstName;
+    _lastNameController.text = user.lastName;
+    _nicknameController.text = user.nickname;
+    _positionController.text = user.position;
+    _emailController.text = user.email;
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    if (_saving) return;
+    final result = await FilePicker.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+      withData: false,
+    );
+    if (!mounted) return;
+    if (result == null || result.files.isEmpty) return;
+    final path = result.files.single.path;
+    if (path == null) return;
+    setState(() => _uploaded = false);
+    context.read<UserProfileBloc>().add(UploadProfileImageEvent(path));
+  }
+
+  void _saveProfile() {
+    if (_saving) return;
+    context.read<UserProfileBloc>().add(
+      UpdateMyProfileEvent(
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
+        nickname: _nicknameController.text.trim(),
+        position: _positionController.text.trim(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = AppTheme.of(context);
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthenticatedState ? authState.user : null;
 
-    final usernameController = TextEditingController(
-      text: user?.username ?? '',
-    );
-    final firstNameController = TextEditingController(
-      text: user?.firstName ?? '',
-    );
-    final lastNameController = TextEditingController(
-      text: user?.lastName ?? '',
-    );
-    final nicknameController = TextEditingController(
-      text: user?.nickname ?? '',
-    );
-    final emailController = TextEditingController(text: user?.email ?? '');
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SettingsSectionHeader(label: l10n.userSettingsProfileSectionPicture),
-        const SizedBox(height: 16),
-        Center(
-          child: ProfilePicture.xl(
-            username: user?.username ?? '?',
-            avatarUrl: null,
-            status: null,
+    return BlocListener<UserProfileBloc, UserProfileState>(
+      listener: (context, state) {
+        if (state is UserProfileSavingState) {
+          if (mounted) setState(() => _saving = true);
+        } else if (state is UserProfileSaveSuccessState) {
+          if (!mounted) return;
+          setState(() {
+            _saving = false;
+            _uploaded = state.message.contains('picture');
+          });
+          _syncFromUser(state.myProfile);
+          if (state.myProfile != null) {
+            context
+                .read<AuthBloc>()
+                .add(AuthUserUpdatedEvent(state.myProfile!));
+          }
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        } else if (state is UserProfileSaveErrorState) {
+          if (!mounted) return;
+          setState(() => _saving = false);
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        } else if (state is UserProfileLoadedState && !_loadedOnce) {
+          _loadedOnce = true;
+          _syncFromUser(state.myProfile);
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SettingsSectionHeader(label: l10n.userSettingsProfileSectionPicture),
+          const SizedBox(height: 16),
+          Center(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ProfilePicture.xl(
+                  username: user?.username ?? '?',
+                  avatarUrl: user == null ? null : serverUserAvatarUrl(user.id),
+                  status: null,
+                ),
+                if (_saving)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.centerChannelBg.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Center(
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 24),
-        SettingsTextFieldRow(
-          label: l10n.userSettingsGeneralUsername,
-          controller: usernameController,
-          readOnly: true,
-        ),
-        SettingsTextFieldRow(
-          label: l10n.userSettingsGeneralFirstName,
-          controller: firstNameController,
-        ),
-        SettingsTextFieldRow(
-          label: l10n.userSettingsGeneralLastName,
-          controller: lastNameController,
-        ),
-        SettingsTextFieldRow(
-          label: l10n.userSettingsGeneralNickname,
-          controller: nicknameController,
-        ),
-        SettingsTextFieldRow(
-          label: l10n.userSettingsGeneralEmail,
-          controller: emailController,
-          readOnly: true,
-        ),
-      ],
+          const SizedBox(height: 12),
+          Center(
+            child: MatterButtonOutlined(
+              label: _uploaded
+                  ? l10n.userSettingsGeneralPictureUploaded
+                  : l10n.userSettingsGeneralSelect,
+              onPressed: _saving ? null : _pickAndUploadImage,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralUsername,
+            controller: _usernameController,
+            readOnly: true,
+          ),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralFirstName,
+            controller: _firstNameController,
+          ),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralLastName,
+            controller: _lastNameController,
+          ),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralNickname,
+            controller: _nicknameController,
+          ),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralPosition,
+            controller: _positionController,
+          ),
+          SettingsTextFieldRow(
+            label: l10n.userSettingsGeneralEmail,
+            controller: _emailController,
+            readOnly: true,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: MatterButton(
+                  onPressed: _saving ? null : _saveProfile,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(l10n.generic_btnSave),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -407,99 +567,169 @@ class NotificationsSettingsTab extends StatefulWidget {
 }
 
 class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
-  bool _desktop = true;
-  bool _sound = true;
-  bool _triggerWordMessage = true;
-  bool _directMessage = true;
   String _duration = '30s';
-  String _email = 'immediately';
-  String _push = 'mentions';
+
+  UserEntity? _currentUser() {
+    final authState = context.read<AuthBloc>().state;
+    return authState is AuthenticatedState ? authState.user : null;
+  }
+
+  void _saveNotifyProps(Map<String, dynamic> changes) {
+    final user = _currentUser();
+    final base = Map<String, dynamic>.from(user?.notifyProps ?? const {});
+    base.addAll(changes);
+    context.read<UserProfileBloc>().add(UpdateNotifyPropsEvent(base));
+  }
+
+  void _saveEmailInterval(String value) {
+    final user = _currentUser();
+    if (user == null) return;
+    context.read<UserPreferencesBloc>().add(
+      SavePreferenceEvent(
+        PreferenceEntity(
+          serverId: '',
+          userId: user.id,
+          category: preferenceCategoryNotifications,
+          name: preferenceNameEmailInterval,
+          value: value,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final authState = context.watch<AuthBloc>().state;
+    final prefs = context.watch<UserPreferencesBloc>().state;
+    final user = authState is AuthenticatedState ? authState.user : null;
+    final notifyProps = user?.notifyProps ?? const <String, dynamic>{};
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SettingsSectionGroup(
-          title: l10n.userSettingsNotificationsDesktopTitle,
-          children: [
-            SettingsToggleRow(
-              label: l10n.userSettingsNotificationsDesktopEnable,
-              value: _desktop,
-              onChanged: (v) => setState(() => _desktop = v),
-            ),
-            SettingsToggleRow(
-              label: l10n.userSettingsNotificationsDesktopSound,
-              value: _sound,
-              onChanged: (v) => setState(() => _sound = v),
-            ),
-            SettingsDropdownRow<String>(
-              label: l10n.userSettingsNotificationsDesktopDuration,
-              value: _duration,
-              values: const ['3s', '10s', '30s', '1m'],
-              labelOf: (v) => switch (v) {
-                '3s' => l10n.userSettingsNotificationsDuration3s,
-                '10s' => l10n.userSettingsNotificationsDuration10s,
-                '30s' => l10n.userSettingsNotificationsDuration30s,
-                _ => l10n.userSettingsNotificationsDuration1m,
-              },
-              onChanged: (v) => setState(() => _duration = v),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        SettingsSectionGroup(
-          title: l10n.userSettingsNotificationsEmailTitle,
-          children: [
-            SettingsDropdownRow<String>(
-              label: l10n.userSettingsNotificationsEmailSend,
-              value: _email,
-              values: const ['immediately', 'every15', 'never'],
-              labelOf: (v) => switch (v) {
-                'immediately' => l10n.userSettingsNotificationsImmediately,
-                'every15' => l10n.userSettingsNotificationsEvery15,
-                _ => l10n.userSettingsNotificationsNever,
-              },
-              onChanged: (v) => setState(() => _email = v),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        SettingsSectionGroup(
-          title: l10n.userSettingsNotificationsPushTitle,
-          children: [
-            SettingsDropdownRow<String>(
-              label: l10n.userSettingsNotificationsPushSend,
-              value: _push,
-              values: const ['all', 'mentions', 'never'],
-              labelOf: (v) => switch (v) {
-                'all' => l10n.userSettingsNotificationsPushAll,
-                'mentions' => l10n.userSettingsNotificationsPushMentions,
-                _ => l10n.userSettingsNotificationsNever,
-              },
-              onChanged: (v) => setState(() => _push = v),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        SettingsSectionGroup(
-          title: l10n.userSettingsNotificationsKeywordsTitle,
-          children: [
-            SettingsToggleRow(
-              label: l10n.userSettingsNotificationsWhenContains,
-              value: _triggerWordMessage,
-              onChanged: (v) => setState(() => _triggerWordMessage = v),
-            ),
-            SettingsToggleRow(
-              label: l10n.userSettingsNotificationsWhenDirect,
-              value: _directMessage,
-              onChanged: (v) => setState(() => _directMessage = v),
-            ),
-          ],
-        ),
-      ],
+    final desktopEnabled =
+        _notifyString(notifyProps, 'desktop', 'all') != 'none';
+    final soundEnabled =
+        _notifyString(notifyProps, 'desktop_sound', 'true') == 'true';
+    final pushValue = _notifyString(notifyProps, 'push', 'mention');
+    final directEnabled = pushValue != 'none';
+    final emailOff = _notifyString(notifyProps, 'email', 'true') == 'false';
+    final emailInterval = prefs is UserPreferencesLoadedState
+        ? prefs.emailInterval
+        : 'immediately';
+    final emailValue = emailOff || emailInterval == 'never'
+        ? 'never'
+        : (emailInterval == 'every15' ? 'every15' : 'immediately');
+    final mentionKeys = _notifyString(notifyProps, 'mention_keys', '');
+    final triggerEnabled = mentionKeys.isNotEmpty;
+
+    return BlocListener<UserProfileBloc, UserProfileState>(
+      listener: (context, state) {
+        if (state is UserProfileSaveSuccessState) {
+          if (state.myProfile != null) {
+            context
+                .read<AuthBloc>()
+                .add(AuthUserUpdatedEvent(state.myProfile!));
+          }
+        } else if (state is UserProfileSaveErrorState) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SettingsSectionGroup(
+            title: l10n.userSettingsNotificationsDesktopTitle,
+            children: [
+              SettingsToggleRow(
+                label: l10n.userSettingsNotificationsDesktopEnable,
+                value: desktopEnabled,
+                onChanged: (v) =>
+                    _saveNotifyProps({'desktop': v ? 'all' : 'none'}),
+              ),
+              SettingsToggleRow(
+                label: l10n.userSettingsNotificationsDesktopSound,
+                value: soundEnabled,
+                onChanged: (v) =>
+                    _saveNotifyProps({'desktop_sound': v ? 'true' : 'false'}),
+              ),
+              SettingsDropdownRow<String>(
+                label: l10n.userSettingsNotificationsDesktopDuration,
+                value: _duration,
+                values: const ['3s', '10s', '30s', '1m'],
+                labelOf: (v) => switch (v) {
+                  '3s' => l10n.userSettingsNotificationsDuration3s,
+                  '10s' => l10n.userSettingsNotificationsDuration10s,
+                  '30s' => l10n.userSettingsNotificationsDuration30s,
+                  _ => l10n.userSettingsNotificationsDuration1m,
+                },
+                onChanged: (v) => setState(() => _duration = v),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SettingsSectionGroup(
+            title: l10n.userSettingsNotificationsEmailTitle,
+            children: [
+              SettingsDropdownRow<String>(
+                label: l10n.userSettingsNotificationsEmailSend,
+                value: emailValue,
+                values: const ['immediately', 'every15', 'never'],
+                labelOf: (v) => switch (v) {
+                  'immediately' => l10n.userSettingsNotificationsImmediately,
+                  'every15' => l10n.userSettingsNotificationsEvery15,
+                  _ => l10n.userSettingsNotificationsNever,
+                },
+                onChanged: (v) {
+                  _saveNotifyProps({
+                    'email': v == 'never' ? 'false' : 'true',
+                  });
+                  _saveEmailInterval(v);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SettingsSectionGroup(
+            title: l10n.userSettingsNotificationsPushTitle,
+            children: [
+              SettingsDropdownRow<String>(
+                label: l10n.userSettingsNotificationsPushSend,
+                value: pushValue,
+                values: const ['all', 'mention', 'none'],
+                labelOf: (v) => switch (v) {
+                  'all' => l10n.userSettingsNotificationsPushAll,
+                  'mention' => l10n.userSettingsNotificationsPushMentions,
+                  _ => l10n.userSettingsNotificationsNever,
+                },
+                onChanged: (v) => _saveNotifyProps({'push': v}),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SettingsSectionGroup(
+            title: l10n.userSettingsNotificationsKeywordsTitle,
+            children: [
+              SettingsToggleRow(
+                label: l10n.userSettingsNotificationsWhenContains,
+                value: triggerEnabled,
+                onChanged: (v) => _saveNotifyProps({
+                  'mention_keys': v ? (user?.username ?? '') : '',
+                }),
+              ),
+              SettingsToggleRow(
+                label: l10n.userSettingsNotificationsWhenDirect,
+                value: directEnabled,
+                onChanged: (v) => _saveNotifyProps({
+                  'push': v
+                      ? (pushValue == 'none' ? 'mention' : pushValue)
+                      : 'none',
+                }),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -513,15 +743,44 @@ class DisplaySettingsTab extends StatefulWidget {
 }
 
 class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
-  String _clock = '12h';
-  String _messageDisplay = 'standard';
-  String _timezone = 'automatic';
-  bool _groupUnreads = false;
+  String? _currentUserId() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthenticatedState) return null;
+    return authState.user.id;
+  }
+
+  void _savePref(String category, String name, String value) {
+    final userId = _currentUserId();
+    if (userId == null) return;
+    context.read<UserPreferencesBloc>().add(
+      SavePreferenceEvent(
+        PreferenceEntity(
+          serverId: '',
+          userId: userId,
+          category: category,
+          name: name,
+          value: value,
+        ),
+      ),
+    );
+  }
+
+  void _saveDisplay(String name, String value) =>
+      _savePref(preferenceCategoryDisplay, name, value);
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final settings = context.watch<AppSettingsCubit>().state;
+    final prefsState = context.watch<UserPreferencesBloc>().state;
+    final prefs = prefsState is UserPreferencesLoadedState
+        ? prefsState
+        : const UserPreferencesLoadedState([]);
+
+    final clock = prefs.useMilitaryTime ? '24h' : '12h';
+    final messageDisplay = prefs.messageDisplay;
+    final timezone = prefs.timezone;
+    final groupUnreads = prefs.channelGrouping;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,6 +791,7 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
           themeMode: settings.themeMode,
           onChanged: (mode) {
             context.read<AppSettingsCubit>().setThemeMode(mode);
+            _savePref(preferenceCategoryTheme, 'theme', mode.name);
           },
         ),
         const SizedBox(height: 24),
@@ -540,12 +800,15 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
           children: [
             SettingsRadioGroup<String>(
               label: l10n.userSettingsDisplayClockSection,
-              value: _clock,
+              value: clock,
               values: const ['12h', '24h'],
               labelOf: (v) => v == '12h'
                   ? l10n.userSettingsDisplayClock12h
                   : l10n.userSettingsDisplayClock24h,
-              onChanged: (v) => setState(() => _clock = v),
+              onChanged: (v) => _saveDisplay(
+                preferenceNameMilitaryTime,
+                v == '24h' ? 'true' : 'false',
+              ),
             ),
           ],
         ),
@@ -555,12 +818,13 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
           children: [
             SettingsRadioGroup<String>(
               label: l10n.userSettingsDisplayMessageSection,
-              value: _messageDisplay,
-              values: const ['standard', 'compact'],
+              value: messageDisplay,
+              values: const ['clean', 'compact'],
               labelOf: (v) => v == 'compact'
                   ? l10n.userSettingsDisplayCompact
                   : l10n.userSettingsDisplayStandard,
-              onChanged: (v) => setState(() => _messageDisplay = v),
+              onChanged: (v) =>
+                  _saveDisplay(preferenceNameMessageDisplay, v),
             ),
           ],
         ),
@@ -585,12 +849,12 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
           children: [
             SettingsDropdownRow<String>(
               label: l10n.userSettingsDisplayTimezoneSection,
-              value: _timezone,
+              value: timezone,
               values: const ['automatic', 'UTC', 'GMT+3'],
               labelOf: (v) => v == 'automatic'
                   ? l10n.userSettingsDisplayTimezoneAutomatic
                   : v,
-              onChanged: (v) => setState(() => _timezone = v),
+              onChanged: (v) => _saveDisplay(preferenceNameTimezone, v),
             ),
           ],
         ),
@@ -600,8 +864,11 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
           children: [
             SettingsToggleRow(
               label: l10n.userSettingsDisplayGroupUnreads,
-              value: _groupUnreads,
-              onChanged: (v) => setState(() => _groupUnreads = v),
+              value: groupUnreads,
+              onChanged: (v) => _saveDisplay(
+                preferenceNameChannelGrouping,
+                v ? 'true' : 'false',
+              ),
             ),
           ],
         ),
@@ -782,13 +1049,39 @@ class SidebarSettingsTab extends StatefulWidget {
 }
 
 class _SidebarSettingsTabState extends State<SidebarSettingsTab> {
-  String _grouping = 'grouped';
-  String _sort = 'alphabetical';
-  String _nameDisplay = 'full';
+  String? _currentUserId() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthenticatedState) return null;
+    return authState.user.id;
+  }
+
+  void _savePref(String category, String name, String value) {
+    final userId = _currentUserId();
+    if (userId == null) return;
+    context.read<UserPreferencesBloc>().add(
+      SavePreferenceEvent(
+        PreferenceEntity(
+          serverId: '',
+          userId: userId,
+          category: category,
+          name: name,
+          value: value,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final prefsState = context.watch<UserPreferencesBloc>().state;
+    final prefs = prefsState is UserPreferencesLoadedState
+        ? prefsState
+        : const UserPreferencesLoadedState([]);
+
+    final grouping = prefs.showUnreadSection ? 'grouped' : 'ungrouped';
+    final sort = prefs.sortChannelsBy;
+    final nameDisplay = prefs.nameFormat;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -798,12 +1091,16 @@ class _SidebarSettingsTabState extends State<SidebarSettingsTab> {
           children: [
             SettingsRadioGroup<String>(
               label: l10n.userSettingsSidebarGroupingSection,
-              value: _grouping,
+              value: grouping,
               values: const ['grouped', 'ungrouped'],
               labelOf: (v) => v == 'grouped'
                   ? l10n.userSettingsSidebarUnreadsGrouped
                   : l10n.userSettingsSidebarUngrouped,
-              onChanged: (v) => setState(() => _grouping = v),
+              onChanged: (v) => _savePref(
+                preferenceCategorySidebar,
+                preferenceNameShowUnreadSection,
+                v == 'grouped' ? 'true' : 'false',
+              ),
             ),
           ],
         ),
@@ -813,12 +1110,16 @@ class _SidebarSettingsTabState extends State<SidebarSettingsTab> {
           children: [
             SettingsRadioGroup<String>(
               label: l10n.userSettingsSidebarSortSection,
-              value: _sort,
-              values: const ['alphabetical', 'recency'],
-              labelOf: (v) => v == 'alphabetical'
+              value: sort,
+              values: const ['alpha', 'recent'],
+              labelOf: (v) => v == 'alpha'
                   ? l10n.userSettingsSidebarSortAlphabetical
                   : l10n.userSettingsSidebarSortRecency,
-              onChanged: (v) => setState(() => _sort = v),
+              onChanged: (v) => _savePref(
+                preferenceCategorySidebar,
+                preferenceNameSortChannels,
+                v,
+              ),
             ),
           ],
         ),
@@ -828,14 +1129,18 @@ class _SidebarSettingsTabState extends State<SidebarSettingsTab> {
           children: [
             SettingsRadioGroup<String>(
               label: l10n.userSettingsSidebarNameSection,
-              value: _nameDisplay,
-              values: const ['full', 'username', 'standard'],
+              value: nameDisplay,
+              values: const ['full_name', 'username', 'nickname_full_name'],
               labelOf: (v) => switch (v) {
-                'full' => l10n.userSettingsSidebarNameFull,
+                'full_name' => l10n.userSettingsSidebarNameFull,
                 'username' => l10n.userSettingsSidebarNameUsername,
                 _ => l10n.userSettingsSidebarNameStandard,
               },
-              onChanged: (v) => setState(() => _nameDisplay = v),
+              onChanged: (v) => _savePref(
+                preferenceCategoryDisplay,
+                preferenceNameNameFormat,
+                v,
+              ),
             ),
           ],
         ),
@@ -853,20 +1158,19 @@ class AdvancedSettingsTab extends StatefulWidget {
 }
 
 class _AdvancedSettingsTabState extends State<AdvancedSettingsTab> {
-  bool _ctrlEnter = false;
-  bool _joinLeave = true;
-  bool _codeBlock = true;
-  bool _groupChannels = true;
-  bool _headerTooltips = true;
-  bool _timeSpent = true;
+  String _userId() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is AuthenticatedState) return authState.user.id;
+    return 'me';
+  }
 
   void _savePreference(BuildContext context, String name, bool value) {
     context.read<UserPreferencesBloc>().add(
       SavePreferenceEvent(
         PreferenceEntity(
           serverId: '',
-          userId: 'me',
-          category: 'advanced_settings',
+          userId: _userId(),
+          category: preferenceCategoryAdvanced,
           name: name,
           value: value ? 'true' : 'false',
         ),
@@ -877,56 +1181,40 @@ class _AdvancedSettingsTabState extends State<AdvancedSettingsTab> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final prefsState = context.watch<UserPreferencesBloc>().state;
+    final prefs = prefsState is UserPreferencesLoadedState
+        ? prefsState
+        : const UserPreferencesLoadedState([]);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SettingsToggleRow(
           label: l10n.userSettingsAdvancedCtrlEnter,
-          value: _ctrlEnter,
+          value: prefs.advancedPref(preferenceNameSendOnCtrlEnter),
           onChanged: (v) {
-            setState(() => _ctrlEnter = v);
-            _savePreference(context, 'send_on_ctrl_enter', v);
+            _savePreference(context, preferenceNameSendOnCtrlEnter, v);
           },
         ),
         SettingsToggleRow(
           label: l10n.userSettingsAdvancedJoinLeave,
-          value: _joinLeave,
+          value: prefs.advancedPref(preferenceNameJoinLeaveMessages),
           onChanged: (v) {
-            setState(() => _joinLeave = v);
-            _savePreference(context, 'join_leave_messages', v);
+            _savePreference(context, preferenceNameJoinLeaveMessages, v);
           },
         ),
         SettingsToggleRow(
           label: l10n.userSettingsAdvancedCodeBlock,
-          value: _codeBlock,
+          value: prefs.advancedPref(preferenceNameCodeBlockFormatting),
           onChanged: (v) {
-            setState(() => _codeBlock = v);
-            _savePreference(context, 'code_block_formatting', v);
-          },
-        ),
-        SettingsToggleRow(
-          label: l10n.userSettingsAdvancedGroupChannels,
-          value: _groupChannels,
-          onChanged: (v) {
-            setState(() => _groupChannels = v);
-            _savePreference(context, 'group_unread_messages', v);
+            _savePreference(context, preferenceNameCodeBlockFormatting, v);
           },
         ),
         SettingsToggleRow(
           label: l10n.userSettingsAdvancedHeaderTooltips,
-          value: _headerTooltips,
+          value: prefs.advancedPref(preferenceNameChannelHeaderTooltips),
           onChanged: (v) {
-            setState(() => _headerTooltips = v);
-            _savePreference(context, 'channel_header_tooltips', v);
-          },
-        ),
-        SettingsToggleRow(
-          label: l10n.userSettingsAdvancedTimeSpent,
-          value: _timeSpent,
-          onChanged: (v) {
-            setState(() => _timeSpent = v);
-            _savePreference(context, 'time_spent_in_app', v);
+            _savePreference(context, preferenceNameChannelHeaderTooltips, v);
           },
         ),
       ],
@@ -935,81 +1223,333 @@ class _AdvancedSettingsTabState extends State<AdvancedSettingsTab> {
 }
 
 /// ===== تبويب الأمان (webapp user_settings_security) =====
-class SecuritySettingsTab extends StatelessWidget {
+class SecuritySettingsTab extends StatefulWidget {
   const SecuritySettingsTab({super.key});
+
+  @override
+  State<SecuritySettingsTab> createState() => _SecuritySettingsTabState();
+}
+
+class _SecuritySettingsTabState extends State<SecuritySettingsTab> {
+  Future<void> _showChangePasswordDialog() async {
+    final result = await showDialog<({String current, String newPassword})>(
+      context: context,
+      builder: (_) => const _ChangePasswordDialog(),
+    );
+    if (result == null || !mounted) return;
+    context.read<UserProfileBloc>().add(
+      ChangePasswordEvent(
+        currentPassword: result.current,
+        newPassword: result.newPassword,
+      ),
+    );
+  }
+
+  Future<void> _showRemoveMfaDialog() async {
+    final l10n = AppLocalizations.of(context);
+    final codeController = TextEditingController();
+    final code = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = AppTheme.of(dialogContext);
+        return AlertDialog(
+          backgroundColor: theme.centerChannelBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(DesignTokens.radiusM),
+          ),
+          title: Text(
+            l10n.userSettingsMfaRemove,
+            style: TextStyle(
+              color: theme.centerChannelColor,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: TextField(
+            controller: codeController,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: theme.centerChannelColor, fontSize: 14),
+            decoration: InputDecoration(
+              hintText: 'MFA Code',
+              isDense: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(l10n.generic_modalCancel),
+            ),
+            TextButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(codeController.text.trim()),
+              child: Text(l10n.generic_modalConfirm),
+            ),
+          ],
+        );
+      },
+    );
+    codeController.dispose();
+    if (code == null || code.isEmpty || !mounted) return;
+    context
+        .read<UserProfileBloc>()
+        .add(UpdateMfaEvent(activate: false, code: code));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final authState = context.watch<AuthBloc>().state;
+    final user = authState is AuthenticatedState ? authState.user : null;
+
+    return BlocListener<UserProfileBloc, UserProfileState>(
+      listener: (context, state) {
+        if (state is UserProfileSaveSuccessState) {
+          if (state.myProfile != null) {
+            context
+                .read<AuthBloc>()
+                .add(AuthUserUpdatedEvent(state.myProfile!));
+          }
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        } else if (state is UserProfileSaveErrorState) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.message)));
+        }
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SettingsSectionGroup(
+            title: l10n.userSettingsSecurityMfaSection,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 20,
+                    color: theme.centerChannelColor.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      (user?.mfaActive ?? false)
+                          ? l10n.userSettingsSecurityActive
+                          : l10n.userSettingsSecurityMfaNotActive,
+                      style: TextStyle(
+                        color: theme.centerChannelColor.withValues(alpha: 0.75),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (user?.mfaActive ?? false)
+                    MatterButtonOutlined(
+                      label: l10n.userSettingsMfaRemove,
+                      onPressed: _showRemoveMfaDialog,
+                    )
+                  else
+                    MatterButtonOutlined(
+                      label: l10n.userSettingsSecurityMfaSetup,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        context.go('/mfa');
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SettingsSectionGroup(
+            title: l10n.userSettingsSecurityPasswordSection,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.lock_outline,
+                    size: 20,
+                    color: theme.centerChannelColor.withValues(alpha: 0.7),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      l10n.userSettingsSecurityPasswordChange,
+                      style: TextStyle(
+                        color: theme.centerChannelColor.withValues(alpha: 0.75),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  MatterButtonOutlined(
+                    label: l10n.userSettingsSecurityPasswordChange,
+                    onPressed: _showChangePasswordDialog,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChangePasswordDialog extends StatefulWidget {
+  const _ChangePasswordDialog();
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  final _currentController = TextEditingController();
+  final _newController = TextEditingController();
+  final _confirmController = TextEditingController();
+
+  String? _currentError;
+  String? _newError;
+  String? _confirmError;
+
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _newController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final l10n = AppLocalizations.of(context);
+    final current = _currentController.text;
+    final newPassword = _newController.text;
+    final confirm = _confirmController.text;
+
+    String? currentError;
+    String? newError;
+    String? confirmError;
+
+    if (current.isEmpty) {
+      currentError = l10n.userSettingsSecurityCurrentPasswordError;
+    }
+    if (newPassword.length < 5) {
+      newError = l10n.userSettingsSecurityPasswordError(64, 5);
+    }
+    if (confirm.isEmpty) {
+      confirmError = l10n.userSettingsSecurityRetypePassword;
+    } else if (confirm != newPassword) {
+      confirmError = l10n.userSettingsSecurityPasswordMatchError;
+    }
+
+    if (currentError != null || newError != null || confirmError != null) {
+      setState(() {
+        _currentError = currentError;
+        _newError = newError;
+        _confirmError = confirmError;
+      });
+      return;
+    }
+
+    Navigator.of(context).pop(
+      (current: current, newPassword: newPassword),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SettingsSectionGroup(
-          title: l10n.userSettingsSecurityMfaSection,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.shield_outlined,
-                  size: 20,
-                  color: theme.centerChannelColor.withValues(alpha: 0.7),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.userSettingsSecurityMfaNotActive,
-                    style: TextStyle(
-                      color: theme.centerChannelColor.withValues(alpha: 0.75),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                MatterButtonOutlined(
-                  label: l10n.userSettingsSecurityMfaSetup,
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.go('/mfa/setup');
-                  },
-                ),
-              ],
-            ),
-          ],
+    return AlertDialog(
+      backgroundColor: theme.centerChannelBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(DesignTokens.radiusM),
+      ),
+      title: Text(
+        l10n.userSettingsSecurityPasswordChange,
+        style: TextStyle(
+          color: theme.centerChannelColor,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
         ),
-        const SizedBox(height: 24),
-        SettingsSectionGroup(
-          title: l10n.userSettingsSecurityPasswordSection,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.lock_outline,
-                  size: 20,
-                  color: theme.centerChannelColor.withValues(alpha: 0.7),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.userSettingsSecurityPasswordChange,
-                    style: TextStyle(
-                      color: theme.centerChannelColor.withValues(alpha: 0.75),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-                MatterButtonOutlined(
-                  label: l10n.userSettingsSecurityPasswordChange,
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    context.go('/reset_password');
-                  },
-                ),
-              ],
-            ),
-          ],
+      ),
+      content: SizedBox(
+        width: 360,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _PasswordField(
+                label: l10n.userSettingsSecurityCurrentPassword,
+                controller: _currentController,
+                errorText: _currentError,
+              ),
+              _PasswordField(
+                label: l10n.userSettingsSecurityNewPassword,
+                controller: _newController,
+                errorText: _newError,
+              ),
+              _PasswordField(
+                label: l10n.userSettingsSecurityRetypePassword,
+                controller: _confirmController,
+                errorText: _confirmError,
+                onSubmitted: (_) => _submit(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.generic_modalCancel),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: Text(l10n.generic_modalConfirm),
         ),
       ],
+    );
+  }
+}
+
+class _PasswordField extends StatelessWidget {
+  final String label;
+  final TextEditingController controller;
+  final String? errorText;
+  final ValueChanged<String>? onSubmitted;
+
+  const _PasswordField({
+    required this.label,
+    required this.controller,
+    this.errorText,
+    this.onSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: TextField(
+        controller: controller,
+        obscureText: true,
+        onSubmitted: onSubmitted,
+        style: TextStyle(color: theme.centerChannelColor, fontSize: 14),
+        decoration: InputDecoration(
+          labelText: label,
+          errorText: errorText,
+          isDense: true,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(DesignTokens.radiusSm),
+          ),
+        ),
+      ),
     );
   }
 }

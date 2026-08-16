@@ -82,38 +82,115 @@ class SyntaxTheme {
 class SyntaxHighlightBuilder {
   SyntaxHighlightBuilder._();
 
-  /// مزامنة أسماء اللغات الشائعة مع أسماء حزمة highlight.
+  /// مزامنة أسماء اللغات الشائعة مع أسماء حزمة highlight —
+  /// مطابقة لصيغ Mattermost Webapp (highlight.js) والـ Markdown الشائعة.
   static const Map<String, String> _aliases = {
+    // JS / TS
     'js': 'javascript',
     'jsx': 'javascript',
+    'mjs': 'javascript',
+    'cjs': 'javascript',
     'ts': 'typescript',
     'tsx': 'typescript',
+    // Python
     'py': 'python',
+    'python3': 'python',
+    'py3': 'python',
+    // Shell
     'sh': 'bash',
     'shell': 'bash',
     'zsh': 'bash',
+    'bashrc': 'bash',
+    'bat': 'dos',
+    'ps1': 'powershell',
+    'pwsh': 'powershell',
+    // C family
     'c++': 'cpp',
+    'hpp': 'cpp',
+    'cc': 'cpp',
     'c#': 'cs',
     'csharp': 'cs',
+    'cs': 'cs',
+    'm': 'objectivec',
+    'mm': 'objectivec',
+    // Web / markup
     'yml': 'yaml',
+    'yaml': 'yaml',
+    'jsonc': 'json',
+    'json5': 'json',
+    'htm': 'html',
+    'xhtml': 'html',
+    'svg': 'xml',
+    'plist': 'xml',
+    'sass': 'scss',
+    'styl': 'stylus',
+    'hbs': 'handlebars',
+    'handlebars': 'handlebars',
+    'mustache': 'handlebars',
+    'vue': 'html',
+    'svelte': 'html',
+    // Docker / infra
     'docker': 'dockerfile',
+    'dockerfile': 'dockerfile',
+    'containerfile': 'dockerfile',
+    'conf': 'ini',
+    'cfg': 'ini',
+    'toml': 'ini',
+    'env': 'ini',
+    'gitignore': 'ini',
+    'dockerignore': 'ini',
+    // Data formats
+    'graphql': 'graphql',
+    'gql': 'graphql',
+    'proto': 'protobuf',
+    'protobuf': 'protobuf',
+    'properties': 'properties',
+    'rd': 'properties',
+    // Misc
+    'rb': 'ruby',
+    'rs': 'rust',
+    'kt': 'kotlin',
+    'kts': 'kotlin',
+    'swift': 'swift',
+    'md': 'markdown',
+    'markdown': 'markdown',
+    'diff': 'diff',
+    'patch': 'diff',
+    'coffee': 'coffeescript',
+    'coffeescript': 'coffeescript',
+    'crystal': 'crystal',
+    'fsharp': 'fsharp',
+    'vb': 'vbnet',
+    'vba': 'vbnet',
+    'visualbasic': 'vbnet',
+    'makefile': 'makefile',
+    'make': 'makefile',
+    'mk': 'makefile',
+    'cmake': 'cmake',
+    // Plain text
     'text': 'plaintext',
     'txt': 'plaintext',
     'none': 'plaintext',
+    'plain': 'plaintext',
   };
 
-  /// اللغات المدعومة المعروفة (أسماء standard).
+  /// اللغات المدعومة المعروفة (أسماء standard مطابقة لحزمة highlight).
   static const List<String> supportedLanguages = [
     'python', 'dart', 'go', 'javascript', 'typescript', 'sql', 'yaml',
     'json', 'bash', 'shell', 'cpp', 'c', 'csharp', 'java', 'kotlin',
     'swift', 'ruby', 'php', 'rust', 'html', 'css', 'xml', 'objectivec',
     'scala', 'perl', 'lua', 'r', 'matlab', 'groovy', 'haskell', 'elixir',
     'erlang', 'clojure', 'd', 'fortran', 'vbnet', 'powershell', 'dockerfile',
-    'nginx', 'gradle', 'ini', 'plaintext', 'markdown', 'diff',
+    'nginx', 'gradle', 'ini', 'plaintext', 'markdown', 'diff', 'makefile',
+    'cmake', 'graphql', 'protobuf', 'properties', 'scss', 'less', 'stylus',
+    'handlebars', 'coffeescript', 'crystal', 'fsharp', 'dos',
   ];
 
+  /// يطبّع اسم اللغة المُعطى: يحلّ الأسماء المستعارة، ويرجّع الاسم المعياري
+  /// المعروف لحزمة highlight، ويبقي أي اسم آخر كما هو (يتعامل معه
+  /// `buildSpans` بأمان عند الفشل).
   static String normalizeLanguage(String? language) {
-    if (language == null) return 'plaintext';
+    if (language == null || language.trim().isEmpty) return 'plaintext';
     final lang = language.trim().toLowerCase();
     return _aliases[lang] ?? lang;
   }

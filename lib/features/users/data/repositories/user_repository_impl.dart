@@ -178,4 +178,64 @@ class UserRepositoryImpl implements UserRepository {
       for (final p in preferences) PreferenceModel.fromEntity(p),
     ]);
   }
+
+  @override
+  Future<void> deleteMyPreferences(List<PreferenceEntity> preferences) {
+    return _preferencesDataSource.deletePreferences('me', [
+      for (final p in preferences) PreferenceModel.fromEntity(p),
+    ]);
+  }
+
+  @override
+  Future<UserEntity> updateMyProfile({
+    String? firstName,
+    String? lastName,
+    String? nickname,
+    String? position,
+    String? locale,
+  }) async {
+    final model = await _remoteDataSource.patchMe(
+      firstName: firstName,
+      lastName: lastName,
+      nickname: nickname,
+      position: position,
+      locale: locale,
+    );
+    final entity = model.toEntity();
+    _profileCache[entity.id] = entity;
+    return entity;
+  }
+
+  @override
+  Future<UserEntity> updateMyNotifyProps(
+    Map<String, dynamic> notifyProps,
+  ) async {
+    final model = await _remoteDataSource.patchMe(notifyProps: notifyProps);
+    final entity = model.toEntity();
+    _profileCache[entity.id] = entity;
+    return entity;
+  }
+
+  @override
+  Future<void> uploadProfileImage(String userId, String filePath) {
+    return _remoteDataSource.uploadProfileImage(userId, filePath);
+  }
+
+  @override
+  Future<void> updatePassword(
+    String userId,
+    String currentPassword,
+    String newPassword,
+  ) {
+    return _remoteDataSource.updatePassword(
+      userId,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
+  Future<void> updateMyMfa({required bool activate, String? code}) {
+    return _remoteDataSource.updateUserMfa('me', activate: activate, code: code);
+  }
 }

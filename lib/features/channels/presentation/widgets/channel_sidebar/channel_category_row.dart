@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/enums/category_sorting.dart';
+import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
@@ -114,7 +116,10 @@ class _ChannelCategoryRowState extends State<ChannelCategoryRow> {
                       teamId: widget.teamId,
                       userId: widget.userId,
                       displayName: widget.title,
+                      type: widget.category?.type ?? ChannelCategoryType.channels,
                       channelIds: widget.channels.map((e) => e.id).toList(),
+                      muted: widget.category?.muted ?? false,
+                      sorting: widget.category?.sorting ?? CategorySorting.recent,
                     ),
                     userId: widget.userId,
                     teamId: widget.teamId,

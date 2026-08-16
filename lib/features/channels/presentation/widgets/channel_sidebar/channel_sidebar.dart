@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_navigator.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar_header.dart';
@@ -464,16 +466,32 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                         }
                       },
                     ),
-                    // _GlobalSectionLink(
-                    //   icon: Icons.bookmark_border,
-                    //   label: l10n.sidebar_right_menuFlagged,
-                    //   onTap: () {
-                    //     final teamName = _teamName(context);
-                    //     if (teamName != null) {
-                    //       context.go('/$teamName/saved');
-                    //     }
-                    //   },
-                    // ),
+                    ListenableBuilder(
+                      listenable: getIt<DraftStorageService>(),
+                      builder: (context, _) => _GlobalSectionLink(
+                        icon: Icons.edit_outlined,
+                        label: l10n.draftsSidebarLink,
+                        badgeCount: getIt<DraftStorageService>()
+                            .channelsWithDrafts
+                            .length,
+                        onTap: () {
+                          final teamName = _teamName(context);
+                          if (teamName != null) {
+                            context.go('/$teamName/drafts');
+                          }
+                        },
+                      ),
+                    ),
+                    _GlobalSectionLink(
+                      icon: Icons.bookmark_border,
+                      label: l10n.sidebar_right_menuFlagged,
+                      onTap: () {
+                        final teamName = _teamName(context);
+                        if (teamName != null) {
+                          context.go('/$teamName/saved');
+                        }
+                      },
+                    ),
                     const SizedBox(height: 8),
                     for (final (categoryId, title, list) in sections)
                       if (list.isNotEmpty)
@@ -604,10 +622,14 @@ class _GlobalSectionLink extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
+  /// عداد يظهر يمين الرابط (مثل عدد المسودات المحفوظة محلياً).
+  final int? badgeCount;
+
   const _GlobalSectionLink({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.badgeCount,
   });
 
   @override
@@ -636,6 +658,27 @@ class _GlobalSectionLink extends StatelessWidget {
                 ),
               ),
             ),
+            if (badgeCount != null && badgeCount! > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 1,
+                ),
+                decoration: BoxDecoration(
+                  color: theme.mentionBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$badgeCount',
+                  style: TextStyle(
+                    color: theme.mentionColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

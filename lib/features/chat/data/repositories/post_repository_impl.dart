@@ -226,10 +226,22 @@ class PostRepositoryImpl implements PostRepository {
     List<String> postIds,
   ) async {
     if (postIds.isEmpty) return {};
-    final byPost = await _reactionsDataSource.getReactionsForPosts(postIds);
-    return byPost.map(
-      (postId, models) => MapEntry(postId, models.map((m) => m.toEntity()).toList()),
-    );
+    try {
+      final byPost = await _reactionsDataSource.getReactionsForPosts(postIds);
+      final result = byPost.map(
+        (postId, models) =>
+            MapEntry(postId, models.map((m) => m.toEntity()).toList()),
+      );
+      // تخزين محلي عند النجاح ليتم عرض التفاعلات في وضع الأوفلاين لاحقاً.
+      final all = result.values.expand((list) => list).toList();
+      if (all.isNotEmpty) {
+        await _localDataSource.cacheReactions(all);
+      }
+      return result;
+    } catch (_) {
+      // الاحتياطي المحلي عند فشل الشبكة (وضع الأوفلاين).
+      return _localDataSource.getCachedReactionsForPosts(postIds);
+    }
   }
 
   @override

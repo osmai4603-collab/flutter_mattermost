@@ -10,6 +10,7 @@ import 'package:flutter_mattermost/features/chat/data/datasources/files_remote_d
 import 'package:flutter_mattermost/features/chat/data/models/file_info_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/composer_draft.dart';
+import 'package:flutter_mattermost/features/system/domain/repositories/system_repository.dart';
 import 'package:pasteboard/pasteboard.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -42,6 +43,9 @@ class FileUploadController extends ChangeNotifier {
   final ComposerDraft draft;
   final FilesRemoteDataSource _filesDataSource;
 
+  /// يوفر إعدادات الخادم (ClientConfig.MaxFileSize) لتحديث حد الحجم ديناميكياً.
+  final SystemRepository? _systemRepository;
+
   /// الحد الأقصى لحجم الملف (بايت) — يُضبط من إعدادات الخادم.
   int maxFileSizeBytes;
 
@@ -58,8 +62,27 @@ class FileUploadController extends ChangeNotifier {
   FileUploadController({
     required this.draft,
     required this._filesDataSource,
+    this._systemRepository,
     this.maxFileSizeBytes = 104857600, // 100MB — الافتراضي في الخادم
-  });
+  }) {
+    unawaited(_refreshMaxFileSize());
+  }
+
+  /// تحديث حد الحجم من إعدادات الخادم (ClientConfig.MaxFileSize) —
+  /// يُستدعى عند الإنشاء وقبل كل عملية رفع للحفاظ على أحدث قيمة.
+  Future<void> _refreshMaxFileSize() async {
+    final repo = _systemRepository;
+    if (repo == null) return;
+    try {
+      final info = await repo.getSystemInfo();
+      if (info.maxFileSizeBytes > 0 && info.maxFileSizeBytes != maxFileSizeBytes) {
+        maxFileSizeBytes = info.maxFileSizeBytes;
+        notifyListeners();
+      }
+    } catch (_) {
+      // فشل جلب الإعدادات — نُبقي القيمة الحالية (افتراضية أو سابقة).
+    }
+  }
 
   void clearError() {
     if (_lastError.isEmpty) return;
@@ -102,6 +125,9 @@ class FileUploadController extends ChangeNotifier {
   }) async {
     if (files.isEmpty) return;
     clearError();
+
+    // قراءة أحدث حد للحجم من إعدادات الخادم قبل التحقق.
+    await _refreshMaxFileSize();
 
     final sorted = [...files]..sort(
       (a, b) => naturalCompare(a.name.toLowerCase(), b.name.toLowerCase()),

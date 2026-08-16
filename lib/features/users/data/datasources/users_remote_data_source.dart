@@ -16,6 +16,14 @@ import 'package:flutter_mattermost/features/integrations/data/models/oauth_app_m
 import 'package:flutter_mattermost/features/users/data/models/thread_read_state_model.dart';
 import 'package:flutter_mattermost/core/endpoints/endpoints.dart';
 
+/// نتيجة إكمال المستخدمين — مطابقة استجابة
+/// `GET /users/autocomplete`: قائمة المستخدمين + معرّفات من هم خارج القناة
+/// (`out_of_channel`) لتحديد أولوية أعضاء القناة في القائمة المسدلة.
+typedef AutocompleteUsersResult = ({
+  List<UserModel> users,
+  Set<String> outOfChannelIds,
+});
+
 abstract class UsersRemoteDataSource {
   Future<List<UserModel>> getProfiles({int page = 0, int perPage = 60});
   Future<UserModel> createUser({
@@ -32,6 +40,11 @@ abstract class UsersRemoteDataSource {
     String? teamId,
     String? channelId,
   });
+  Future<AutocompleteUsersResult> autocompleteUsersWithOutOfChannel(
+    String term, {
+    String? teamId,
+    String? channelId,
+  });
   Future<UserModel> getUserByEmail(String email);
   Future<List<UserModel>> getProfilesByIds(List<String> userIds);
   Future<List<UserModel>> getProfilesByUsernames(List<String> usernames);
@@ -43,6 +56,7 @@ abstract class UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
+    Map<String, dynamic>? notifyProps,
   });
   Future<UserModel> getUser(String userId);
   Future<UserModel> getUserByAuthData(String value);
@@ -64,6 +78,7 @@ abstract class UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
+    Map<String, dynamic>? notifyProps,
   });
   Future<UserModel> updateUserAuth(
     String userId, {
@@ -252,7 +267,21 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     String? teamId,
     String? channelId,
   }) async {
-    final result = await _apiClient.get<List<UserModel>>(
+    final result = await autocompleteUsersWithOutOfChannel(
+      term,
+      teamId: teamId,
+      channelId: channelId,
+    );
+    return result.users;
+  }
+
+  @override
+  Future<AutocompleteUsersResult> autocompleteUsersWithOutOfChannel(
+    String term, {
+    String? teamId,
+    String? channelId,
+  }) async {
+    final result = await _apiClient.get<AutocompleteUsersResult>(
       UsersEndPoint.autocomplete,
       queryParameters: {
         'term': term,
@@ -262,12 +291,17 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
       fromJson: (json) {
         final data = json as Map<String, dynamic>;
         final users = data['users'] as List<dynamic>? ?? [];
-        return users
-            .map((e) => UserModel.fromMap(e as Map<String, dynamic>))
-            .toList();
+        return (
+          users: users
+              .map((e) => UserModel.fromMap(e as Map<String, dynamic>))
+              .toList(),
+          outOfChannelIds: (data['out_of_channel'] as List<dynamic>? ?? [])
+              .cast<String>()
+              .toSet(),
+        );
       },
     );
-    if (result is ApiSuccess<List<UserModel>>) {
+    if (result is ApiSuccess<AutocompleteUsersResult>) {
       return result.data;
     }
     throw Exception('Failed to autocomplete users');
@@ -346,6 +380,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
+    Map<String, dynamic>? notifyProps,
   }) async {
     final result = await _apiClient.put<UserModel>(
       UsersEndPoint.patch('me'),
@@ -355,6 +390,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
         'nickname': ?nickname,
         'position': ?position,
         'locale': ?locale,
+        'notify_props': ?notifyProps,
       },
       fromJson: (json) => UserModel.fromMap(json as Map<String, dynamic>),
     );
@@ -430,6 +466,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
+    Map<String, dynamic>? notifyProps,
   }) async {
     final result = await _apiClient.put<UserModel>(
       UsersEndPoint.patch(userId),
@@ -439,6 +476,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
         'nickname': ?nickname,
         'position': ?position,
         'locale': ?locale,
+        'notify_props': ?notifyProps,
       },
       fromJson: (json) => UserModel.fromMap(json as Map<String, dynamic>),
     );

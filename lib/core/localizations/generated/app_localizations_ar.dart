@@ -46656,6 +46656,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get autocompleteMentionHere => 'يُخطر الجميع المتصلين في هذه القناة';
 
   @override
+  String get autocompleteMentionOutOfChannel => 'خارج هذه القناة';
+
+  @override
   String get autocompleteRoleAdmin => 'مسؤول';
 
   @override

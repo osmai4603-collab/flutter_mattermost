@@ -13,6 +13,7 @@ final class GroupModel extends GroupEntity {
     super.deleteAt,
     super.hasSyncables,
     super.memberCount,
+    super.allowReference,
   });
 
   factory GroupModel.fromMap(Map<String, dynamic> data) {
@@ -27,7 +28,8 @@ final class GroupModel extends GroupEntity {
       updateAt: (data['update_at'] ?? 0).toInt(),
       deleteAt: (data['delete_at'] ?? 0).toInt(),
       hasSyncables: data['has_syncables'] ?? false,
-      memberCount: data['member_count'],
+      memberCount: (data['member_count'] ?? 0).toInt(),
+      allowReference: data['allow_reference'] ?? false,
     );
   }
 
@@ -43,6 +45,8 @@ final class GroupModel extends GroupEntity {
       updateAt: entity.updateAt,
       deleteAt: entity.deleteAt,
       hasSyncables: entity.hasSyncables,
+      memberCount: entity.memberCount,
+      allowReference: entity.allowReference,
     );
   }
 
@@ -58,6 +62,8 @@ final class GroupModel extends GroupEntity {
       'update_at': updateAt,
       'delete_at': deleteAt,
       'has_syncables': hasSyncables,
+      'member_count': memberCount,
+      'allow_reference': allowReference,
     };
   }
 
@@ -74,6 +80,7 @@ final class GroupModel extends GroupEntity {
     int? deleteAt,
     bool? hasSyncables,
     int? memberCount,
+    bool? allowReference,
   }) {
     return GroupModel(
       id: id ?? this.id,
@@ -87,6 +94,7 @@ final class GroupModel extends GroupEntity {
       deleteAt: deleteAt ?? this.deleteAt,
       hasSyncables: hasSyncables ?? this.hasSyncables,
       memberCount: memberCount ?? this.memberCount,
+      allowReference: allowReference ?? this.allowReference,
     );
   }
 
@@ -102,6 +110,8 @@ final class GroupModel extends GroupEntity {
       updateAt: updateAt,
       deleteAt: deleteAt,
       hasSyncables: hasSyncables,
+      memberCount: memberCount,
+      allowReference: allowReference,
     );
   }
 }

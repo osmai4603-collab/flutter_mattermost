@@ -112,6 +112,23 @@ class CategoryMenu extends StatelessWidget {
           icon: const Icon(Icons.sort, size: 18),
           submenu: sortSubmenu,
         ),
+        // ==== إعادة التسمية/الحذف — للفئات المخصصة فقط (webapp: rename/delete) ====
+        if (_isCustom) ...[
+          MatterMenuItem.divider(),
+          MatterMenuItem(
+            id: 'rename',
+            label: l10n.sidebar_leftSidebar_category_menuRenameCategory,
+            icon: const Icon(Icons.drive_file_rename_outline, size: 18),
+            onTap: () => _showRenameDialog(context),
+          ),
+          MatterMenuItem(
+            id: 'delete',
+            label: l10n.sidebar_leftSidebar_category_menuDeleteCategory,
+            icon: const Icon(Icons.delete_outline, size: 18),
+            danger: true,
+            onTap: () => _confirmDelete(context),
+          ),
+        ],
         MatterMenuItem.divider(),
 
         MatterMenuItem(

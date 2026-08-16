@@ -8,6 +8,11 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 /// يبني [CodeBlockWidget] من عنصر `pre` في شجرة Markdown —
 /// يستخرج اللغة من `class="language-x"` في عنصر `code`.
 class CodeBlockElementBuilder extends MarkdownElementBuilder {
+  /// تحكم إظهار أرقام الأسطر: `null` = تلقائي (تظهر عند تعدد الأسطر).
+  final bool? showLineNumbers;
+
+  CodeBlockElementBuilder({this.showLineNumbers});
+
   @override
   bool isBlockElement() => true;
 
@@ -36,17 +41,41 @@ class CodeBlockElementBuilder extends MarkdownElementBuilder {
       }
     }
     code ??= element.textContent;
-    return CodeBlockWidget(language: language, code: code);
+    return CodeBlockWidget(
+      language: language,
+      code: code,
+      showLineNumbers: showLineNumbers,
+    );
   }
 }
 
 /// كتلة كود مخصصة للعرض في معاينة Markdown:
-/// شريط علوي باسم اللغة + زر نسخ + تلوين حسب اللغة على خلفية داكنة.
+/// شريط علوي باسم اللغة + زر نسخ + تلوين حسب اللغة على خلفية داكنة،
+/// مع أرقام أسطر اختيارية وتمرير أفقي/عمودي للكتل الطويلة.
 class CodeBlockWidget extends StatelessWidget {
   final String code;
   final String? language;
 
-  const CodeBlockWidget({super.key, required this.code, this.language});
+  /// `null` = تلقائي: تظهر الأرقام عندما يتجاوز الكود عدد أسطر معين.
+  final bool? showLineNumbers;
+
+  const CodeBlockWidget({
+    super.key,
+    required this.code,
+    this.language,
+    this.showLineNumbers,
+  });
+
+  /// عدد الأسطر الذي يُفعّل عرض أرقام الأسطر تلقائياً.
+  static const int _autoLineNumberThreshold = 6;
+
+  /// أقصى ارتفاع لكتلة الكود قبل تفعيل التمرير العمودي.
+  static const double _maxCodeHeight = 420;
+
+  bool get _shouldShowLineNumbers {
+    if (showLineNumbers != null) return showLineNumbers!;
+    return code.split('\n').length > _autoLineNumberThreshold;
+  }
 
   String get _languageLabel {
     final lang = SyntaxHighlightBuilder.normalizeLanguage(language);
@@ -55,6 +84,9 @@ class CodeBlockWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final lines = code.split('\n');
+    final showNumbers = _shouldShowLineNumbers;
+
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
@@ -96,30 +128,70 @@ class CodeBlockWidget extends StatelessWidget {
               ],
             ),
           ),
-          // الكود الملون.
-          Container(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFF0B1020),
-            ),
-            child: RichText(
-              text: TextSpan(
-                children: SyntaxHighlightBuilder.buildSpans(
-                  code: code,
-                  language: language,
-                  syntaxTheme: SyntaxTheme.githubDark(),
-                ),
-                style: const TextStyle(
-                  color: Color(0xFFE6EDF3),
-                  fontSize: 12.5,
-                  height: 1.45,
-                  fontFamily: 'monospace',
+          // الكود الملون — تمرير عمودي (للكتل الطويلة) وأفقي (للأسطر الطويلة).
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: _maxCodeHeight),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (showNumbers) ...[
+                      _LineNumbers(count: lines.length),
+                      const SizedBox(width: 14),
+                    ],
+                    RichText(
+                      text: TextSpan(
+                        children: SyntaxHighlightBuilder.buildSpans(
+                          code: code,
+                          language: language,
+                          syntaxTheme: SyntaxTheme.githubDark(),
+                        ),
+                        style: const TextStyle(
+                          color: Color(0xFFE6EDF3),
+                          fontSize: 12.5,
+                          height: 1.45,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// عمود أرقام الأسطر بمحاذاة نص الكود (نفس الخط والحجم والارتفاع).
+class _LineNumbers extends StatelessWidget {
+  final int count;
+  const _LineNumbers({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        for (var i = 1; i <= count; i++)
+          Text(
+            '$i',
+            style: const TextStyle(
+              color: Color(0xFF4B5563),
+              fontSize: 12.5,
+              height: 1.45,
+              fontFamily: 'monospace',
+            ),
+          ),
+      ],
     );
   }
 }

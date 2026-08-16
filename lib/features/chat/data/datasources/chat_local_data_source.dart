@@ -20,6 +20,9 @@ abstract class ChatLocalDataSource {
   Future<void> updateCachedPost(PostEntity post);
   Future<void> markPostDeleted(String postId);
   Future<void> cacheReactions(List<ReactionEntity> reactions);
+  Future<Map<String, List<ReactionEntity>>> getCachedReactionsForPosts(
+    List<String> postIds,
+  );
   Future<void> removeReaction(String userId, String postId, String emojiName);
   Future<void> cacheUserStatuses(List<UserStatusEntity> statuses);
   Future<void> cacheUsers(List<UserEntity> users);
@@ -217,6 +220,34 @@ class ChatLocalDataSourceImpl implements ChatLocalDataSource {
         );
       }
     });
+  }
+
+  @override
+  Future<Map<String, List<ReactionEntity>>> getCachedReactionsForPosts(
+    List<String> postIds,
+  ) async {
+    if (postIds.isEmpty) return {};
+    final query = (_db.select(_db.cachedReactions)
+      ..where(
+        (r) =>
+            r.serverId.equals(_serverManager.activeServerUrl) &
+            r.postId.isIn(postIds),
+      ));
+    final rows = await query.get();
+
+    final byPost = <String, List<ReactionEntity>>{};
+    for (final row in rows) {
+      byPost.putIfAbsent(row.postId, () => []).add(
+        ReactionEntity(
+          serverId: row.serverId,
+          userId: row.userId,
+          postId: row.postId,
+          emojiName: row.emojiName,
+          createAt: row.createAt,
+        ),
+      );
+    }
+    return byPost;
   }
 
   @override

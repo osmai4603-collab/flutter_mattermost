@@ -7,7 +7,7 @@ import 'package:flutter_mattermost/features/auth/domain/entities/user_status_ent
 enum AutocompleteType { none, mention, channel, command, emoji }
 
 /// نوع العنصر المعروض في قائمة النتائج.
-enum AutocompleteKind { mention, channel, command, emoji }
+enum AutocompleteKind { mention, channel, command, emoji, group }
 
 /// عنصر عرض في قائمة الإكمال التلقائي.
 ///
@@ -46,6 +46,15 @@ class AutocompleteItem {
   /// تنبيه خاص (@all/@channel/@here).
   final bool special;
 
+  /// هل المستخدم خارج القناة الحالية؟ (يُعرَض مع إشارة في القائمة).
+  final bool outOfChannel;
+
+  /// معرف المجموعة (منشن المجموعة — [AutocompleteKind.group]).
+  final String? groupId;
+
+  /// عدد أعضاء المجموعة (شارة صغيرة في القائمة).
+  final int groupMemberCount;
+
   const AutocompleteItem({
     required this.kind,
     required this.title,
@@ -58,6 +67,9 @@ class AutocompleteItem {
     this.emojiUnicode,
     this.emojiName,
     this.special = false,
+    this.outOfChannel = false,
+    this.groupId,
+    this.groupMemberCount = 0,
   });
 
   factory AutocompleteItem.specialMention(String name, String subtitle) =>
@@ -67,5 +79,20 @@ class AutocompleteItem {
         subtitle: subtitle,
         insertText: '@$name ',
         special: true,
+      );
+
+  factory AutocompleteItem.group({
+    required String id,
+    required String name,
+    required String displayName,
+    required int memberCount,
+  }) =>
+      AutocompleteItem(
+        kind: AutocompleteKind.group,
+        title: '@$name',
+        subtitle: displayName.isNotEmpty ? displayName : null,
+        insertText: '@$name ',
+        groupId: id,
+        groupMemberCount: memberCount,
       );
 }

@@ -18,11 +18,13 @@ class GroupsRepositoryImpl implements GroupsRepository {
     int perPage = 60,
     String? q,
     bool includeMemberCount = false,
+    bool filterAllowReference = false,
   }) => _dataSource.getGroups(
     page: page,
     perPage: perPage,
     q: q,
     includeMemberCount: includeMemberCount,
+    filterAllowReference: filterAllowReference,
   );
 
   @override
