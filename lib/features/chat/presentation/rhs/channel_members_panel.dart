@@ -539,15 +539,12 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
                 onTap: () => _removeMember(member, users),
               ),
             ],
-            child: InkWell(
-              onTap: () {},
-              child: Container(
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  Icons.more_vert,
-                  size: 18,
-                  color: theme.centerChannelColor.withValues(alpha: 0.5),
-                ),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              child: Icon(
+                Icons.more_vert,
+                size: 18,
+                color: theme.centerChannelColor.withValues(alpha: 0.5),
               ),
             ),
           ),

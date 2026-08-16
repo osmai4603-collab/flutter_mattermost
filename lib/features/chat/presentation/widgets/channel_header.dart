@@ -15,7 +15,7 @@ import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/channel_notifications_modal.dart';
-import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart' hide ToggleMuteEvent;
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_header_text_popover.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/pluggable_channel_header_slots.dart';
@@ -51,6 +51,9 @@ class ChannelHeader extends StatelessWidget {
         final memberCount = stats?.memberCount ?? 0;
         final hasGuests = (stats?.guestsCount ?? 0) > 0;
         final pinnedCount = stats?.pinnedPostsCount ?? 0;
+
+        final member = channel == null ? null : loaded?.members[channel.id];
+        final isMuted = member?.notifyProps['mark_unread'] == 'mention';
 
         final headerText = channel == null
             ? ''
@@ -226,6 +229,34 @@ class ChannelHeader extends StatelessWidget {
                         color: theme.centerChannelColor.withValues(alpha: 0.7),
                       ),
                     ),
+                  if (!isCompact && channel != null)
+                    MatterButton(
+                      size: MatterButtonSize.icon,
+                      transparent: true,
+                      tooltip: l10n.channel_headerRecentMentions,
+                      onPressed: () {
+                        context.read<RhsBloc>().add(ShowMentionsEvent());
+                      },
+                      child: Icon(
+                        Icons.alternate_email,
+                        size: 20,
+                        color: theme.centerChannelColor.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  if (!isCompact && channel != null)
+                    MatterButton(
+                      size: MatterButtonSize.icon,
+                      transparent: true,
+                      tooltip: l10n.channel_headerChannelFiles,
+                      onPressed: () {
+                        context.read<RhsBloc>().add(ShowChannelFilesEvent());
+                      },
+                      child: Icon(
+                        Icons.insert_drive_file_outlined,
+                        size: 20,
+                        color: theme.centerChannelColor.withValues(alpha: 0.7),
+                      ),
+                    ),
                   if (!isVeryCompact && channel != null)
                     MatterButton(
                       size: MatterButtonSize.icon,
@@ -325,6 +356,28 @@ class ChannelHeader extends StatelessWidget {
                     openUp: true,
                     items: [
                       MatterMenuItem(
+                        id: 'mute',
+                        label: isMuted
+                            ? l10n.channel_headerUnmute
+                            : l10n.channel_headerMute,
+                        icon: Icon(
+                          isMuted
+                              ? Icons.volume_up_outlined
+                              : Icons.volume_off_outlined,
+                          size: 18,
+                        ),
+                        onTap: channel == null
+                            ? null
+                            : () {
+                                context.read<ChannelBloc>().add(
+                                      ToggleMuteEvent(
+                                        channelId: channel.id,
+                                        userId: loaded!.userId,
+                                      ),
+                                    );
+                              },
+                      ),
+                      MatterMenuItem(
                         id: 'copy_link',
                         label: l10n.channelHeaderCopyLink,
                         icon: const Icon(Icons.link, size: 18),
@@ -335,10 +388,22 @@ class ChannelHeader extends StatelessWidget {
                         label: l10n.channelHeaderChannelInfo,
                         icon: const Icon(Icons.info_outline, size: 18),
                         onTap: () {
-                          context
-                              .read<RhsBloc>()
-                              .add(ShowChannelInfoEvent());
+                          context.read<RhsBloc>().add(ShowChannelInfoEvent());
                         },
+                      ),
+                      MatterMenuItem(
+                        id: 'invite',
+                        label: l10n.invite_modalInvite,
+                        icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                        onTap: channel == null
+                            ? null
+                            : () {
+                                ModalRegistry.open(
+                                  context,
+                                  id: ModalIdentifiers.channelInvite,
+                                  args: {'channel': channel},
+                                );
+                              },
                       ),
                       MatterMenuItem(
                         id: 'pinned',
@@ -346,21 +411,55 @@ class ChannelHeader extends StatelessWidget {
                         icon: const Icon(Icons.push_pin_outlined, size: 18),
                         separatorBefore: true,
                         onTap: () {
-                          context
-                              .read<RhsBloc>()
-                              .add(ShowPinnedPostsEvent());
+                          context.read<RhsBloc>().add(ShowPinnedPostsEvent());
                         },
                       ),
+                      MatterMenuItem(
+                        id: 'mentions',
+                        label: l10n.channel_headerRecentMentions,
+                        icon: const Icon(Icons.alternate_email, size: 18),
+                        onTap: () {
+                          context.read<RhsBloc>().add(ShowMentionsEvent());
+                        },
+                      ),
+                      MatterMenuItem(
+                        id: 'files',
+                        label: l10n.channel_headerChannelFiles,
+                        icon: const Icon(Icons.insert_drive_file_outlined, size: 18),
+                        onTap: () {
+                          context.read<RhsBloc>().add(ShowChannelFilesEvent());
+                        },
+                      ),
+                      MatterMenuItem(
+                        id: 'leave',
+                        label: l10n.channel_headerLeave,
+                        icon: const Icon(
+                          Icons.logout,
+                          size: 18,
+                          color: Colors.red,
+                        ),
+                        separatorBefore: true,
+                        onTap: channel == null
+                            ? null
+                            : () {
+                                context.read<ChannelBloc>().add(
+                                      LeaveChannelEvent(
+                                        channelId: channel.id,
+                                        userId: loaded!.userId,
+                                      ),
+                                    );
+                              },
+                      ),
                     ],
-                    child: MatterButton(
-                      size: MatterButtonSize.icon,
-                      transparent: true,
-                      tooltip: l10n.channelHeaderMore,
-                      onPressed: () {},
-                      child: Icon(
-                        Icons.more_horiz,
-                        size: 20,
-                        color: theme.centerChannelColor.withValues(alpha: 0.7),
+                    child: Tooltip(
+                      message: l10n.channelHeaderMore,
+                      child: Padding(
+                        padding: const EdgeInsets.all(7),
+                        child: Icon(
+                          Icons.more_horiz,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(alpha: 0.7),
+                        ),
                       ),
                     ),
                   ),
