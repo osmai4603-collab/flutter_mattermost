@@ -469,6 +469,13 @@ class CallsManager {
     }
   }
 
+  /// كتم مشارك من المكالمة (host_mute).
+  Future<void> hostMute(String sessionId) async {
+    final callId = _callId;
+    if (callId == null) return;
+    await _callsRestRepository.hostMute(callId, sessionId);
+  }
+
   /// إرسال تفاعل (emoji) — `react{data: <EmojiData JSON>}` — الخادم يبث
   /// `user_reacted` للجميع (المرسل أيضاً) ولا يخزّن/يمسح التفاعلات.
   void sendReaction(CallsEmoji emoji) {
@@ -737,9 +744,9 @@ class CallsManager {
 
   // ── معالجة أحداث الـ Hub الرئيسي (حالة المكالمة) ────────────
 
-  void _onHubEvent(TypedWebSocketEvent event) {
+  void _onHubEvent(TypedWebSocketEvent event) async {
     if (event is CallStartedEvent) {
-      _onCallStarted(event);
+      await _onCallStarted(event);
     } else if (event is CallEndedEvent) {
       _handleCallEnd(event);
     } else if (event is CallUserJoinedEvent) {
@@ -773,7 +780,7 @@ class CallsManager {
     }
   }
 
-  void _onCallStarted(CallStartedEvent event) {
+  Future<void> _onCallStarted(CallStartedEvent event) async {
     // تذكّر لحظة بدء المكالمة لعدّاد المدة (أول حدث call_start للمكالمة).
     _callStartAt = event.startAt ?? _callStartAt;
 
@@ -789,8 +796,9 @@ class CallsManager {
             defaultTargetPlatform == TargetPlatform.macOS ||
             defaultTargetPlatform == TargetPlatform.linux)) {
       try {
-        windowManager.show();
-        windowManager.focus();
+        await windowManager.show();
+        await windowManager.focus();
+        // Option to flash the taskbar if possible (platform specific)
       } catch (e) {
         debugPrint('Failed to focus window: $e');
       }

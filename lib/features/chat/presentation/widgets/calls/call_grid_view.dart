@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter_mattermost/core/calls/calls_manager.dart';
-import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/users/domain/repositories/user_repository.dart';
 import 'package:get_it/get_it.dart';
 
