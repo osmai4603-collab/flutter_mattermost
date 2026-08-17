@@ -234,6 +234,7 @@ class _GroupPopoverState extends State<_GroupPopover> {
                           child: Row(
                             children: [
                               ProfilePicture(
+                                userId: user.id,
                                 avatarUrl: _memberAvatarUrl(user.id),
                                 username: user.username,
                                 status: _statuses[user.id],

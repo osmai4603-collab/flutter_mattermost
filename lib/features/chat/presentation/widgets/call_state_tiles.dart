@@ -281,6 +281,7 @@ class CallPostTile extends StatelessWidget {
               (id) => Padding(
                 padding: const EdgeInsets.only(left: 2),
                 child: ProfilePicture(
+                  userId: id,
                   username: profiles
                           .where((p) => p.id == id)
                           .firstOrNull

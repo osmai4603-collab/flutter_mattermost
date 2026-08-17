@@ -27,10 +27,12 @@ import 'package:flutter_mattermost/features/chat/presentation/rhs/mentions_panel
 import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_list.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/emoji_picker_overlay.dart';
 
 import 'package:flutter_mattermost/features/chat/presentation/widgets/post_attachment_preview.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/post_thread_footer.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/youtube_embed_preview.dart';
+import 'package:flutter_mattermost/features/chat/data/models/file_info_model.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/add_channel_bookmark_dialog.dart';
 import 'package:intl/intl.dart';
 
@@ -218,26 +220,15 @@ class _PostListBodyState extends State<_PostListBody> {
   final GlobalKey _focusKey = GlobalKey();
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final ids = widget.state.posts
-        .map((p) => p.userId)
-        .where((id) => id != 'current_user')
-        .toSet();
-    if (!setEquals(ids, _loadedUserIds)) {
-      _loadedUserIds = ids;
-      if (ids.isNotEmpty) {
-        context.read<UserProfileBloc>().add(
-          LoadProfilesByIdsEvent(ids.toList()),
-        );
-        context.read<UserStatusBloc>().add(LoadUserStatusesEvent(ids.toList()));
-      }
-    }
+  void initState() {
+    super.initState();
+    _loadMissingProfiles();
   }
 
   @override
   void didUpdateWidget(_PostListBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _loadMissingProfiles();
     if (widget.state.focusPostId != null &&
         widget.state.focusPostId != oldWidget.state.focusPostId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -249,6 +240,26 @@ class _PostListBodyState extends State<_PostListBody> {
           );
         }
       });
+    }
+  }
+
+  void _loadMissingProfiles() {
+    final allIds = widget.state.posts
+        .map((p) => p.userId)
+        .where((id) => id != 'current_user')
+        .toSet();
+
+    final newIds = allIds.difference(_loadedUserIds);
+
+    if (newIds.isNotEmpty) {
+      // ندمج المعرفات الجديدة مع السجل لضمان عدم طلبها مرة أخرى
+      _loadedUserIds = {..._loadedUserIds, ...newIds};
+      context.read<UserProfileBloc>().add(
+        LoadProfilesByIdsEvent(newIds.toList()),
+      );
+      context.read<UserStatusBloc>().add(
+        LoadUserStatusesEvent(newIds.toList()),
+      );
     }
   }
 
@@ -370,9 +381,11 @@ class _PostListBodyState extends State<_PostListBody> {
       }
     }
 
+    final visiblePosts = state.posts.where((p) => p.rootId.isEmpty).toList();
+
     // posts are sorted latest to oldest (reverse: true)
-    for (int i = 0; i < state.posts.length; i++) {
-      final post = state.posts[i];
+    for (int i = 0; i < visiblePosts.length; i++) {
+      final post = visiblePosts[i];
       final isNew =
           lastViewedAt > 0 &&
           post.createAt > lastViewedAt &&
@@ -386,8 +399,8 @@ class _PostListBodyState extends State<_PostListBody> {
       if (!newMessagesLineShown && isNew) {
         // If this is the last post or the next one is older than lastViewedAt
         final isLastNew =
-            (i == state.posts.length - 1) ||
-            (state.posts[i + 1].createAt <= lastViewedAt);
+            (i == visiblePosts.length - 1) ||
+            (visiblePosts[i + 1].createAt <= lastViewedAt);
         if (isLastNew) {
           items.add(const _NewMessagesSeparator());
           newMessagesLineShown = true;
@@ -439,7 +452,18 @@ class _PostListBodyState extends State<_PostListBody> {
     }
 
     if (state.typingUserIds.isNotEmpty) {
-      items.add(_TypingRow(userIds: state.typingUserIds.toList()));
+      final typingNames = state.typingUserIds.map((id) {
+        final profile = byId[id];
+        return profile != null
+            ? getMentionDisplayName(
+                username: profile.username,
+                nickname: profile.nickname,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+              )
+            : formatMemberName(id);
+      }).toList();
+      items.add(_TypingRow(names: typingNames));
     }
 
     return ListView(
@@ -530,14 +554,14 @@ class _DateSeparator extends StatelessWidget {
 }
 
 class _TypingRow extends StatelessWidget {
-  final List<String> userIds;
-  const _TypingRow({required this.userIds});
+  final List<String> names;
+  const _TypingRow({required this.names});
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-    final names = userIds.map((id) => id).join(', ');
+    final joinedNames = names.join(', ');
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
@@ -552,7 +576,7 @@ class _TypingRow extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$names ${l10n.messageTyping}',
+            '$joinedNames ${l10n.messageTyping}',
             style: TextStyle(
               fontSize: 12,
               color: theme.centerChannelColor.withValues(alpha: 0.6),
@@ -626,7 +650,14 @@ class _PostItemState extends State<PostItem> {
     final l10n = AppLocalizations.of(context);
     final post = widget.post;
 
-    final username = widget.profile?.username ?? post.userId;
+    final username = widget.profile != null
+        ? getMentionDisplayName(
+            username: widget.profile!.username,
+            nickname: widget.profile!.nickname,
+            firstName: widget.profile!.firstName,
+            lastName: widget.profile!.lastName,
+          )
+        : formatMemberName(post.userId);
     final time = _formatTime(post.createAt);
     final fullTime = DateFormat(
       'EEEE, MMMM d, yyyy h:mm a',
@@ -645,6 +676,28 @@ class _PostItemState extends State<PostItem> {
               .statusOf(post.userId)
         : null;
 
+    final effectiveFiles = widget.filesList.isNotEmpty
+        ? widget.filesList
+        : (post.metadata?.files != null && post.metadata!.files!.isNotEmpty
+              ? post.metadata!.files!
+                    .whereType<FileInfoEntity>()
+                    .where((f) => f.id.isNotEmpty)
+                    .toList()
+              : const <FileInfoEntity>[]);
+
+    final youtubeUrls = YouTubeEmbedPreview.extractAllUrls(post.message);
+    if (youtubeUrls.isEmpty && post.metadata?.embeds != null) {
+      for (final embed in post.metadata!.embeds!) {
+        final type = embed['type'];
+        final url = embed['url'] as String?;
+        if (url != null && (type == 'opengraph' || type == 'youtube')) {
+          if (YouTubeEmbedPreview.extractVideoId(url) != null) {
+            youtubeUrls.add(url);
+          }
+        }
+      }
+    }
+
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -655,183 +708,211 @@ class _PostItemState extends State<PostItem> {
           16,
           widget.isReply ? 2 : 4,
         ),
-        decoration: BoxDecoration(
-          color: _postBackgroundColor(theme),
-        ),
-        child: Stack(
-          alignment: AlignmentDirectional.topEnd,
+        decoration: BoxDecoration(color: _postBackgroundColor(theme)),
+        child: Column(
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Stack(
+              alignment: AlignmentDirectional.topEnd,
               children: [
-                GestureDetector(
-                  onTap: () => showUserProfile(context, post.userId),
-                  child: ProfilePicture(
-                    username: username,
-                    avatarUrl: avatarUrl,
-                    status: widget.isReply ? null : status,
-                    size: widget.isReply ? 24 : 32,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (widget.showFullHeader || widget.isReply)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Row(
-                            children: [
-                              Flexible(
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      showUserProfile(context, post.userId),
-                                  child: Text(
-                                    username,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: theme.centerChannelColor,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: widget.isReply ? 13 : 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (isBot) ...[
-                                const SizedBox(width: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: theme.centerChannelColor.withValues(
-                                      alpha: 0.08,
-                                    ),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                  child: Text(
-                                    'BOT',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w700,
-                                      color: theme.centerChannelColor
-                                          .withValues(alpha: 0.6),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(width: 6),
-                              Tooltip(
-                                message: fullTime,
-                                child: Text(
-                                  time,
-                                  style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: theme.centerChannelColor.withValues(
-                                      alpha: 0.45,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (widget.isPinned) ...[
-                                const SizedBox(width: 6),
-                                Icon(
-                                  Icons.push_pin,
-                                  size: 12,
-                                  color: theme.centerChannelColor.withValues(
-                                    alpha: 0.45,
-                                  ),
-                                ),
-                              ],
-                            ],
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () => showUserProfile(context, post.userId),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          ProfilePicture(
+                            userId: post.userId,
+                            username: username,
+                            avatarUrl: avatarUrl,
+                            status: widget.isReply ? null : status,
+                            size: widget.isReply ? 24 : 32,
                           ),
-                        ),
-                      if (post.deleteAt > 0)
-                        Text(
-                          l10n.postDeleted,
-                          style: TextStyle(
-                            color: theme.centerChannelColor.withValues(
-                              alpha: 0.5,
+                          if (widget.isFlagged)
+                            Positioned(
+                              top: -4,
+                              right: -4,
+                              child: Container(
+                                padding: const EdgeInsets.all(1),
+                                decoration: BoxDecoration(
+                                  color: theme.centerChannelBg,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.bookmark_rounded,
+                                  size: 14,
+                                  color: theme.linkColor,
+                                ),
+                              ),
                             ),
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
-                            height: 1.35,
-                          ),
-                        )
-                      else
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (CallStateTiles.isCallPost(post))
-                              CallPostTile(post: post)
-                            else ...[
-                              MarkdownMessage(text: post.message),
-                              if (post.editAt > 0)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: InkWell(
-                                    onTap: () => context.read<RhsBloc>().add(
-                                      OpenEditHistoryEvent(post.id),
-                                    ),
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Text(
-                                      l10n.postEdited,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontStyle: FontStyle.italic,
-                                        color: theme.centerChannelColor
-                                            .withValues(alpha: 0.45),
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: theme
-                                            .centerChannelColor
-                                            .withValues(alpha: 0.3),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.showFullHeader || widget.isReply)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Row(
+                                children: [
+                                  Flexible(
+                                    child: GestureDetector(
+                                      onTap: () =>
+                                          showUserProfile(context, post.userId),
+                                      child: Text(
+                                        username,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: theme.centerChannelColor,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: widget.isReply ? 13 : 14,
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ],
-                        ),
-                      if (widget.filesList.isNotEmpty)
-                        PostAttachmentPreview(files: widget.filesList),
-                      if (!widget.isReply && widget.replyCount > 0)
-                        PostThreadFooter(
-                          replyCount: widget.replyCount,
-                          participants: widget.threadParticipants,
-                          lastReplyAt: widget.threadLastReplyAt,
-                          isFollowing: widget.threadIsFollowing,
-                          unreadReplies: widget.threadUnreadReplies,
-                          onOpenThread: () {
-                            context.read<RhsBloc>().add(
-                              OpenThreadEvent(post.id, post.channelId),
-                            );
-                          },
-                          onToggleFollow: () {
-                            context.read<PostBloc>().add(
-                              ToggleThreadFollowEvent(
-                                channelId: post.channelId,
-                                threadId: post.id,
-                                follow: !widget.threadIsFollowing,
+                                  if (isBot) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: theme.centerChannelColor
+                                            .withValues(alpha: 0.08),
+                                        borderRadius: BorderRadius.circular(2),
+                                      ),
+                                      child: Text(
+                                        'BOT',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: theme.centerChannelColor
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const SizedBox(width: 6),
+                                  Tooltip(
+                                    message: fullTime,
+                                    child: Text(
+                                      time,
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        color: theme.centerChannelColor
+                                            .withValues(alpha: 0.45),
+                                      ),
+                                    ),
+                                  ),
+                                  if (widget.isPinned) ...[
+                                    const SizedBox(width: 6),
+                                    Icon(
+                                      Icons.push_pin,
+                                      size: 12,
+                                      color: theme.centerChannelColor
+                                          .withValues(alpha: 0.45),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                      ReactionList(
-                        postId: post.id,
-                        reactions: widget.reactions,
-                        myUserId: widget.myUserId,
+                            ),
+                          if (post.deleteAt > 0)
+                            Text(
+                              l10n.postDeleted,
+                              style: TextStyle(
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.5,
+                                ),
+                                fontSize: 14,
+                                fontStyle: FontStyle.italic,
+                                height: 1.35,
+                              ),
+                            )
+                          else
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (CallStateTiles.isCallPost(post))
+                                  CallPostTile(post: post)
+                                else ...[
+                                  MarkdownMessage(
+                                    text: post.message,
+                                    mentionTime: post.createAt,
+                                  ),
+                                  for (final ytUrl in youtubeUrls)
+                                    YouTubeEmbedPreview(url: ytUrl),
+                                  if (post.editAt > 0)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: InkWell(
+                                        onTap: () => context
+                                            .read<RhsBloc>()
+                                            .add(OpenEditHistoryEvent(post.id)),
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Text(
+                                          l10n.postEdited,
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontStyle: FontStyle.italic,
+                                            color: theme.centerChannelColor
+                                                .withValues(alpha: 0.45),
+                                            decoration:
+                                                TextDecoration.underline,
+                                            decorationColor: theme
+                                                .centerChannelColor
+                                                .withValues(alpha: 0.3),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ],
+                            ),
+                          ReactionList(
+                            postId: post.id,
+                            reactions: widget.reactions,
+                            myUserId: widget.myUserId,
+                          ),
+                          if (effectiveFiles.isNotEmpty)
+                            PostAttachmentPreview(files: effectiveFiles),
+                          if (!widget.isReply && widget.replyCount > 0)
+                            PostThreadFooter(
+                              replyCount: widget.replyCount,
+                              participants: widget.threadParticipants,
+                              lastReplyAt: widget.threadLastReplyAt,
+                              isFollowing: widget.threadIsFollowing,
+                              unreadReplies: widget.threadUnreadReplies,
+                              onOpenThread: () {
+                                context.read<RhsBloc>().add(
+                                  OpenThreadEvent(post.id, post.channelId),
+                                );
+                              },
+                              onToggleFollow: () {
+                                context.read<PostBloc>().add(
+                                  ToggleThreadFollowEvent(
+                                    channelId: post.channelId,
+                                    threadId: post.id,
+                                    follow: !widget.threadIsFollowing,
+                                  ),
+                                );
+                              },
+                            ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
                 if (_hovered && post.deleteAt == 0)
                   PositionedDirectional(
                     child: _PostActions(
                       post: post,
-                      isFlagged: widget.isFlagged,
+                      isSavedMessage: widget.isFlagged,
                       isPinned: widget.isPinned,
                       isReply: widget.isReply,
                       canDelete: canDelete,
@@ -866,7 +947,7 @@ class _PostItemState extends State<PostItem> {
 
 class _PostActions extends StatelessWidget {
   final PostEntity post;
-  final bool isFlagged;
+  final bool isSavedMessage;
   final bool isPinned;
   final bool isReply;
   final bool canDelete;
@@ -874,7 +955,7 @@ class _PostActions extends StatelessWidget {
 
   const _PostActions({
     required this.post,
-    required this.isFlagged,
+    required this.isSavedMessage,
     required this.isPinned,
     required this.isReply,
     required this.canDelete,
@@ -898,7 +979,7 @@ class _PostActions extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (final emoji in const ['👍', '❤️', '😂'])
+            for (final emoji in const ['👍', '😀'])
               InkWell(
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
@@ -911,158 +992,139 @@ class _PostActions extends StatelessWidget {
                 },
               ),
             _ActionIcon(
-              icon: Icons.add_reaction,
+              icon: Icons.check_box_rounded,
               tooltip: l10n.reactionAdd,
-              onTap: () async {
-                final selected = await showReactionPicker(context);
-                if (selected == null || !context.mounted) return;
-                context.read<PostBloc>().add(
-                  ToggleReactionEvent(post.id, selected),
+              color: Colors.green[700],
+              iconSize: 20,
+              onTap: (ctx) {
+                EmojiPickerOverlay.show(
+                  context,
+                  anchorContext: ctx,
+                  onEmojiSelected: (emoji) {
+                    context.read<PostBloc>().add(
+                      ToggleReactionEvent(post.id, emoji),
+                    );
+                  },
                 );
+              },
+            ),
+            _ActionIcon(
+              icon: Icons.add_reaction_outlined,
+              iconSize: 20,
+              tooltip: l10n.reactionAdd,
+              onTap: (ctx) {
+                EmojiPickerOverlay.show(
+                  context,
+                  anchorContext: ctx,
+                  onEmojiSelected: (emoji) {
+                    context.read<PostBloc>().add(
+                      ToggleReactionEvent(post.id, emoji),
+                    );
+                  },
+                );
+              },
+            ),
+            _ActionIcon(
+              icon: isSavedMessage ? Icons.bookmark : Icons.bookmark_outline,
+              iconSize: 20,
+              tooltip: isSavedMessage ? l10n.postMenuUnflag : l10n.postMenuFlag,
+              color: isSavedMessage ? theme.linkColor : null,
+              onTap: (_) {
+                context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
               },
             ),
             if (!isReply)
               _ActionIcon(
-                icon: Icons.mode_comment_outlined,
+                icon: Icons.reply_outlined,
                 tooltip: l10n.postMenuReply,
-                onTap: () {
+                iconSize: 20,
+                onTap: (_) {
                   context.read<RhsBloc>().add(
                     OpenThreadEvent(post.id, post.channelId),
                   );
                 },
               ),
-            _ActionIcon(
-              icon: isFlagged ? Icons.flag : Icons.flag_outlined,
-              tooltip: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
-              color: isFlagged ? theme.errorTextColor : null,
-              onTap: () {
-                context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
-              },
-            ),
-            PopupMenuButton<String>(
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'reply',
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Icons.mode_comment_outlined, size: 18),
-                      Text(l10n.postMenuReply),
-                    ],
+            MenuAnchor(
+              builder: (ctx, controller, child) => _ActionIcon(
+                icon: Icons.more_horiz,
+                tooltip: l10n.channelHeaderMore,
+                onTap: (_) =>
+                    controller.isOpen ? controller.close() : controller.open(),
+              ),
+              menuChildren: [
+                MenuItemButton(
+                  leadingIcon: const Icon(
+                    Icons.mode_comment_outlined,
+                    size: 18,
                   ),
-                  onTap: () {
+                  onPressed: () {
                     context.read<RhsBloc>().add(
                       OpenThreadEvent(post.id, post.channelId),
                     );
                   },
+                  child: Text(l10n.postMenuReply),
                 ),
-                PopupMenuItem(
-                  value: 'copy',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.copy, size: 18),
-                      Text(l10n.postMenuCopy),
-                    ],
-                  ),
-                  onTap: () =>
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.copy, size: 18),
+                  onPressed: () =>
                       Clipboard.setData(ClipboardData(text: post.message)),
+                  child: Text(l10n.postMenuCopy),
                 ),
-                PopupMenuItem(
-                  value: 'copy_link',
-                  // label: 'Copy Link',
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Icons.link, size: 18),
-                      Text('Copy Link'),
-                    ],
-                  ),
-                  onTap: () {
+                MenuItemButton(
+                  leadingIcon: const Icon(Icons.link, size: 18),
+                  onPressed: () {
                     final serverUrl = getIt<ServerManager>().activeServerUrl;
                     final link = '$serverUrl/_redirect/pl/${post.id}';
                     Clipboard.setData(ClipboardData(text: link));
                   },
+                  child: const Text('Copy Link'),
                 ),
-                PopupMenuItem(
-                  value: 'bookmark',
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      const Icon(Icons.bookmark_add_outlined, size: 18),
-                      Text(l10n.channel_bookmarksAddBookmark),
-                    ],
+                MenuItemButton(
+                  leadingIcon: const Icon(
+                    Icons.bookmark_add_outlined,
+                    size: 18,
                   ),
-                  onTap: () => _addBookmark(context),
+                  onPressed: () => _addBookmark(context),
+                  child: Text(l10n.channel_bookmarksAddBookmark),
                 ),
-                PopupMenuItem(
-                  value: 'flag',
-                  // label: isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag,
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      Icon(
-                        isFlagged ? Icons.flag : Icons.flag_outlined,
-                        size: 18,
-                      ),
-                      Text(isFlagged ? l10n.postMenuUnflag : l10n.postMenuFlag),
-                    ],
+                MenuItemButton(
+                  leadingIcon: Icon(
+                    isSavedMessage ? Icons.flag : Icons.flag_outlined,
+                    size: 18,
                   ),
-                  onTap: () {
+                  onPressed: () {
                     context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
                   },
-                ),
-                PopupMenuItem(
-                  value: 'pin',
-                  // label: isPinned ? l10n.postMenuUnpin : l10n.postMenuPin,
-                  child: Row(
-                    spacing: 8,
-                    children: [
-                      Icon(
-                        isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                        size: 18,
-                      ),
-                      Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
-                    ],
+                  child: Text(
+                    isSavedMessage ? l10n.postMenuUnflag : l10n.postMenuFlag,
                   ),
-                  onTap: () {
+                ),
+                MenuItemButton(
+                  leadingIcon: Icon(
+                    isPinned ? Icons.push_pin : Icons.push_pin_outlined,
+                    size: 18,
+                  ),
+                  onPressed: () {
                     context.read<PostBloc>().add(TogglePinPostEvent(post.id));
                   },
+                  child: Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
                 ),
                 if (canEdit)
-                  PopupMenuItem(
-                    value: 'edit',
-                    // label: l10n.postMenuEdit,
-                    child: Row(
-                      spacing: 8,
-                      children: [
-                        const Icon(Icons.edit_outlined, size: 18),
-                        Text(l10n.postMenuEdit),
-                      ],
-                    ),
-                    onTap: () => _startComposerEdit(context),
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () => _startComposerEdit(context),
+                    child: Text(l10n.postMenuEdit),
                   ),
                 if (canDelete)
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.delete_outline, size: 18),
-                        Text(
-                          l10n.postMenuDelete,
-                          style: TextStyle(color: Colors.red),
-                        ),
-                      ],
+                  MenuItemButton(
+                    leadingIcon: const Icon(Icons.delete_outline, size: 18),
+                    onPressed: () => _confirmDelete(context),
+                    child: Text(
+                      l10n.postMenuDelete,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                    // danger: true,
-                    // separatorBefore: true,
-                    onTap: () => _confirmDelete(context),
                   ),
               ],
-              child: _ActionIcon(
-                icon: Icons.more_horiz,
-                tooltip: l10n.channelHeaderMore,
-                onTap: null,
-              ),
             ),
           ],
         ),
@@ -1163,14 +1225,16 @@ class _PostActions extends StatelessWidget {
 class _ActionIcon extends StatelessWidget {
   final IconData icon;
   final String tooltip;
-  final VoidCallback? onTap;
+  final void Function(BuildContext context)? onTap;
   final Color? color;
+  final double iconSize;
 
   const _ActionIcon({
     required this.icon,
     required this.tooltip,
     required this.onTap,
     this.color,
+    this.iconSize = 16,
   });
 
   @override
@@ -1179,13 +1243,13 @@ class _ActionIcon extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: InkWell(
-        onTap: onTap,
+        onTap: () => onTap?.call(context),
         borderRadius: BorderRadius.circular(4),
         child: Padding(
           padding: const EdgeInsets.all(4),
           child: Icon(
             icon,
-            size: 16,
+            size: iconSize,
             color: color ?? theme.centerChannelColor.withValues(alpha: 0.55),
           ),
         ),

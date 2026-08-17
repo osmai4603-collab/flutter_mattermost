@@ -59,10 +59,32 @@ class _ChannelPageState extends State<ChannelPage> {
   void initState() {
     super.initState();
     _teamSub = context.read<TeamBloc>().stream.listen((_) => _syncWithRoute());
-    _channelSub = context.read<ChannelBloc>().stream.listen(
-      (_) => _syncWithRoute(),
-    );
+
+    // فقط عند انتقال الحالة من غير محمّلة إلى محمّلة
+    ChannelState? _prevChannelState;
+    _channelSub = context.read<ChannelBloc>().stream.listen((newState) {
+      final wasNotLoaded = _prevChannelState is! ChannelsLoadedState;
+      _prevChannelState = newState;
+      if (wasNotLoaded && newState is ChannelsLoadedState) {
+        _syncWithRoute();
+      }
+    });
+    _prevChannelState = context.read<ChannelBloc>().state;
+
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncWithRoute());
+  }
+
+  @override
+  void didUpdateWidget(covariant ChannelPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.channelName != widget.channelName ||
+        oldWidget.dmUsername != widget.dmUsername ||
+        oldWidget.teamName != widget.teamName) {
+      // إعادة تعيين الحالات المرتبطة بالقناة السابقة
+      _resolvedDmUsername = null;
+      _dmCheckedChannelId = '';
+      _syncWithRoute();
+    }
   }
 
   @override
@@ -88,7 +110,7 @@ class _ChannelPageState extends State<ChannelPage> {
 
     if (_loadedTeamId != team.id) {
       _loadedTeamId = team.id;
-      context.read<ChannelBloc>().add(LoadChannelsForTeamEvent(team.id));
+      context.read<ChannelBloc>().add(LoadChannelsForTeamEvent(team.id, seamless: true));
     }
 
     final channelState = context.read<ChannelBloc>().state;

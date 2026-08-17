@@ -53,7 +53,7 @@ class WebsocketDbSyncService {
         await _chatLocalDataSource.cacheReactions([entity]);
       } else {
         await _chatLocalDataSource.removeReaction(
-          entity.serverId, // wait, should be userId? 
+          entity.userId,
           entity.postId,
           entity.emojiName,
         );

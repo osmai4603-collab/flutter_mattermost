@@ -135,6 +135,7 @@ class CallWidget extends StatelessWidget {
                 child: Row(
                   children: [
                     ProfilePicture(
+                      userId: speakerUserId,
                       username: speakerProfile?.username ?? '',
                       avatarUrl: speakerUserId.isNotEmpty
                           ? serverUserAvatarUrl(speakerUserId)

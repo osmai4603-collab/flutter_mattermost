@@ -278,6 +278,7 @@ class _ProfileSettingsContent extends StatelessWidget {
           title: 'Profile Picture',
           subtitle: 'Update your avatar',
           leading: ProfilePicture.xl(
+            userId: user?.id,
             username: user?.username ?? '?',
             avatarUrl: null,
             status: null,

@@ -5,6 +5,7 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/widgets/matter_button.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
@@ -167,7 +168,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
           style: TextStyle(color: theme.centerChannelColor),
         ),
         content: Text(
-          '$name?',
+          formatMemberName(name) + '?',
           style: TextStyle(
             color: theme.centerChannelColor.withValues(alpha: 0.7),
           ),
@@ -221,8 +222,12 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
   }
 
   String _displayNameOf(UserEntity user) {
-    final full = '${user.firstName} ${user.lastName}'.trim();
-    return full.isNotEmpty ? full : user.username;
+    return getMentionDisplayName(
+      username: user.username,
+      nickname: user.nickname,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    );
   }
 
   List<ChannelMemberEntity> _sorted(
@@ -231,8 +236,12 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
   ) {
     final sorted = [...list];
     sorted.sort((a, b) {
-      final an = users[a.userId] == null ? a.userId : _displayNameOf(users[a.userId]!);
-      final bn = users[b.userId] == null ? b.userId : _displayNameOf(users[b.userId]!);
+      final an = users[a.userId] == null
+          ? formatMemberName(a.userId)
+          : _displayNameOf(users[a.userId]!);
+      final bn = users[b.userId] == null
+          ? formatMemberName(b.userId)
+          : _displayNameOf(users[b.userId]!);
       return an.toLowerCase().compareTo(bn.toLowerCase());
     });
     return sorted;
@@ -419,7 +428,9 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     bool canManage,
   ) {
     final user = users[member.userId];
-    final name = user == null ? member.userId : _displayNameOf(user);
+    final name = user == null
+        ? formatMemberName(member.userId)
+        : _displayNameOf(user);
     final username = user?.username ?? member.userId;
     final isAdmin = _isChannelAdmin(member);
     final isSelf = _isCurrentUser(member.userId);
@@ -428,6 +439,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     final content = Row(
       children: [
         ProfilePicture.md(
+          userId: member.userId,
           avatarUrl: userAvatarUrl(member.userId),
           username: username,
           status: _statusOf(member.userId),

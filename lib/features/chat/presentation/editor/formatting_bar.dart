@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/utils/markdown_apply.dart';
+import 'package:flutter_mattermost/features/chat/presentation/editor/composer_controller.dart';
 
 /// شريط التنسيق — نظير formatting_bar في webapp
 /// (webapp/channels/src/components/advanced_text_editor/formatting_bar).
@@ -11,10 +12,11 @@ import 'package:flutter_mattermost/core/utils/markdown_apply.dart';
 /// - جدول، خط فاصل، قائمة مهام
 /// - فواصل بين المجموعات
 /// - حالة active حسب موقع المؤشر في النص
-class FormattingBar extends StatelessWidget {
+class FormattingBar extends StatefulWidget {
   final void Function(MarkdownMode mode) onFormat;
   final bool showPreview;
   final VoidCallback? onTogglePreview;
+  final ComposerController composer;
 
   /// النص الحالي في المحرر (للحالة النشطة للأزرار).
   final String message;
@@ -22,6 +24,8 @@ class FormattingBar extends StatelessWidget {
   /// موضع المؤشر/التحديد.
   final int selectionStart;
   final int selectionEnd;
+  final void Function()? onPickFile;
+  final GlobalKey? emojiButtonKey;
 
   const FormattingBar({
     super.key,
@@ -31,25 +35,34 @@ class FormattingBar extends StatelessWidget {
     this.message = '',
     this.selectionStart = 0,
     this.selectionEnd = 0,
+    required this.composer,
+    required this.onPickFile,
+    this.emojiButtonKey,
   });
 
+  @override
+  State<FormattingBar> createState() => _FormattingBarState();
+}
+
+class _FormattingBarState extends State<FormattingBar> {
+  bool hideFormatting = false;
   int get _safeSelectionStart {
-    if (message.isEmpty) return 0;
-    return selectionStart.clamp(0, message.length);
+    if (widget.message.isEmpty) return 0;
+    return widget.selectionStart.clamp(0, widget.message.length);
   }
 
   String get _lineAtCaret {
     final caret = _safeSelectionStart;
-    if (message.isEmpty || caret <= 0) return '';
-    final upToCaret = message.substring(0, caret);
+    if (widget.message.isEmpty || caret <= 0) return '';
+    final upToCaret = widget.message.substring(0, caret);
     final index = upToCaret.lastIndexOf('\n');
     return index == -1 ? upToCaret : upToCaret.substring(index + 1);
   }
 
   bool _isActive(MarkdownMode mode) {
     final caret = _safeSelectionStart;
-    if (message.isEmpty || caret <= 0) return false;
-    final before = message.substring(0, caret);
+    if (widget.message.isEmpty || caret <= 0) return false;
+    final before = widget.message.substring(0, caret);
     final line = _lineAtCaret.trimLeft();
 
     switch (mode) {
@@ -111,29 +124,36 @@ class FormattingBar extends StatelessWidget {
       VoidCallback onTap, {
       bool active = false,
       String shortcut = '',
+      double iconSize = 17,
+      Key? key,
     }) {
       final tip = shortcut.isEmpty ? tooltip : '$tooltip  ($shortcut)';
       return Tooltip(
+        key: key,
         message: tip,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(4),
-          child: Container(
-            width: 30,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color: active
-                  ? theme.centerChannelColor.withValues(alpha: 0.08)
-                  : Colors.transparent,
-            ),
-            child: Icon(
-              icon,
-              size: 17,
-              color: active
-                  ? theme.linkColor
-                  : theme.centerChannelColor.withValues(alpha: 0.65),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              width: 30,
+              height: 30,
+              padding: .all(4),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: active
+                    ? theme.centerChannelColor.withValues(alpha: 0.08)
+                    : Colors.transparent,
+              ),
+              child: Icon(
+                icon,
+                size: iconSize,
+                color: active
+                    ? theme.linkColor
+                    : theme.centerChannelColor.withValues(alpha: 0.65),
+              ),
             ),
           ),
         ),
@@ -149,150 +169,217 @@ class FormattingBar extends StatelessWidget {
       );
     }
 
-    // قائمة منسدلة للعناوين H1/H2/H3.
-    final heading = PopupMenuButton<MarkdownMode>(
-      tooltip: l10n.formattingHeading,
-      icon: Icon(
-        Icons.title,
-        size: 17,
-        color: theme.centerChannelColor.withValues(alpha: 0.65),
-      ),
-      onSelected: (mode) => onFormat(mode),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      color: theme.centerChannelBg,
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: MarkdownMode.heading1,
-          child: _HeadingItem(
-            label: l10n.formatting_barText_styleH1,
-            prefix: '# ',
-            selected: _isActive(MarkdownMode.heading1),
-          ),
-        ),
-        PopupMenuItem(
-          value: MarkdownMode.heading2,
-          child: _HeadingItem(
-            label: l10n.formatting_barText_styleH2,
-            prefix: '## ',
-            selected: _isActive(MarkdownMode.heading2),
-          ),
-        ),
-        PopupMenuItem(
-          value: MarkdownMode.heading3,
-          child: _HeadingItem(
-            label: l10n.formatting_barText_styleH3,
-            prefix: '### ',
-            selected: _isActive(MarkdownMode.heading3),
-          ),
-        ),
-      ],
-    );
+    // // قائمة منسدلة للعناوين H1/H2/H3.
+    // final heading = PopupMenuButton<MarkdownMode>(
+    //   tooltip: l10n.formattingHeading,
+    //   borderRadius: .circular(4),
+    //   onSelected: (mode) => widget.onFormat(mode),
+    //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    //   color: theme.centerChannelBg,
+    //   itemBuilder: (context) => [
+    //     PopupMenuItem(
+    //       value: MarkdownMode.heading1,
+    //       child: _HeadingItem(
+    //         label: l10n.formatting_barText_styleH1,
+    //         prefix: '# ',
+    //         selected: _isActive(MarkdownMode.heading1),
+    //       ),
+    //     ),
+    //     PopupMenuItem(
+    //       value: MarkdownMode.heading2,
+    //       child: _HeadingItem(
+    //         label: l10n.formatting_barText_styleH2,
+    //         prefix: '## ',
+    //         selected: _isActive(MarkdownMode.heading2),
+    //       ),
+    //     ),
+    //     PopupMenuItem(
+    //       value: MarkdownMode.heading3,
+    //       child: _HeadingItem(
+    //         label: l10n.formatting_barText_styleH3,
+    //         prefix: '### ',
+    //         selected: _isActive(MarkdownMode.heading3),
+    //       ),
+    //     ),
+    //   ],
+    //   child: Padding(
+    //     padding: const EdgeInsets.all(4.0),
+    //     child: Text(
+    //       'H',
+    //       style: TextStyle(
+    //         color: theme.centerChannelColor.withValues(alpha: 0.65),
+    //         fontSize: 14,
+    //         fontWeight: .bold,
+    //       ),
+    //     ),
+    //   ),
+    // );
 
-    final hasHeading =
-        _isActive(MarkdownMode.heading1) ||
-        _isActive(MarkdownMode.heading2) ||
-        _isActive(MarkdownMode.heading3);
+    // final hasHeading =
+    //     _isActive(MarkdownMode.heading1) ||
+    //     _isActive(MarkdownMode.heading2) ||
+    //     _isActive(MarkdownMode.heading3);
 
     return SizedBox(
       height: 36,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // مجموعة الأساسية.
-            item(
-              Icons.format_bold,
-              l10n.formattingBold,
-              () => onFormat(MarkdownMode.bold),
-              active: _isActive(MarkdownMode.bold),
-              shortcut: _shortcutOf(MarkdownMode.bold),
-            ),
-            item(
-              Icons.format_italic,
-              l10n.formattingItalic,
-              () => onFormat(MarkdownMode.italic),
-              active: _isActive(MarkdownMode.italic),
-              shortcut: _shortcutOf(MarkdownMode.italic),
-            ),
-            item(
-              Icons.strikethrough_s,
-              l10n.formattingStrike,
-              () => onFormat(MarkdownMode.strike),
-              active: _isActive(MarkdownMode.strike),
-              shortcut: _shortcutOf(MarkdownMode.strike),
-            ),
-            item(
-              Icons.code,
-              l10n.formattingCode,
-              () => onFormat(MarkdownMode.code),
-              active: _isActive(MarkdownMode.code),
-              shortcut: _shortcutOf(MarkdownMode.code),
-            ),
-            item(
-              Icons.link,
-              l10n.formattingLink,
-              () => onFormat(MarkdownMode.link),
-              shortcut: _shortcutOf(MarkdownMode.link),
-            ),
-            divider(),
-            // مجموعة الاقتباس والقوائم.
-            item(
-              Icons.format_quote,
-              l10n.formattingQuote,
-              () => onFormat(MarkdownMode.quote),
-              active: _isActive(MarkdownMode.quote),
-            ),
-            item(
-              Icons.format_list_bulleted,
-              l10n.formattingUnorderedList,
-              () => onFormat(MarkdownMode.ul),
-              active: _isActive(MarkdownMode.ul),
-            ),
-            item(
-              Icons.format_list_numbered,
-              l10n.formattingOrderedList,
-              () => onFormat(MarkdownMode.ol),
-              active: _isActive(MarkdownMode.ol),
-            ),
-            item(
-              Icons.check_box_outline_blank,
-              l10n.formattingTaskList,
-              () => onFormat(MarkdownMode.taskList),
-              active: _isActive(MarkdownMode.taskList),
-            ),
-            divider(),
-            // مجموعة العناصر المتقدمة.
-            Tooltip(
-              message: l10n.formattingHeading,
-              child: Container(
-                decoration: hasHeading
-                    ? BoxDecoration(
-                        color: theme.centerChannelColor.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(4),
-                      )
-                    : null,
-                child: heading,
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                spacing: 4,
+                mainAxisAlignment: .start,
+                children: [
+                  // مجموعة الأساسية.
+                  item(
+                    Icons.format_bold,
+                    l10n.formattingBold,
+                    () => widget.onFormat(MarkdownMode.bold),
+                    active: _isActive(MarkdownMode.bold),
+                    shortcut: _shortcutOf(MarkdownMode.bold),
+                  ),
+                  item(
+                    Icons.format_italic,
+                    l10n.formattingItalic,
+                    () => widget.onFormat(MarkdownMode.italic),
+                    active: _isActive(MarkdownMode.italic),
+                    shortcut: _shortcutOf(MarkdownMode.italic),
+                  ),
+                  item(
+                    Icons.strikethrough_s,
+                    l10n.formattingStrike,
+                    () => widget.onFormat(MarkdownMode.strike),
+                    active: _isActive(MarkdownMode.strike),
+                    shortcut: _shortcutOf(MarkdownMode.strike),
+                  ),
+                  item(
+                    Icons.h_mobiledata,
+                    l10n.formattingHeading,
+                    () => widget.onFormat(MarkdownMode.heading1),
+                    active: _isActive(MarkdownMode.heading1),
+                    shortcut: _shortcutOf(MarkdownMode.heading1),
+                    iconSize: 20,
+                  ),
+                  divider(),
+                  item(
+                    Icons.link,
+                    l10n.formattingLink,
+                    () => widget.onFormat(MarkdownMode.link),
+                    shortcut: _shortcutOf(MarkdownMode.link),
+                  ),
+                  item(
+                    Icons.code,
+                    l10n.formattingCode,
+                    () => widget.onFormat(MarkdownMode.code),
+                    active: _isActive(MarkdownMode.code),
+                    shortcut: _shortcutOf(MarkdownMode.code),
+                  ),
+                  // مجموعة الاقتباس والقوائم.
+                  item(
+                    Icons.format_quote,
+                    l10n.formattingQuote,
+                    () => widget.onFormat(MarkdownMode.quote),
+                    active: _isActive(MarkdownMode.quote),
+                  ),
+                  item(
+                    Icons.format_list_bulleted,
+                    l10n.formattingUnorderedList,
+                    () => widget.onFormat(MarkdownMode.ul),
+                    active: _isActive(MarkdownMode.ul),
+                  ),
+                  item(
+                    Icons.format_list_numbered,
+                    l10n.formattingOrderedList,
+                    () => widget.onFormat(MarkdownMode.ol),
+                    active: _isActive(MarkdownMode.ol),
+                  ),
+
+                  divider(),
+                  item(
+                    Icons.info_outline_rounded,
+                    'Message Priority',
+                    () => widget.onFormat(MarkdownMode.ol),
+                    active: _isActive(MarkdownMode.ol),
+                  ),
+                ],
               ),
             ),
-            item(
-              Icons.table_chart_outlined,
-              l10n.formattingTable,
-              () => onFormat(MarkdownMode.table),
-            ),
-            item(
-              Icons.remove,
-              l10n.formattingHorizontalRule,
-              () => onFormat(MarkdownMode.horizontalRule),
-            ),
-            divider(),
-            item(
-              Icons.preview,
-              l10n.formattingPreview,
-              onTogglePreview ?? () {},
-              active: showPreview,
-            ),
-          ],
-        ),
+          ),
+          Row(
+            spacing: 4,
+            children: [
+              Tooltip(
+                message: 'Hide Formatting',
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {},
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      width: 50,
+                      height: 30,
+                      padding: .all(4),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: hideFormatting
+                            ? theme.centerChannelColor.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
+                        children: [
+                          Text('Aa'),
+                          AnimatedRotation(
+                            turns: hideFormatting ? 0.5 : 0,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeInOut,
+                            child: Icon(
+                              Icons.arrow_drop_down,
+                              size: 20,
+                              color: hideFormatting
+                                  ? theme.linkColor
+                                  : theme.centerChannelColor.withValues(
+                                      alpha: 0.65,
+                                    ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              divider(),
+              item(
+                Icons.link,
+                'Upload File',
+                () => widget.onPickFile?.call(),
+                active: false,
+              ),
+
+              item(
+                Icons.emoji_emotions_outlined,
+                'Emoji / Gif piker',
+                widget.composer.toggleEmojiPicker,
+                active: false,
+                key: widget.emojiButtonKey,
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: .all(4),
+                ),
+                onPressed: widget.composer.canSend
+                    ? () => widget.composer.send()
+                    : null,
+                child: Icon(Icons.send_rounded, size: 19),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

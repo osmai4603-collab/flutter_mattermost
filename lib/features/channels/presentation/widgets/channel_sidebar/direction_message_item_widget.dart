@@ -153,6 +153,7 @@ class _DirectionMessageItemWidgetState
                       alignment: AlignmentGeometry.bottomEnd,
                       children: [
                         ProfilePicture.sm(
+                          userId: widget.user?.id,
                           username:
                               widget.user?.firstName ??
                               widget.user?.lastName ??

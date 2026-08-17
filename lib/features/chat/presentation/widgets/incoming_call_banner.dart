@@ -80,6 +80,7 @@ class IncomingCallBanner extends StatelessWidget {
             child: Row(
               children: [
                 ProfilePicture(
+                  userId: ownerId,
                   username: callerLabel,
                   avatarUrl: ownerId.isNotEmpty
                       ? serverUserAvatarUrl(ownerId)

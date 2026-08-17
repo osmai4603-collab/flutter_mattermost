@@ -13,6 +13,7 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 
 // Events
 abstract class PostEvent extends Equatable {
@@ -53,6 +54,7 @@ class SendPostEvent extends PostEvent {
   final bool alsoSendToChannel;
   final Map<String, dynamic>? metadata;
   final int? scheduledAt;
+  final Completer<PostEntity>? completer;
 
   const SendPostEvent({
     required this.channelId,
@@ -62,6 +64,7 @@ class SendPostEvent extends PostEvent {
     this.alsoSendToChannel = false,
     this.metadata,
     this.scheduledAt,
+    this.completer,
   });
   @override
   List<Object?> get props => [
@@ -256,7 +259,24 @@ class PostsLoadedState extends PostsState {
   List<ReactionEntity> reactionsFor(String postId) =>
       reactions[postId] ?? const [];
 
-  List<FileInfoEntity> filesFor(String postId) => files[postId] ?? const [];
+  List<FileInfoEntity> filesFor(String postId) {
+    final list = files[postId];
+    if (list != null && list.isNotEmpty) return list;
+
+    final post = postById(postId);
+    if (post != null &&
+        post.metadata?.files != null &&
+        post.metadata!.files!.isNotEmpty) {
+      final parsed = <FileInfoEntity>[];
+      for (final info in post.metadata!.files!) {
+        try {
+          if (info.id.isNotEmpty) parsed.add(info);
+        } catch (_) {}
+      }
+      if (parsed.isNotEmpty) return parsed;
+    }
+    return const [];
+  }
 
   PostsLoadedState copyWith({
     List<PostEntity>? posts,
@@ -313,9 +333,14 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   final TypingRemoteDataSource _typingDataSource;
   final SecureStorageService _secureStorage;
   final ChannelBloc _channelBloc;
+  final RhsBloc _rhsBloc;
   StreamSubscription? _wsSubscription;
   StreamSubscription? _channelSubscription;
   Timer? _typingClearTimer;
+
+  /// يتتبع آخر وقت لتغيير التفاعل لكل (postId:emoji).
+  /// يُستخدم لمنع أحداث WebSocket القديمة من إعادة إضافة تفاعل أُزيل بالفعل.
+  final Map<String, int> _lastReactionToggleAt = {};
 
   PostBloc(
     this._postRepository,
@@ -323,6 +348,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     this._typingDataSource,
     this._secureStorage,
     this._channelBloc,
+    this._rhsBloc,
   ) : super(PostInitialState()) {
     on<LoadPostsForChannelEvent>(_onLoadPosts);
     on<LoadMorePostsEvent>(_onLoadMorePosts);
@@ -434,11 +460,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         final metadataFiles = post.metadata?.files;
         if (metadataFiles == null || metadataFiles.isEmpty) continue;
         final list = <FileInfoEntity>[];
-        for (final map in metadataFiles) {
+        for (final info in metadataFiles) {
           try {
-            final info = FileInfoModel.fromMap(
-              Map<String, dynamic>.from(map),
-            ).toEntity();
             if (info.id.isEmpty) continue;
             list.add(info);
           } catch (_) {}
@@ -540,6 +563,18 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     }
   }
 
+  List<FileInfoEntity> _extractFilesFromPost(PostEntity post) {
+    final metadataFiles = post.metadata?.files;
+    if (metadataFiles == null || metadataFiles.isEmpty) return const [];
+    final list = <FileInfoEntity>[];
+    for (final info in metadataFiles) {
+      try {
+        if (info.id.isNotEmpty) list.add(info);
+      } catch (_) {}
+    }
+    return list;
+  }
+
   Future<void> _onSendPost(
     SendPostEvent event,
     Emitter<PostsState> emit,
@@ -556,23 +591,71 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       );
       final current = state;
       if (current is PostsLoadedState && current.channelId == event.channelId) {
-        emit(current.copyWith(posts: [newPost, ...current.posts]));
+        var updatedFiles = current.files;
+        final fileList = _extractFilesFromPost(newPost);
+        if (fileList.isNotEmpty) {
+          updatedFiles = Map<String, List<FileInfoEntity>>.from(current.files)
+            ..[newPost.id] = fileList;
+        } else if (newPost.fileIds.isNotEmpty) {
+          try {
+            final fetched = await _postRepository.getFilesForPost(newPost.id);
+            if (fetched.isNotEmpty) {
+              updatedFiles = Map<String, List<FileInfoEntity>>.from(
+                current.files,
+              )..[newPost.id] = fetched;
+            }
+          } catch (_) {}
+        }
+        emit(
+          current.copyWith(
+            posts: [newPost, ...current.posts],
+            files: updatedFiles,
+          ),
+        );
       }
-    } catch (_) {
-      // فشل الإرسال — يتعامل معه الـ repository عبر طابور الإرسال المحلي.
+      event.completer?.complete(newPost);
+    } catch (e) {
+      event.completer?.completeError(e);
     }
   }
 
-  void _onRealtimePostReceived(
+  Future<void> _onRealtimePostReceived(
     RealtimePostReceivedEvent event,
     Emitter<PostsState> emit,
-  ) {
+  ) async {
     final current = state;
     if (current is PostsLoadedState &&
         current.channelId == event.post.channelId) {
       final exists = current.posts.any((p) => p.id == event.post.id);
       if (!exists) {
-        emit(current.copyWith(posts: [event.post, ...current.posts]));
+        var updatedFiles = current.files;
+        final fileList = _extractFilesFromPost(event.post);
+        if (fileList.isNotEmpty) {
+          updatedFiles = Map<String, List<FileInfoEntity>>.from(current.files)
+            ..[event.post.id] = fileList;
+        } else if (event.post.fileIds.isNotEmpty) {
+          try {
+            final fetched = await _postRepository.getFilesForPost(
+              event.post.id,
+            );
+            if (fetched.isNotEmpty) {
+              updatedFiles = Map<String, List<FileInfoEntity>>.from(
+                current.files,
+              )..[event.post.id] = fetched;
+            }
+          } catch (_) {}
+        }
+        emit(
+          current.copyWith(
+            posts: [event.post, ...current.posts],
+            files: updatedFiles,
+          ),
+        );
+      }
+
+      // Notify RHS if this is a reply to the currently open thread
+      if (event.post.rootId.isNotEmpty) {
+        _rhsBloc.add(ThreadRealtimeUpdatedEvent(event.post));
       }
     }
   }
@@ -592,6 +675,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         ),
       );
     }
+
+    // Notify RHS
+    _rhsBloc.add(ThreadRealtimeUpdatedEvent(event.post));
   }
 
   void _onRealtimePostDeleted(
@@ -606,6 +692,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         ),
       );
     }
+
+    // Notify RHS
+    _rhsBloc.add(ThreadRealtimeDeletedEvent(event.postId));
   }
 
   void _onRealtimeTyping(RealtimeTypingEvent event, Emitter<PostsState> emit) {
@@ -729,16 +818,30 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     ToggleReactionEvent event,
     Emitter<PostsState> emit,
   ) async {
-    final current = state;
-    if (current is! PostsLoadedState) return;
-    final existing = current.reactionsFor(event.postId);
     final userId = await _currentUserId();
-    final mine = existing.where((r) => r.userId == userId).toList();
-    final wasReacted = mine.any((r) => r.emojiName == event.emoji);
+
+    // جلب الحالة الحالية فوراً قبل البدء بالتحديث المتفائل
+    if (state is! PostsLoadedState) return;
+    var currentState = state as PostsLoadedState;
+
+    final existing = currentState.reactionsFor(event.postId);
+    final wasReacted = existing.any(
+      (r) =>
+          (r.userId == userId || r.userId == 'me') &&
+          r.emojiName == event.emoji,
+    );
+
+    // تسجيل وقت التغيير لمنع أحداث WebSocket القديمة من التدخل
+    final toggleKey = '${event.postId}:${event.emoji}';
+    _lastReactionToggleAt[toggleKey] = DateTime.now().millisecondsSinceEpoch;
 
     final next = [...existing];
     if (wasReacted) {
-      next.removeWhere((r) => r.userId == userId && r.emojiName == event.emoji);
+      next.removeWhere(
+        (r) =>
+            (r.userId == userId || r.userId == 'me') &&
+            r.emojiName == event.emoji,
+      );
     } else {
       next.add(
         ReactionEntity(
@@ -750,8 +853,12 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         ),
       );
     }
+
+    // إرسال التحديث المتفائل باستخدام أحدث حالة متوفرة
     emit(
-      current.copyWith(reactions: {...current.reactions, event.postId: next}),
+      currentState.copyWith(
+        reactions: {...currentState.reactions, event.postId: next},
+      ),
     );
 
     try {
@@ -761,8 +868,53 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         await _postRepository.addReaction(event.postId, event.emoji);
       }
     } catch (_) {
-      // التراجع عن التحديث المتفائل عند الفشل.
-      emit(current.copyWith(reactions: current.reactions));
+      // تراجع جراحي: نتحقق من الحالة اللحظية قبل التراجع
+      final latestState = state;
+      if (latestState is PostsLoadedState) {
+        final currentForPost = latestState.reactionsFor(event.postId);
+
+        // لا نتراجع إلا إذا كان التفاعل ما زال "متفائلاً" (بدون serverId)
+        // ولم يتم تأكيده بعد بواسطة WebSocket.
+        final isStillOptimistic =
+            !wasReacted &&
+            currentForPost.any(
+              (r) =>
+                  r.serverId.isEmpty &&
+                  r.emojiName == event.emoji &&
+                  (r.userId == userId || r.userId == 'me'),
+            );
+        final failedToRemove =
+            wasReacted &&
+            !currentForPost.any(
+              (r) =>
+                  r.emojiName == event.emoji &&
+                  (r.userId == userId || r.userId == 'me'),
+            );
+
+        if (isStillOptimistic || failedToRemove) {
+          final reverted = [...currentForPost];
+          if (isStillOptimistic) {
+            reverted.removeWhere(
+              (r) => r.serverId.isEmpty && r.emojiName == event.emoji,
+            );
+          } else {
+            reverted.add(
+              ReactionEntity(
+                serverId: '',
+                userId: userId,
+                postId: event.postId,
+                emojiName: event.emoji,
+                createAt: DateTime.now().millisecondsSinceEpoch,
+              ),
+            );
+          }
+          emit(
+            latestState.copyWith(
+              reactions: {...latestState.reactions, event.postId: reverted},
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -770,31 +922,51 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     RealtimeReactionEvent event,
     Emitter<PostsState> emit,
   ) {
-    final current = state;
-    if (current is! PostsLoadedState) return;
-    final existing = current.reactionsFor(event.reaction.postId);
-    final alreadyPresent = existing.any(
+    final currentState = state;
+    if (currentState is! PostsLoadedState) return;
+
+    // عند استلام حدث "إضافة" من WebSocket، تحقق مما إذا كان المستخدم قد
+    // أزال التفاعل محلياً بعد هذا الحدث (سباق الضغط السريع).
+    // إذا كان وقت التغيير المحلي أحدث، تجاهل حدث WebSocket.
+    if (event.added) {
+      final toggleKey = '${event.reaction.postId}:${event.reaction.emojiName}';
+      final lastToggleAt = _lastReactionToggleAt[toggleKey];
+      if (lastToggleAt != null) {
+        final elapsed = DateTime.now().millisecondsSinceEpoch - lastToggleAt;
+        // إذا تم التغيير محلياً خلال 5 ثوانٍ الماضية، تجاهل حدث الإضافة
+        // لأن المستخدم ربما أزال التفاعل بعد أن أضافه.
+        if (elapsed < 5000) {
+          return;
+        }
+      }
+    }
+
+    final existing = currentState.reactionsFor(event.reaction.postId);
+    final existingIndex = existing.indexWhere(
       (r) =>
-          r.userId == event.reaction.userId &&
+          (r.userId == event.reaction.userId || r.userId == 'me') &&
           r.emojiName == event.reaction.emojiName,
     );
+
     List<ReactionEntity> next;
-    if (event.added && !alreadyPresent) {
-      next = [...existing, event.reaction];
-    } else if (!event.added && alreadyPresent) {
-      next = existing
-          .where(
-            (r) =>
-                !(r.userId == event.reaction.userId &&
-                    r.emojiName == event.reaction.emojiName),
-          )
-          .toList();
+    if (event.added) {
+      if (existingIndex != -1) {
+        next = [...existing];
+        next[existingIndex] = event.reaction;
+      } else {
+        next = [...existing, event.reaction];
+      }
     } else {
-      return;
+      if (existingIndex != -1) {
+        next = [...existing]..removeAt(existingIndex);
+      } else {
+        return;
+      }
     }
+
     emit(
-      current.copyWith(
-        reactions: {...current.reactions, event.reaction.postId: next},
+      currentState.copyWith(
+        reactions: {...currentState.reactions, event.reaction.postId: next},
       ),
     );
   }

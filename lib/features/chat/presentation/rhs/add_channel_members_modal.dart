@@ -187,6 +187,7 @@ class _AddChannelMembersModalState extends State<AddChannelMembersModal> {
                           });
                         },
                         secondary: ProfilePicture.sm(
+                          userId: user.id,
                           avatarUrl: userAvatarUrl(user.id),
                           username: user.username,
                         ),

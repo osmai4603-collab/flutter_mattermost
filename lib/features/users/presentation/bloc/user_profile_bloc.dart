@@ -163,10 +163,13 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
     LoadMyProfileEvent event,
     Emitter<UserProfileState> emit,
   ) async {
-    emit(UserProfileLoadingState());
+    final currentProfiles = _currentProfiles;
+    if (state is! UserProfileLoadedState) {
+      emit(UserProfileLoadingState());
+    }
     try {
       final me = await _userRepository.getMyProfile();
-      emit(UserProfileLoadedState(myProfile: me));
+      emit(UserProfileLoadedState(myProfile: me, profiles: currentProfiles));
     } catch (e) {
       emit(UserProfileErrorState(e.toString()));
     }
@@ -203,14 +206,20 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
     SearchUsersEvent event,
     Emitter<UserProfileState> emit,
   ) async {
+    final currentMe = _currentUser;
+    final currentProfiles = _currentProfiles;
     try {
       final results = await _userRepository.searchUsers(event.term);
+      // دمج نتائج البحث مع الملفات الشخصية الموجودة لضمان عدم فقدان بيانات المستخدمين
+      // الذين تظهر رسائلهم في الدردشة الحالية.
+      final byId = <String, UserEntity>{
+        for (final p in currentProfiles) p.id: p,
+        for (final p in results) p.id: p,
+      };
       emit(
         UserProfileLoadedState(
-          myProfile: state is UserProfileLoadedState
-              ? (state as UserProfileLoadedState).myProfile
-              : null,
-          profiles: results,
+          myProfile: currentMe,
+          profiles: byId.values.toList(),
         ),
       );
     } catch (e) {

@@ -80,6 +80,7 @@ class _AutocompleteOverlayState extends State<AutocompleteOverlay> {
           );
         }
         return ProfilePicture(
+          userId: item.userId,
           avatarUrl: _avatarUrlForUser(item.userId),
           username: item.userId ?? '',
           status: item.status,

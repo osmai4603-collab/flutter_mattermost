@@ -86,14 +86,15 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
   List<PostEntity> _applyFilters(List<PostEntity> posts) {
     final query = widget.searchQuery.trim().toLowerCase();
     return posts.where((post) {
-      final hasFiles = post.fileIds.isNotEmpty ||
+      final hasFiles =
+          post.fileIds.isNotEmpty ||
           (post.metadata?.files?.isNotEmpty ?? false);
       if (widget.contentFilter == SavedContentFilter.files && !hasFiles) {
         return false;
       }
       if (query.isEmpty) return true;
       final fileNames = (post.metadata?.files ?? const [])
-          .map((f) => '${f['name'] ?? ''}')
+          .map((f) => f.name)
           .join(' ');
       return post.message.toLowerCase().contains(query) ||
           fileNames.toLowerCase().contains(query);
@@ -228,12 +229,13 @@ class _SavedPinnedPanelState extends State<SavedPinnedPanel> {
           return const Center(child: CircularProgressIndicator());
         }
         final all = snapshot.data ?? const <PostEntity>[];
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          widget.onLoad?.call(all.length);
-        });
         final posts = _applyFilters(all);
-        _loadProfiles(posts);
-        _resolveChannels(posts);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          widget.onLoad?.call(all.length);
+          _loadProfiles(posts);
+          _resolveChannels(posts);
+        });
         if (posts.isEmpty) {
           if (widget.contentFilter == SavedContentFilter.files &&
               all.isNotEmpty) {
@@ -430,6 +432,7 @@ class _PostRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ProfilePicture.sm(
+                    userId: profile?.id ?? post.userId,
                     username: profile?.username ?? '',
                     avatarUrl: null,
                     status: status,

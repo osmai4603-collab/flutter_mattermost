@@ -738,6 +738,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i428.TypingRemoteDataSource>(),
         gh<_i666.SecureStorageService>(),
         gh<_i515.ChannelBloc>(),
+        gh<_i478.RhsBloc>(),
       ),
     );
     gh.lazySingleton<_i478.RhsBloc>(

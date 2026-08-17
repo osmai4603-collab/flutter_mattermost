@@ -119,7 +119,7 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
     if (errorMessage != null) {
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Text(errorMessage!, style: TextStyle(fontSize: 17)),
+        child: SelectableText(errorMessage!, style: TextStyle(fontSize: 17)),
       );
     }
     if (_bookmarks.isEmpty && !_loading) return const SizedBox.shrink();

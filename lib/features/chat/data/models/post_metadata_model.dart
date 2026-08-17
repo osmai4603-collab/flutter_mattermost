@@ -1,4 +1,11 @@
+import 'package:flutter_mattermost/features/chat/data/models/file_info_list_model.dart';
+import 'package:flutter_mattermost/features/chat/data/models/reaction_model.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/file_info_list_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_metadata_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
+import 'package:flutter_mattermost/features/system/data/models/emoji_model.dart';
+import 'package:flutter_mattermost/features/system/domain/entities/emoji_entity.dart';
 
 final class PostMetadataModel extends PostMetadataEntity {
   const PostMetadataModel({
@@ -18,20 +25,20 @@ final class PostMetadataModel extends PostMetadataEntity {
           (e) => Map<String, dynamic>.from(e as Map<String, dynamic>),
         ),
       ),
-      emojis: List<Map<String, dynamic>>.from(
+      emojis: List<EmojiEntity>.from(
         (map["emojis"] as List<dynamic>? ?? []).map(
-          (e) => Map<String, dynamic>.from(e as Map<String, dynamic>),
+          (e) => EmojiModel.fromMap(e as Map<String, dynamic>),
         ),
       ),
-      files: List<Map<String, dynamic>>.from(
+      files: List<FileInfoEntity>.from(
         (map["files"] as List<dynamic>? ?? []).map(
-          (e) => Map<String, dynamic>.from(e as Map<String, dynamic>),
+          (e) => FileInfoListModel.fromMap(e as Map<String, dynamic>),
         ),
       ),
       images: map["images"] as Map<String, dynamic>?,
-      reactions: List<Map<String, dynamic>>.from(
+      reactions: List<ReactionEntity>.from(
         (map["reactions"] as List<dynamic>? ?? []).map(
-          (e) => Map<String, dynamic>.from(e as Map<String, dynamic>),
+          (e) => ReactionModel.fromMap(e as Map<String, dynamic>),
         ),
       ),
       priority: map["priority"],
@@ -70,10 +77,10 @@ final class PostMetadataModel extends PostMetadataEntity {
   @override
   PostMetadataModel copyWith({
     List<Map<String, dynamic>>? embeds,
-    List<Map<String, dynamic>>? emojis,
-    List<Map<String, dynamic>>? files,
+    List<EmojiEntity>? emojis,
+    List<FileInfoEntity>? files,
     Map<String, dynamic>? images,
-    List<Map<String, dynamic>>? reactions,
+    List<ReactionEntity>? reactions,
     dynamic priority,
     List<Map<String, dynamic>>? acknowledgements,
   }) {
@@ -89,12 +96,12 @@ final class PostMetadataModel extends PostMetadataEntity {
   }
 
   PostMetadataEntity toEntity() => PostMetadataEntity(
-        embeds: embeds,
-        emojis: emojis,
-        files: files,
-        images: images,
-        reactions: reactions,
-        priority: priority,
-        acknowledgements: acknowledgements,
-      );
+    embeds: embeds,
+    emojis: emojis,
+    files: files,
+    images: images,
+    reactions: reactions,
+    priority: priority,
+    acknowledgements: acknowledgements,
+  );
 }

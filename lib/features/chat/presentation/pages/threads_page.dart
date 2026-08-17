@@ -10,6 +10,7 @@ import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
@@ -435,10 +436,12 @@ class _ThreadsPageState extends State<ThreadsPage> {
   String? _displayNameFor(Map<String, UserEntity> profiles, String userId) {
     final profile = profiles[userId];
     if (profile == null) return null;
-    if (profile.firstName.isNotEmpty || profile.lastName.isNotEmpty) {
-      return '${profile.firstName} ${profile.lastName}'.trim();
-    }
-    return profile.username.isNotEmpty ? profile.username : null;
+    return getMentionDisplayName(
+      username: profile.username,
+      nickname: profile.nickname,
+      firstName: profile.firstName,
+      lastName: profile.lastName,
+    );
   }
 
   String? _teamName() {

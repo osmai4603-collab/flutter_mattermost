@@ -24,20 +24,21 @@ class LocalNotificationService {
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
 
     const LinuxInitializationSettings initializationSettingsLinux =
         LinuxInitializationSettings(defaultActionName: 'Open');
 
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin,
-      macOS: initializationSettingsDarwin,
-      linux: initializationSettingsLinux,
-    );
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+          macOS: initializationSettingsDarwin,
+          linux: initializationSettingsLinux,
+        );
 
     await _notificationsPlugin.initialize(
       initializationSettings,
@@ -53,27 +54,23 @@ class LocalNotificationService {
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          _notificationsPlugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
+          _notificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                AndroidFlutterLocalNotificationsPlugin
+              >();
       await androidImplementation?.requestNotificationsPermission();
     } else if (defaultTargetPlatform == TargetPlatform.iOS ||
         defaultTargetPlatform == TargetPlatform.macOS) {
       await _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-              IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
+            IOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
       await _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-              MacOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(
-            alert: true,
-            badge: true,
-            sound: true,
-          );
+            MacOSFlutterLocalNotificationsPlugin
+          >()
+          ?.requestPermissions(alert: true, badge: true, sound: true);
     }
   }
 
@@ -88,9 +85,9 @@ class LocalNotificationService {
   }
 
   Future<void> _handleWsEvent(TypedWebSocketEvent event) async {
-    // Show notification only if backgrounded? 
+    // Show notification only if backgrounded?
     // In a real app we'd check AppLifecycleState.
-    
+
     if (event is PostCreatedEvent) {
       await showNotification(
         id: event.post.id.hashCode,
@@ -129,19 +126,19 @@ class LocalNotificationService {
 
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'mattermost_channel',
-      'Mattermost Notifications',
-      channelDescription: 'Notifications from Mattermost server',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: true,
-    );
-    
+          'mattermost_channel',
+          'Mattermost Notifications',
+          channelDescription: 'Notifications from Mattermost server',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+        );
+
     const LinuxNotificationDetails linuxPlatformChannelSpecifics =
         LinuxNotificationDetails(
-      defaultActionName: 'Open',
-      urgency: LinuxNotificationUrgency.critical,
-    );
+          defaultActionName: 'Open',
+          urgency: LinuxNotificationUrgency.critical,
+        );
 
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,

@@ -51,10 +51,14 @@ class ChannelBookmarksRemoteDataSourceImpl
     if (result is ApiSuccess<List<ChannelBookmarkModel>>) {
       return result.data;
     }
-    // if (result is ApiFailure<List<ChannelBookmarkModel>> &&
-    //     result.error is FeatureError) {
-    //   return [];
-    // }
+    if (result is ApiFailure<List<ChannelBookmarkModel>>) {
+      if (result.error is FeatureError) {
+        return [];
+      }
+      throw Exception(
+        'Failed to get bookmarks of channel $channelId: ${result.error}',
+      );
+    }
     throw Exception('Failed to get bookmarks of channel $channelId');
   }
 

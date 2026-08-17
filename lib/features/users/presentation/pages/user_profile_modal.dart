@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
@@ -56,10 +57,12 @@ class _UserProfileModalState extends State<_UserProfileModal> {
   }
 
   String _displayName(UserEntity user) {
-    final full = '${user.firstName} ${user.lastName}'.trim();
-    if (full.isNotEmpty) return full;
-    if (user.nickname.isNotEmpty) return user.nickname;
-    return user.username;
+    return getMentionDisplayName(
+      username: user.username,
+      nickname: user.nickname,
+      firstName: user.firstName,
+      lastName: user.lastName,
+    );
   }
 
   String _statusLabel(AppLocalizations l10n, UserStatus? status) {
@@ -174,6 +177,7 @@ class _UserProfileModalState extends State<_UserProfileModal> {
                   )
                 else ...[
                   ProfilePicture(
+                    userId: user.id,
                     username: user.username,
                     avatarUrl: userAvatarUrl(user.id),
                     status: status,

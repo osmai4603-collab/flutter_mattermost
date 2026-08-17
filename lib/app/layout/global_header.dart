@@ -360,6 +360,7 @@ class _UserAccountMenuButton extends StatelessWidget {
         child: Row(
           children: [
             ProfilePicture.sm(
+              userId: user?.id,
               username: user?.username ?? '?',
               avatarUrl: null,
               status: myStatus,

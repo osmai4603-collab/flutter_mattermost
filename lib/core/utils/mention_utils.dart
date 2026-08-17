@@ -133,16 +133,32 @@ class MentionOccurrence {
 
 /// الاسم المعروض للمستخدم: اللقب إن وُجد، وإلا الاسم الكامل،
 /// وإلا username — نظير getDisplayNameByUser في webapp.
+/// يتضمن فلترة للأسماء التي تحتوي على '.' لاستبدالها بمسافات وتكبير أول حرف.
 String getMentionDisplayName({
   required String username,
   String nickname = '',
   String firstName = '',
   String lastName = '',
 }) {
-  if (nickname.trim().isNotEmpty) return nickname;
-  final full = '$firstName $lastName'.trim();
-  if (full.isNotEmpty) return full;
-  return username;
+  String name;
+  if (nickname.trim().isNotEmpty) {
+    name = nickname;
+  } else {
+    final full = '$firstName $lastName'.trim();
+    name = full.isNotEmpty ? full : username;
+  }
+  return formatMemberName(name);
+}
+
+/// فلترة اسم العضو: إذا كان يحتوي على '.' يتم استبدالها بمسافة
+/// وتكبير أول حرف من كل كلمة.
+String formatMemberName(String name) {
+  if (!name.contains('.')) return name;
+  return name
+      .split('.')
+      .where((s) => s.isNotEmpty)
+      .map((s) => s[0].toUpperCase() + s.substring(1).toLowerCase())
+      .join(' ');
 }
 
 /// هل يذكر النص أيّاً من مفاتيح الإشارة المحددة؟ — نظير فحص

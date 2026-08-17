@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
@@ -15,8 +16,38 @@ String serverUserAvatarUrl(String userId) {
   return '$serverUrl/api/v4/users/$userId/image';
 }
 
+const List<Color> avatarColors = [
+  Color(0xFFC5087E), // {197, 8, 126, 255}
+  Color(0xFFE3CF12), // {227, 207, 18, 255}
+  Color(0xFF1CB569), // {28, 181, 105, 255}
+  Color(0xFF23BCE0), // {35, 188, 224, 255}
+  Color(0xFF7431C4), // {116, 49, 196, 255}
+  Color(0xFFC5087E), // {197, 8, 126, 255}
+  Color(0xFFC51313), // {197, 19, 19, 255}
+  Color(0xFFFA8606), // {250, 134, 6, 255}
+  Color(0xFFE3CF12), // {227, 207, 18, 255}
+  Color(0xFF7BC947), // {123, 201, 71, 255}
+  Color(0xFF1CB569), // {28, 181, 105, 255}
+  Color(0xFF23BCE0), // {35, 188, 224, 255}
+  Color(0xFF7431C4), // {116, 49, 196, 255}
+  Color(0xFFC5087E), // {197, 8, 126, 255}
+  Color(0xFFC51313), // {197, 19, 19, 255}
+  Color(0xFFFA8606), // {250, 134, 6, 255}
+  Color(0xFFE3CF12), // {227, 207, 18, 255}
+  Color(0xFF7BC947), // {123, 201, 71, 255}
+  Color(0xFF1CB569), // {28, 181, 105, 255}
+  Color(0xFF23BCE0), // {35, 188, 224, 255}
+  Color(0xFF7431C4), // {116, 49, 196, 255}
+  Color(0xFFC5087E), // {197, 8, 126, 255}
+  Color(0xFFC51313), // {197, 19, 19, 255}
+  Color(0xFFFA8606), // {250, 134, 6, 255}
+  Color(0xFFE3CF12), // {227, 207, 18, 255}
+  Color(0xFF7BC947), // {123, 201, 71, 255}
+];
+
 /// صورة المستخدم مع الحالة (مطابقة components/profile_picture في webapp).
 class ProfilePicture extends StatelessWidget {
+  final String? userId;
   final String? avatarUrl;
   final String username;
   final UserStatus? status;
@@ -25,6 +56,7 @@ class ProfilePicture extends StatelessWidget {
 
   const ProfilePicture({
     super.key,
+    this.userId,
     this.avatarUrl,
     required this.username,
     this.status,
@@ -33,11 +65,13 @@ class ProfilePicture extends StatelessWidget {
   });
 
   factory ProfilePicture.sm({
+    String? userId,
     String? avatarUrl,
     required String username,
     UserStatus? status,
     bool showStatus = false,
   }) => ProfilePicture(
+    userId: userId,
     avatarUrl: avatarUrl,
     username: username,
     status: status,
@@ -46,11 +80,13 @@ class ProfilePicture extends StatelessWidget {
   );
 
   factory ProfilePicture.md({
+    String? userId,
     String? avatarUrl,
     required String username,
     UserStatus? status,
     bool showStatus = true,
   }) => ProfilePicture(
+    userId: userId,
     avatarUrl: avatarUrl,
     username: username,
     status: status,
@@ -59,10 +95,12 @@ class ProfilePicture extends StatelessWidget {
   );
 
   factory ProfilePicture.lg({
+    String? userId,
     String? avatarUrl,
     required String username,
     UserStatus? status,
   }) => ProfilePicture(
+    userId: userId,
     avatarUrl: avatarUrl,
     username: username,
     status: status,
@@ -71,16 +109,33 @@ class ProfilePicture extends StatelessWidget {
   );
 
   factory ProfilePicture.xl({
+    String? userId,
     String? avatarUrl,
     required String username,
     UserStatus? status,
   }) => ProfilePicture(
+    userId: userId,
     avatarUrl: avatarUrl,
     username: username,
     status: status,
     size: 72,
     showStatus: true,
   );
+
+  Color _getAvatarColor(String? userId, String username) {
+    final seedString = userId != null && userId.isNotEmpty ? userId : username;
+    if (seedString.isEmpty) return const Color(0xFFC5087E);
+    
+    // FNV-1a 32-bit hash implementation
+    int hash = 2166136261;
+    final bytes = utf8.encode(seedString);
+    for (final byte in bytes) {
+      hash ^= byte;
+      hash = (hash * 16777619) & 0xFFFFFFFF;
+    }
+    
+    return avatarColors[hash % avatarColors.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +145,7 @@ class ProfilePicture extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: theme.sidebarHeaderBg.withValues(alpha: 0.9),
+        color: _getAvatarColor(userId, username),
         borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
@@ -157,7 +212,7 @@ class ProfilePicture extends StatelessWidget {
       child: Text(
         initials,
         style: TextStyle(
-          color: theme.sidebarHeaderTextColor,
+          color: Colors.white,
           fontSize: size * 0.4,
           fontWeight: FontWeight.bold,
         ),

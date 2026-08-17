@@ -16,15 +16,8 @@ class ReactionEntity extends Entity {
   });
 
   @override
-  List<Object?> get props => [
-        serverId,
-        userId,
-        postId,
-        emojiName,
-        createAt,
-      ];
+  List<Object?> get props => [serverId, userId, postId, emojiName, createAt];
 
-  @override
   ReactionEntity copyWith({
     String? serverId,
     String? userId,

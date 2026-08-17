@@ -77,6 +77,9 @@ class _DirectMessageCategoryWidgetState
       for (final ch in widget.channels)
         ...dmCounterpartIds(ch, widget.currentUserId),
     };
+    if (widget.currentUserId.isNotEmpty) {
+      context.read<UserStatusBloc>().add(LoadMyStatusEvent(widget.currentUserId));
+    }
     if (userIds.isEmpty) return;
     context.read<UserStatusBloc>().add(LoadUserStatusesEvent(userIds.toList()));
   }

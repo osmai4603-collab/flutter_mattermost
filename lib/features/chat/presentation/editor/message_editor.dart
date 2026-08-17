@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
@@ -11,6 +14,8 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/files_remote_data_source.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplete/autocomplete_controller.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplete/autocomplete_overlay.dart';
@@ -48,7 +53,7 @@ class _MessageEditorState extends State<MessageEditor> {
   String _channelId = '';
   String _teamId = '';
   String _rootId = '';
-  bool _alsoSendToChannel = false;
+  bool _alsoSendToChannel = false, previewMode = false;
 
   final GlobalKey _emojiButtonKey = GlobalKey();
   final GlobalKey _editorAnchorKey = GlobalKey();
@@ -181,24 +186,50 @@ class _MessageEditorState extends State<MessageEditor> {
   }) async {
     final composer = _composer;
     if (composer == null || channelId.isEmpty) return;
+    
+    final completer = Completer<PostEntity>();
+
     if (composer.isEditMode) {
       context.read<PostBloc>().add(
         EditPostEvent(composer.editingPostId, message),
       );
+      // For simplicity, we don't await edit yet as it doesn't support completer yet
+      return;
     } else {
-      context.read<PostBloc>().add(
-        SendPostEvent(
-          channelId: channelId,
-          message: message,
-          rootId: rootId,
-          fileIds: fileIds,
-          alsoSendToChannel: _alsoSendToChannel,
-          metadata: metadata,
-          scheduledAt: scheduledAt,
-        ),
-      );
-      if (_alsoSendToChannel) {
-        setState(() => _alsoSendToChannel = false);
+      if (rootId != null && rootId.isNotEmpty) {
+        context.read<RhsBloc>().add(
+          SendThreadPostEvent(
+            channelId: channelId,
+            rootPostId: rootId,
+            message: message,
+            fileIds: fileIds,
+            metadata: metadata,
+            completer: completer,
+          ),
+        );
+      } else {
+        context.read<PostBloc>().add(
+          SendPostEvent(
+            channelId: channelId,
+            message: message,
+            rootId: rootId,
+            fileIds: fileIds,
+            alsoSendToChannel: _alsoSendToChannel,
+            metadata: metadata,
+            scheduledAt: scheduledAt,
+            completer: completer,
+          ),
+        );
+      }
+      
+      try {
+        await completer.future;
+        if (_alsoSendToChannel) {
+          setState(() => _alsoSendToChannel = false);
+        }
+      } catch (e) {
+        // Rethrow so ComposerController can handle it
+        rethrow;
       }
     }
   }
@@ -252,8 +283,10 @@ class _MessageEditorState extends State<MessageEditor> {
   void _showPriorityMenu(ComposerController composer) {
     final theme = AppTheme.of(context);
     final overlaySize = context.size ?? const Size(400, 600);
-    final overlayTopLeft = (context.findRenderObject() as RenderBox?)
-            ?.localToGlobal(Offset.zero) ??
+    final overlayTopLeft =
+        (context.findRenderObject() as RenderBox?)?.localToGlobal(
+          Offset.zero,
+        ) ??
         Offset.zero;
     showMenu<String>(
       context: context,
@@ -280,14 +313,14 @@ class _MessageEditorState extends State<MessageEditor> {
                   option.$1 == ComposerController.priorityUrgent
                       ? Icons.bolt
                       : option.$1 == ComposerController.priorityImportant
-                          ? Icons.flag
-                          : Icons.remove_circle_outline,
+                      ? Icons.flag
+                      : Icons.remove_circle_outline,
                   size: 18,
                   color: option.$1 == ComposerController.priorityUrgent
                       ? const Color(0xFFCC3232)
                       : option.$1 == ComposerController.priorityImportant
-                          ? const Color(0xFFE3A319)
-                          : theme.centerChannelColor.withValues(alpha: 0.5),
+                      ? const Color(0xFFE3A319)
+                      : theme.centerChannelColor.withValues(alpha: 0.5),
                 ),
                 const SizedBox(width: 10),
                 Text(option.$2),
@@ -359,11 +392,15 @@ class _MessageEditorState extends State<MessageEditor> {
 
     final overlay = Overlay.of(context);
     final overlayBox = overlay.context.findRenderObject()! as RenderBox;
-    final anchorBox = _editorAnchorKey.currentContext?.findRenderObject() as RenderBox?;
+    final anchorBox =
+        _editorAnchorKey.currentContext?.findRenderObject() as RenderBox?;
     if (anchorBox == null || !anchorBox.hasSize) return;
 
     const overlaySize = 260.0;
-    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+    final anchorPos = anchorBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
 
     var dx = anchorPos.dx + 8;
     if (dx + overlaySize > overlayBox.size.width - 8) {
@@ -402,13 +439,17 @@ class _MessageEditorState extends State<MessageEditor> {
 
     final overlay = Overlay.of(context);
     final overlayBox = overlay.context.findRenderObject()! as RenderBox;
-    final anchorBox = _emojiButtonKey.currentContext?.findRenderObject() as RenderBox?;
+    final anchorBox =
+        _emojiButtonKey.currentContext?.findRenderObject() as RenderBox?;
     if (anchorBox == null || !anchorBox.hasSize) return;
 
     final screenSize = MediaQuery.sizeOf(context);
     final cardWidth = math.min(360.0, screenSize.width - 32);
     final cardHeight = math.min(430.0, screenSize.height - 140);
-    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+    final anchorPos = anchorBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
 
     var dx = anchorPos.dx + anchorBox.size.width - cardWidth;
     if (dx < 8) dx = 8;
@@ -477,6 +518,7 @@ class _MessageEditorState extends State<MessageEditor> {
         color: theme.centerChannelBg,
         child: Column(
           mainAxisSize: MainAxisSize.min,
+
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (composer.isEditMode) _EditBanner(composer: composer),
@@ -491,168 +533,62 @@ class _MessageEditorState extends State<MessageEditor> {
               decoration: BoxDecoration(
                 color: theme.centerChannelBg,
                 border: Border.all(
-                  color: theme.centerChannelColor.withValues(alpha: 0.18),
+                  color: theme.centerChannelColor.withValues(alpha: 0.20),
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(6),
               ),
+              padding: const EdgeInsets.all(8),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  Flexible(
+                    child: composer.showPreview
+                        ? _PreviewPane(composer: composer)
+                        : TextField(
+                            controller: controller,
+                            focusNode: composer.focusNode,
+                            onChanged: (value) {
+                              composer.onComposerTextChanged();
+                              composer.clearServerError();
+                              upload.clearError();
+                            },
+                            minLines: 1,
+                            maxLines: 8,
+                            onSubmitted: (_) => composer.send(),
+                            onEditingComplete: composer.send,
+
+                            keyboardType: TextInputType.multiline,
+                            style: TextStyle(
+                              color: theme.centerChannelColor,
+                              fontSize: 14,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: channelName != null
+                                  ? l10n.create_postWrite(channelName)
+                                  : l10n.editorPlaceholder,
+                              hintStyle: TextStyle(
+                                color: theme.centerChannelColor.withValues(
+                                  alpha: 0.45,
+                                ),
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isDense: true,
+                              filled: false,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 10,
+                                horizontal: 8,
+                              ),
+                            ),
+                          ),
+                  ),
+
                   AttachmentPreview(
                     draft: composer.draft,
                     onRemove: upload.removeFile,
-                  ),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: Icon(
-                          Icons.add,
-                          size: 22,
-                          color: upload.canAddMore
-                              ? theme.centerChannelColor.withValues(alpha: 0.6)
-                              : theme.centerChannelColor.withValues(
-                                  alpha: 0.25,
-                                ),
-                        ),
-                        tooltip: l10n.editorAddAttachment,
-                        onPressed: upload.canAddMore ? upload.pickFiles : null,
-                      ),
-                      IconButton(
-                        key: _emojiButtonKey,
-                        icon: Icon(
-                          Icons.emoji_emotions_outlined,
-                          size: 22,
-                          color: theme.centerChannelColor.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        tooltip: l10n.editorAddEmoji,
-                        onPressed: composer.toggleEmojiPicker,
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          Icons.flash_on_outlined,
-                          size: 22,
-                          color: theme.centerChannelColor.withValues(
-                            alpha: 0.6,
-                          ),
-                        ),
-                        tooltip: l10n.editorSlashCommands,
-                        onPressed: composer.openSlashCommands,
-                      ),
-                      IconButton(
-                        key: _priorityButtonKey,
-                        icon: Icon(
-                          Icons.flag_outlined,
-                          size: 22,
-                          color: composer.priority.isNotEmpty
-                              ? theme.buttonBg
-                              : theme.centerChannelColor.withValues(alpha: 0.6),
-                        ),
-                        tooltip: 'أولوية الرسالة',
-                        onPressed: () => _showPriorityMenu(composer),
-                      ),
-                      IconButton(
-                        key: _scheduleButtonKey,
-                        icon: Icon(
-                          Icons.schedule,
-                          size: 22,
-                          color: composer.scheduledAt != null
-                              ? theme.buttonBg
-                              : theme.centerChannelColor.withValues(alpha: 0.6),
-                        ),
-                        tooltip: 'جدولة الإرسال',
-                        onPressed: () => _pickSchedule(composer),
-                      ),
-                      IconButton(
-                        key: _burnButtonKey,
-                        icon: Icon(
-                          Icons.local_fire_department_outlined,
-                          size: 22,
-                          color: composer.burnOnRead
-                              ? theme.buttonBg
-                              : theme.centerChannelColor.withValues(alpha: 0.6),
-                        ),
-                        tooltip: 'إحراق بعد القراءة',
-                        onPressed: () =>
-                            composer.setBurnOnRead(!composer.burnOnRead),
-                      ),
-                      Expanded(
-                        child: composer.showPreview
-                            ? _PreviewPane(composer: composer)
-                            : TextField(
-                                controller: controller,
-                                focusNode: composer.focusNode,
-                                onChanged: (value) {
-                                  composer.onComposerTextChanged();
-                                  composer.clearServerError();
-                                  upload.clearError();
-                                },
-                                minLines: 1,
-                                maxLines: 8,
-                                keyboardType: TextInputType.multiline,
-                                style: TextStyle(
-                                  color: theme.centerChannelColor,
-                                  fontSize: 14,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: channelName != null
-                                      ? l10n.create_postWrite(channelName)
-                                      : l10n.editorPlaceholder,
-                                  hintStyle: TextStyle(
-                                    color: theme.centerChannelColor.withValues(
-                                      alpha: 0.45,
-                                    ),
-                                    fontSize: 14,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                    horizontal: 8,
-                                  ),
-                                ),
-                              ),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          final teamId = _teamId;
-                          if (teamId.isNotEmpty) {
-                            context.go('/$teamId/drafts');
-                          }
-                        },
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        child: Text(
-                          l10n.editorDrafts,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: theme.centerChannelColor.withValues(
-                              alpha: 0.6,
-                            ),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: Icon(
-                          Icons.send,
-                          size: 22,
-                          color: composer.canSend
-                              ? theme.buttonBg
-                              : theme.buttonBg.withValues(alpha: 0.3),
-                        ),
-                        tooltip: l10n.editorSend,
-                        onPressed: composer.canSend
-                            ? () => composer.send()
-                            : null,
-                      ),
-                    ],
                   ),
                   _AdvancedOptionsBar(
                     composer: composer,
@@ -665,6 +601,9 @@ class _MessageEditorState extends State<MessageEditor> {
                     message: controller.text,
                     selectionStart: selectionStart,
                     selectionEnd: selectionEnd,
+                    onPickFile: upload.canAddMore ? upload.pickFiles : null,
+                    composer: composer,
+                    emojiButtonKey: _emojiButtonKey,
                   ),
                 ],
               ),
@@ -674,9 +613,50 @@ class _MessageEditorState extends State<MessageEditor> {
       ),
     );
 
-    return FileUploadDropArea(
-      controller: upload,
-      child: editor,
+    return FileUploadDropArea(controller: upload, child: editor);
+  }
+
+  Row buildTextField(
+    TextEditingController controller,
+    ComposerController composer,
+    FileUploadController upload,
+    MattermostColors theme,
+    String? channelName,
+    AppLocalizations l10n,
+  ) {
+    return Row(
+      children: [
+        Expanded(child: Container()),
+        //   Tooltip(
+        //   message: 'Preview Mode',
+        //   child: Material(
+        //     color: Colors.transparent,
+        //     child: InkWell(
+        //       onTap: () { },
+        //       borderRadius: BorderRadius.circular(4),
+        //       child: Container(
+        //         width: 30,
+        //         height: 30,
+        //         padding: .all(4),
+        //         alignment: Alignment.center,
+        //         decoration: BoxDecoration(
+        //           borderRadius: BorderRadius.circular(4),
+        //           color: previewMode && controller.text.isNotEmpty
+        //               ? theme.centerChannelColor.withValues(alpha: 0.08)
+        //               : Colors.transparent,
+        //         ),
+        //         child: Icon(
+        //           Icons.visibility_outlined,
+        //           size: 17,
+        //           color: previewMode && controller.text.isNotEmpty
+        //               ? theme.linkColor
+        //               : theme.centerChannelColor.withValues(alpha: 0.65),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
+        // )
+      ],
     );
   }
 }
@@ -687,10 +667,7 @@ class _AdvancedOptionsBar extends StatelessWidget {
   final ComposerController composer;
   final VoidCallback onSchedule;
 
-  const _AdvancedOptionsBar({
-    required this.composer,
-    required this.onSchedule,
-  });
+  const _AdvancedOptionsBar({required this.composer, required this.onSchedule});
 
   @override
   Widget build(BuildContext context) {
@@ -724,9 +701,9 @@ class _AdvancedOptionsBar extends StatelessWidget {
           if (scheduledAt != null)
             _OptionChip(
               icon: Icons.schedule,
-              label: DateFormat('MMM d, HH:mm').format(
-                DateTime.fromMillisecondsSinceEpoch(scheduledAt),
-              ),
+              label: DateFormat(
+                'MMM d, HH:mm',
+              ).format(DateTime.fromMillisecondsSinceEpoch(scheduledAt)),
               color: theme.linkColor,
               onTap: () => composer.setScheduledAt(null),
             ),
@@ -899,7 +876,6 @@ class _AlsoSendToChannelCheckbox extends StatelessWidget {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    // TODO: Use l10n.post_commentCheckbox_also_send_to_channel once regenerated
     const label = 'Also send to channel';
 
     return Container(

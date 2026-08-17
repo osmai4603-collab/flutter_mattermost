@@ -247,17 +247,37 @@ class PostRepositoryImpl implements PostRepository {
   @override
   Future<void> addReaction(String postId, String emoji) async {
     final userId = await _currentUserId();
-    await _reactionsDataSource.addReaction(
-      emoji: emoji,
-      postId: postId,
-      userId: userId,
-    );
+    try {
+      await _reactionsDataSource.addReaction(
+        emoji: emoji,
+        postId: postId,
+        userId: userId,
+      );
+      // تحديث قاعدة البيانات المحلية فور النجاح.
+      await _localDataSource.cacheReactions([
+        ReactionEntity(
+          serverId: '', // سيتم تحديثه عند المزامنة الكاملة
+          userId: userId,
+          postId: postId,
+          emojiName: emoji,
+          createAt: DateTime.now().millisecondsSinceEpoch,
+        ),
+      ]);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
   Future<void> removeReaction(String postId, String emoji) async {
     final userId = await _currentUserId();
-    await _reactionsDataSource.removeReaction(userId, postId, emoji);
+    try {
+      await _reactionsDataSource.removeReaction(userId, postId, emoji);
+      // إزالة التفاعل من قاعدة البيانات المحلية.
+      await _localDataSource.removeReaction(userId, postId, emoji);
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override

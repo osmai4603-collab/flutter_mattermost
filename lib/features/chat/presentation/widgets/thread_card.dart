@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/utils/time_format.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
@@ -64,6 +65,7 @@ class ThreadCard extends StatelessWidget {
             Row(
               children: [
                 ProfilePicture(
+                  userId: post.userId,
                   username: post.userId,
                   avatarUrl: _avatarUrlFor(post.userId),
                   size: 24,
@@ -74,9 +76,10 @@ class ThreadCard extends StatelessWidget {
                     children: [
                       Flexible(
                         child: Text(
-                          rootPostUsername != null && rootPostUsername!.isNotEmpty
+                          rootPostUsername != null &&
+                                  rootPostUsername!.isNotEmpty
                               ? rootPostUsername!
-                              : post.userId,
+                              : formatMemberName(post.userId),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -382,8 +385,10 @@ class _ParticipantsList extends StatelessWidget {
     final toShow = participants.take(5).toList();
     final hasMore = participants.length > 5;
 
+    final stackWidth = (toShow.length * 16.0) + 4;
     return SizedBox(
       height: 24,
+      width: hasMore ? stackWidth + 16.0 : stackWidth,
       child: Stack(
         children: [
           for (var i = 0; i < toShow.length; i++)
@@ -398,6 +403,7 @@ class _ParticipantsList extends StatelessWidget {
                   borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
                 ),
                 child: ProfilePicture(
+                  userId: toShow[i].id,
                   username: toShow[i].username,
                   avatarUrl: _avatarUrlFor(toShow[i].id),
                   size: 20,

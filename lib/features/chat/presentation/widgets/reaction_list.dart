@@ -54,7 +54,6 @@ class ReactionList extends StatelessWidget {
   }
 }
 
-/// كبسولة تفاعل واحدة (Chip) — نظير Reaction في webapp.
 class ReactionChip extends StatelessWidget {
   final String postId;
   final String emojiName;

@@ -4,6 +4,7 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
@@ -50,8 +51,11 @@ class _MentionsPanelState extends State<MentionsPanel> {
     if (teamId == null || query.trim().isEmpty) {
       return Future.value(const []);
     }
-    return getIt<PostRepository>()
-        .searchPostsInTeam(teamId, query, isOrSearch: true);
+    return getIt<PostRepository>().searchPostsInTeam(
+      teamId,
+      query,
+      isOrSearch: true,
+    );
   }
 
   void _loadProfiles(List<PostEntity> posts) {
@@ -87,10 +91,8 @@ class _MentionsPanelState extends State<MentionsPanel> {
             .then((channel) {
               if (!mounted) return;
               setState(
-                () => _channelNames = {
-                  ..._channelNames,
-                  id: channel.displayName,
-                },
+                () =>
+                    _channelNames = {..._channelNames, id: channel.displayName},
               );
             })
             .catchError((_) {});
@@ -251,12 +253,17 @@ class _MentionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final time = DateFormat('h:mm a').format(
-      DateTime.fromMillisecondsSinceEpoch(post.createAt),
-    );
-    final displayName = profile != null && profile!.firstName.isNotEmpty
-        ? '${profile!.firstName} ${profile!.lastName}'.trim()
-        : profile?.username ?? '@unknown';
+    final time = DateFormat(
+      'h:mm a',
+    ).format(DateTime.fromMillisecondsSinceEpoch(post.createAt));
+    final displayName = profile != null
+        ? getMentionDisplayName(
+            username: profile!.username,
+            nickname: profile!.nickname,
+            firstName: profile!.firstName,
+            lastName: profile!.lastName,
+          )
+        : formatMemberName(post.userId);
 
     return InkWell(
       onTap: onTap,
@@ -269,6 +276,7 @@ class _MentionRow extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 2),
               child: ProfilePicture.md(
+                userId: profile?.id ?? post.userId,
                 username: profile?.username ?? '',
                 avatarUrl: null,
                 status: status,
@@ -298,7 +306,9 @@ class _MentionRow extends StatelessWidget {
                       Text(
                         time,
                         style: TextStyle(
-                          color: theme.centerChannelColor.withValues(alpha: 0.3),
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.3,
+                          ),
                           fontSize: 11,
                         ),
                       ),
@@ -310,7 +320,9 @@ class _MentionRow extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: theme.centerChannelColor.withValues(alpha: 0.3),
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.3,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -427,9 +439,9 @@ String mentionKeysQuery(List<String> keys) => '${keys.join(' ').trim()} ';
 List<InlineSpan> mentionHighlightSpans(
   String text,
   TextStyle style,
-  List<String> keys,
-  {required MattermostColors theme,
-  }) {
+  List<String> keys, {
+  required MattermostColors theme,
+}) {
   if (keys.isEmpty) return emojiAwareSpans(text, style);
   final pattern = RegExp(
     keys.map((k) => '(?:@?${RegExp.escape(k)})').join('|'),

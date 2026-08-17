@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
@@ -54,13 +56,21 @@ class SendThreadPostEvent extends RhsEvent {
   final String channelId;
   final String rootPostId;
   final String message;
+  final List<String> fileIds;
+  final Map<String, dynamic>? metadata;
+  final Completer<PostEntity>? completer;
+
   const SendThreadPostEvent({
     required this.channelId,
     required this.rootPostId,
     required this.message,
+    this.fileIds = const [],
+    this.metadata,
+    this.completer,
   });
+
   @override
-  List<Object?> get props => [channelId, rootPostId, message];
+  List<Object?> get props => [channelId, rootPostId, message, fileIds, metadata];
 }
 
 class ThreadRealtimeUpdatedEvent extends RhsEvent {
@@ -68,6 +78,13 @@ class ThreadRealtimeUpdatedEvent extends RhsEvent {
   const ThreadRealtimeUpdatedEvent(this.post);
   @override
   List<Object?> get props => [post];
+}
+
+class ThreadRealtimeDeletedEvent extends RhsEvent {
+  final String postId;
+  const ThreadRealtimeDeletedEvent(this.postId);
+  @override
+  List<Object?> get props => [postId];
 }
 
 class ShowMentionsEvent extends RhsEvent {}
@@ -294,6 +311,7 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
         add(CloseRhsEvent());
       }
     });
+    on<ThreadRealtimeDeletedEvent>(_onRealtimeDeleted);
   }
 
   /// يستدعي previous state قبل فتح لوحة جديدة (كما webapp updateRhsState).
@@ -489,12 +507,16 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
         event.channelId,
         event.message,
         rootId: event.rootPostId,
+        fileIds: event.fileIds,
+        metadata: event.metadata,
       );
       emit(
         current.copyWith(sending: false, replies: [...current.replies, sent]),
       );
-    } catch (_) {
+      event.completer?.complete(sent);
+    } catch (e) {
       emit(current.copyWith(sending: false));
+      event.completer?.completeError(e);
     }
   }
 
@@ -515,5 +537,22 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
               .toList()
         : [...current.replies, event.post];
     emit(current.copyWith(replies: replies));
+  }
+
+  void _onRealtimeDeleted(
+    ThreadRealtimeDeletedEvent event,
+    Emitter<RhsState> emit,
+  ) {
+    final current = state;
+    if (current is! RhsThreadState) return;
+    if (current.rootPostId == event.postId) {
+      // Root post deleted, close RHS
+      add(CloseRhsEvent());
+      return;
+    }
+    final replies = current.replies.where((r) => r.id != event.postId).toList();
+    if (replies.length != current.replies.length) {
+      emit(current.copyWith(replies: replies));
+    }
   }
 }

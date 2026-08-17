@@ -22,9 +22,10 @@ abstract class ChannelEvent extends Equatable {
 class LoadChannelsForTeamEvent extends ChannelEvent {
   final String teamId;
   final String? userId;
-  const LoadChannelsForTeamEvent(this.teamId, {this.userId});
+  final bool seamless;
+  const LoadChannelsForTeamEvent(this.teamId, {this.userId, this.seamless = false});
   @override
-  List<Object?> get props => [teamId, userId];
+  List<Object?> get props => [teamId, userId, seamless];
 }
 
 class SelectChannelEvent extends ChannelEvent {
@@ -437,7 +438,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     LoadChannelsForTeamEvent event,
     Emitter<ChannelState> emit,
   ) async {
-    emit(ChannelLoadingState());
+    if (!event.seamless) {
+      emit(ChannelLoadingState());
+    }
     try {
       // العملية الأساسية: GetChannelsForTeamForUser — تجلب كل قنوات المستخدم
       // في الفريق (عامة/خاصة/DM/GM) ليعمل قسم DM في الشريط الجانبي.
@@ -486,9 +489,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           (previousSelected != null &&
               channels.any((c) => c.id == previousSelected.id))
           ? previousSelected
-          : channels.isNotEmpty
-          ? channels.first
-          : null;
+          : channels.firstWhere(
+              (c) => c.type == ChannelType.open || c.type == ChannelType.private,
+              orElse: () => channels.isNotEmpty ? channels.first : null as dynamic,
+            );
 
       emit(
         ChannelsLoadedState(

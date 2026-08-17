@@ -1,11 +1,14 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
+import 'package:flutter_mattermost/features/system/domain/entities/emoji_entity.dart';
 
 class PostMetadataEntity extends Equatable {
   final List<Map<String, dynamic>>? embeds;
-  final List<Map<String, dynamic>>? emojis;
-  final List<Map<String, dynamic>>? files;
+  final List<EmojiEntity>? emojis;
+  final List<FileInfoEntity>? files;
   final Map<String, dynamic>? images;
-  final List<Map<String, dynamic>>? reactions;
+  final List<ReactionEntity>? reactions;
   final dynamic priority;
   final List<Map<String, dynamic>>? acknowledgements;
 
@@ -21,21 +24,21 @@ class PostMetadataEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        embeds,
-        emojis,
-        files,
-        images,
-        reactions,
-        priority,
-        acknowledgements,
-      ];
+    embeds,
+    emojis,
+    files,
+    images,
+    reactions,
+    priority,
+    acknowledgements,
+  ];
 
   PostMetadataEntity copyWith({
     List<Map<String, dynamic>>? embeds,
-    List<Map<String, dynamic>>? emojis,
-    List<Map<String, dynamic>>? files,
+    List<EmojiEntity>? emojis,
+    List<FileInfoEntity>? files,
     Map<String, dynamic>? images,
-    List<Map<String, dynamic>>? reactions,
+    List<ReactionEntity>? reactions,
     dynamic priority,
     List<Map<String, dynamic>>? acknowledgements,
   }) {

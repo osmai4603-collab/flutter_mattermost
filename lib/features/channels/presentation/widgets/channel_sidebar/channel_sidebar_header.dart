@@ -42,6 +42,19 @@ class ChannelSidebarHeader extends StatelessWidget {
           Expanded(
             child: ChannelSidebarHeaderMainMenuWidget(theme: theme, l10n: l10n),
           ),
+          if (user != null) ...[
+            const SizedBox(width: 8),
+            _UserChip(
+              theme: theme,
+              l10n: l10n,
+              userId: user.id,
+              username: user.username,
+              displayName: '${user.firstName} ${user.lastName}'.trim().isEmpty
+                  ? user.username
+                  : '${user.firstName} ${user.lastName}'.trim(),
+              status: myStatus,
+            ),
+          ],
           const SizedBox(width: 6),
           _AddChannelMenu(theme: theme, l10n: l10n),
         ],
@@ -54,6 +67,7 @@ class ChannelSidebarHeader extends StatelessWidget {
 class _UserChip extends StatelessWidget {
   final MattermostColors theme;
   final AppLocalizations l10n;
+  final String? userId;
   final String username;
   final String displayName;
   final UserStatus? status;
@@ -61,6 +75,7 @@ class _UserChip extends StatelessWidget {
   const _UserChip({
     required this.theme,
     required this.l10n,
+    this.userId,
     required this.username,
     required this.displayName,
     required this.status,
@@ -72,6 +87,7 @@ class _UserChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         ProfilePicture.sm(
+          userId: userId,
           username: username,
           avatarUrl: null,
           status: status,

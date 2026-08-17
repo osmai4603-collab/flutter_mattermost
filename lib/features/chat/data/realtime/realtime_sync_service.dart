@@ -38,7 +38,7 @@ class RealtimeSyncService {
         await _localDataSource.cacheReactions([entity]);
       } else {
         await _localDataSource.removeReaction(
-          entity.serverId,
+          entity.userId,
           entity.postId,
           entity.emojiName,
         );

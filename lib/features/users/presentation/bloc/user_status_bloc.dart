@@ -22,6 +22,13 @@ class LoadUserStatusesEvent extends UserStatusEvent {
   List<Object?> get props => [userIds];
 }
 
+class LoadMyStatusEvent extends UserStatusEvent {
+  final String userId;
+  const LoadMyStatusEvent(this.userId);
+  @override
+  List<Object?> get props => [userId];
+}
+
 class SetMyUserStatusEvent extends UserStatusEvent {
   final UserStatus status;
   const SetMyUserStatusEvent(this.status);
@@ -78,6 +85,7 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
   UserStatusBloc(this._userRepository, this._webSocketManager)
     : super(UserStatusInitialState()) {
     on<LoadUserStatusesEvent>(_onLoadStatuses);
+    on<LoadMyStatusEvent>(_onLoadMyStatus);
     on<SetMyUserStatusEvent>(_onSetMyStatus);
     on<RealtimeUserStatusEvent>(_onRealtimeStatus);
     on<_PollStatusesEvent>(_onPollStatuses);
@@ -140,6 +148,21 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
         merged[s.userId] = s.status;
       }
       emit(UserStatusesLoadedState(merged));
+    } catch (_) {}
+  }
+
+  Future<void> _onLoadMyStatus(
+    LoadMyStatusEvent event,
+    Emitter<UserStatusState> emit,
+  ) async {
+    try {
+      final statuses = await _userRepository.getStatusesByIds([event.userId]);
+      if (statuses.isNotEmpty) {
+        final current = state is UserStatusesLoadedState
+            ? (state as UserStatusesLoadedState).statuses
+            : const <String, UserStatus>{};
+        emit(UserStatusesLoadedState({...current, 'me': statuses.first.status, event.userId: statuses.first.status}));
+      }
     } catch (_) {}
   }
 

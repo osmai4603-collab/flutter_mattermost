@@ -16,6 +16,64 @@ class EmojiPickerOverlay extends StatefulWidget {
   final double width;
   final double height;
 
+  /// يُظهر منتقي الإيموجي كـ [OverlayEntry] بالقرب من زر معين.
+  static void show(
+    BuildContext context, {
+    required BuildContext anchorContext,
+    required Function(String) onEmojiSelected,
+  }) {
+    final overlay = Overlay.of(context);
+    final overlayBox = overlay.context.findRenderObject()! as RenderBox;
+    final anchorBox = anchorContext.findRenderObject() as RenderBox?;
+    if (anchorBox == null || !anchorBox.hasSize) return;
+
+    final screenSize = MediaQuery.sizeOf(context);
+    final cardWidth = (screenSize.width - 32).clamp(280.0, 360.0);
+    final cardHeight = (screenSize.height - 140).clamp(300.0, 430.0);
+
+    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+
+    // حساب الموقع (يفضل فوق الزر إذا وجد مساحة)
+    var dx = anchorPos.dx + anchorBox.size.width - cardWidth;
+    if (dx < 8) dx = 8;
+    if (dx + cardWidth > overlayBox.size.width - 8) {
+      dx = overlayBox.size.width - cardWidth - 8;
+    }
+
+    var dy = anchorPos.dy - cardHeight - 12;
+    // إذا لم تكن هناك مساحة فوق، نعرضه تحت
+    if (dy < 8) dy = anchorPos.dy + anchorBox.size.height + 12;
+
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) => Stack(
+        children: [
+          // خلفية شفافة للإغلاق عند النقر خارجاً
+          GestureDetector(
+            onTap: () => entry.remove(),
+            behavior: HitTestBehavior.opaque,
+            child: const SizedBox.expand(),
+          ),
+          Positioned(
+            left: dx,
+            top: dy,
+            child: EmojiPickerOverlay(
+              width: cardWidth,
+              height: cardHeight,
+              onEmojiSelected: (emoji) {
+                onEmojiSelected(emoji);
+                entry.remove();
+              },
+              onClose: () => entry.remove(),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    overlay.insert(entry);
+  }
+
   const EmojiPickerOverlay({
     super.key,
     required this.onEmojiSelected,
@@ -65,58 +123,102 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Card(
-          elevation: 8,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          clipBehavior: Clip.antiAlias,
-          child: Container(
-            width: widget.width,
-            height: widget.height,
-            color: theme.centerChannelBg,
-            child: Column(
-              children: [
-                _buildHeader(theme, l10n),
-                _buildSearchBar(theme, l10n),
-                _buildTabs(theme),
-                Expanded(
-                  child: _searchQuery.isEmpty
-                      ? _buildEmojiGrid(theme)
-                      : _buildSearchResults(theme),
-                ),
-              ],
+    return Card(
+      elevation: 8,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        width: widget.width,
+        height: widget.height,
+        color: theme.centerChannelBg,
+        child: Column(
+          children: [
+            // Header: Search field and category tabs
+            _buildHeader(theme, l10n),
+            // Body: Emojis
+            Expanded(
+              child: _searchQuery.isEmpty
+                  ? _buildEmojiGrid(theme)
+                  : _buildSearchResults(theme),
             ),
-          ),
+            // Footer: Hovered emoji name
+            _buildFooter(theme),
+          ],
         ),
-        const SizedBox(height: 6),
-        _buildEmojiNameBar(theme),
-      ],
+      ),
     );
   }
 
   Widget _buildHeader(MattermostColors theme, AppLocalizations l10n) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: theme.centerChannelColor.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            l10n.emoji_pickerHeader,
-            style: TextStyle(
-              color: theme.centerChannelColor,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+          _buildTopActions(theme, l10n),
+          _buildSearchBar(theme, l10n),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopActions(MattermostColors theme, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: MenuBar(
+        style: MenuStyle(
+          elevation: const WidgetStatePropertyAll(0),
+          backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
+          padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+        ),
+        children: [
+          MenuItemButton(
+            onPressed: null,
+            child: Text(
+              l10n.emoji_pickerHeader,
+              style: TextStyle(
+                color: theme.centerChannelColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close, size: 20),
+          const Spacer(),
+          ..._categories.map((cat) {
+            final index = _categories.indexOf(cat);
+            final isSelected = _tabController.index == index;
+            return MenuItemButton(
+              onPressed: () {
+                setState(() {
+                  _tabController.animateTo(index);
+                });
+              },
+              style: MenuItemButton.styleFrom(
+                backgroundColor: isSelected ? theme.linkColor.withValues(alpha: 0.1) : null,
+                foregroundColor: isSelected ? theme.linkColor : theme.centerChannelColor.withValues(alpha: 0.55),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                minimumSize: const Size(40, 40),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              child: Icon(_getCategoryIcon(cat), size: 18),
+            );
+          }),
+          const SizedBox(width: 4),
+          MenuItemButton(
             onPressed: widget.onClose,
-            color: theme.centerChannelColor.withValues(alpha: 0.5),
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            style: MenuItemButton.styleFrom(
+              foregroundColor: theme.centerChannelColor.withValues(alpha: 0.5),
+              minimumSize: const Size(40, 40),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: const Icon(Icons.close, size: 18),
           ),
         ],
       ),
@@ -153,17 +255,27 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     );
   }
 
-  Widget _buildTabs(MattermostColors theme) {
-    return TabBar(
-      controller: _tabController,
-      isScrollable: true,
-      tabAlignment: .start,
-      indicatorColor: theme.linkColor,
-      labelColor: theme.linkColor,
-      unselectedLabelColor: theme.centerChannelColor.withValues(alpha: 0.5),
-      tabs: _categories.map((cat) {
-        return Tab(icon: Icon(_getCategoryIcon(cat), size: 20));
-      }).toList(),
+  Widget _buildFooter(MattermostColors theme) {
+    return Container(
+      height: 32,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: theme.centerChannelColor.withValues(alpha: 0.05),
+        border: Border(
+          top: BorderSide(
+            color: theme.centerChannelColor.withValues(alpha: 0.1),
+          ),
+        ),
+      ),
+      child: Text(
+        _hoveredEmojiName,
+        style: TextStyle(
+          color: theme.centerChannelColor.withValues(alpha: 0.6),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
@@ -209,28 +321,6 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
       emojis: results,
       onEmojiSelected: widget.onEmojiSelected,
       onHover: (name) => setState(() => _hoveredEmojiName = name),
-    );
-  }
-
-  /// شريط أسفل البطاقة يعرض اسم الإيموجي الذي يمرر عليه المؤشر.
-  Widget _buildEmojiNameBar(MattermostColors theme) {
-    return Container(
-      width: widget.width,
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      alignment: Alignment.centerLeft,
-      decoration: BoxDecoration(
-        color: theme.centerChannelColor.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        _hoveredEmojiName,
-        style: TextStyle(
-          color: theme.centerChannelColor.withValues(alpha: 0.6),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
     );
   }
 

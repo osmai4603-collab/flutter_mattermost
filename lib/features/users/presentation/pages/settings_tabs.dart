@@ -475,6 +475,7 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
               clipBehavior: Clip.none,
               children: [
                 ProfilePicture.xl(
+                  userId: user?.id,
                   username: user?.username ?? '?',
                   avatarUrl: user == null ? null : serverUserAvatarUrl(user.id),
                   status: null,

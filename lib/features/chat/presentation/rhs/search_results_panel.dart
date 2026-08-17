@@ -6,6 +6,7 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/storage/recent_searches_store.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
@@ -601,10 +602,14 @@ class _PostResultItemState extends State<_PostResultItem> {
     final time = DateFormat(
       'h:mm a',
     ).format(DateTime.fromMillisecondsSinceEpoch(widget.post.createAt));
-    final displayName =
-        widget.profile?.firstName != null && widget.profile!.firstName.isNotEmpty
-        ? '${widget.profile!.firstName} ${widget.profile!.lastName}'.trim()
-        : widget.profile?.username ?? '@unknown';
+    final displayName = widget.profile != null
+        ? getMentionDisplayName(
+            username: widget.profile!.username,
+            nickname: widget.profile!.nickname,
+            firstName: widget.profile!.firstName,
+            lastName: widget.profile!.lastName,
+          )
+        : formatMemberName(widget.post.userId);
     final statusColor = theme.centerChannelColor.withValues(alpha: 0.3);
 
     return MouseRegion(
@@ -621,6 +626,7 @@ class _PostResultItemState extends State<_PostResultItem> {
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: ProfilePicture.md(
+                  userId: widget.profile?.id ?? widget.post.userId,
                   username: widget.profile?.username ?? '?',
                   avatarUrl: null,
                   status: null,

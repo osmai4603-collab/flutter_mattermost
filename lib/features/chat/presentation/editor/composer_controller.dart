@@ -531,6 +531,7 @@ class ComposerController extends ChangeNotifier {
     }
 
     _isSubmitting = true;
+    notifyListeners();
     focusNode.requestFocus();
     try {
       // أوامر slash الخاصة تُعالج محلياً قبل الإرسال.

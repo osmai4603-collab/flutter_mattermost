@@ -36,6 +36,7 @@ class UserAccountMenuButton extends StatelessWidget {
           icon: Row(
             children: [
               ProfilePicture.md(
+                userId: user?.id,
                 username: user?.username ?? '?',
                 avatarUrl: null,
                 status: myStatus,
@@ -126,6 +127,7 @@ class UserAccountMenuButton extends StatelessWidget {
               alignment: Alignment.bottomRight,
               children: [
                 ProfilePicture.md(
+                  userId: user?.id,
                   username: user?.username ?? '?',
                   avatarUrl: null,
                   status: UserStatus.online,

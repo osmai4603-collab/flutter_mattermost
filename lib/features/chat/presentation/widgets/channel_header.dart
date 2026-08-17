@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
 import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/core/utils/time_format.dart';
 import 'package:flutter_mattermost/core/widgets/matter_button.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
@@ -41,6 +42,11 @@ class ChannelHeader extends StatelessWidget {
       builder: (context, state) {
         final loaded = state is ChannelsLoadedState ? state : null;
         final channel = loaded?.selectedChannel;
+        final channelDisplayName = channel == null
+            ? ''
+            : channel.type == ChannelType.direct
+                ? formatMemberName(channel.displayName)
+                : channel.displayName;
 
         final isFavorited = channel != null &&
             loaded!.categories
@@ -113,7 +119,7 @@ class ChannelHeader extends StatelessWidget {
                             children: [
                               Flexible(
                                 child: Text(
-                                  channel?.displayName ?? '',
+                                  channelDisplayName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(

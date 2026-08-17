@@ -82,6 +82,7 @@ Widget _safeMarkdownBody({
   required Widget Function(bool) checkboxBuilder,
   String currentUsername = '',
   String? currentUserId,
+  int? mentionTime,
 }) {
   return MarkdownBody(
     data: data.trim().isEmpty ? ' ' : data,
@@ -100,6 +101,7 @@ Widget _safeMarkdownBody({
         onGroupTap: onGroupMentionTap,
         currentUsername: currentUsername,
         currentUserId: currentUserId,
+        mentionTime: mentionTime,
       ),
       'channel': ChannelMentionElementBuilder(onTap: onChannelTap),
     },
@@ -115,6 +117,7 @@ class MarkdownMessage extends StatelessWidget {
   final String text;
   final TextStyle? style;
   final int? maxLines;
+  final int? mentionTime;
 
   /// استدعاء عند الضغط على `@username` — يُمرَّر اسم المستخدم (بدون `@`).
   /// الافتراضي: فتح بطاقة المستخدم عبر [openUserMention].
@@ -136,6 +139,7 @@ class MarkdownMessage extends StatelessWidget {
     this.onMentionTap,
     this.onGroupMentionTap,
     this.onChannelTap,
+    this.mentionTime,
   });
 
   @override
@@ -266,6 +270,7 @@ class MarkdownMessage extends StatelessWidget {
       onChannelTap: onChannelTap ?? (channel) => openChannelMention(context, channel),
       currentUsername: currentUsername,
       currentUserId: currentUserId,
+      mentionTime: mentionTime,
       checkboxBuilder: (checked) => _buildTaskCheckbox(checked, linkColor),
     );
   }
