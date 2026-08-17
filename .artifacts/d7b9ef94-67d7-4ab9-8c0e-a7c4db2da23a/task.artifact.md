@@ -1,0 +1,2 @@
+- `[/]` Filter `message_list.dart` to hide replies in the main channel.
+- `[ ]` Verify that replies are still accessible via RHS.
