@@ -48,13 +48,14 @@ class PostActions extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Row(
+          spacing: 2,
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (final emoji in const ['👍', '😀'])
+            for (final emoji in const ['👍', '✅', '😀'])
               InkWell(
                 child: Padding(
                   padding: const EdgeInsets.all(4.0),
-                  child: emojiWidget(emoji, size: 20),
+                  child: emojiWidget(emoji, size: 17),
                 ),
                 onTap: () {
                   context.read<PostBloc>().add(
@@ -63,30 +64,14 @@ class PostActions extends StatelessWidget {
                 },
               ),
             _ActionIcon(
-              icon: Icons.check_box_rounded,
-              tooltip: l10n.reactionAdd,
-              color: Colors.green[700],
-              iconSize: 20,
-              onTap: (ctx) {
-                EmojiPickerOverlay.show(
-                  context,
-                  anchorContext: ctx,
-                  onEmojiSelected: (emoji) {
-                    context.read<PostBloc>().add(
-                      ToggleReactionEvent(post.id, emoji),
-                    );
-                  },
-                );
-              },
-            ),
-            _ActionIcon(
               icon: Icons.add_reaction_outlined,
-              iconSize: 20,
+              iconSize: 17,
               tooltip: l10n.reactionAdd,
               onTap: (ctx) {
                 EmojiPickerOverlay.show(
                   context,
                   anchorContext: ctx,
+                  multiSelected: false,
                   onEmojiSelected: (emoji) {
                     context.read<PostBloc>().add(
                       ToggleReactionEvent(post.id, emoji),
@@ -97,18 +82,27 @@ class PostActions extends StatelessWidget {
             ),
             _ActionIcon(
               icon: isSavedMessage ? Icons.bookmark : Icons.bookmark_outline,
-              iconSize: 20,
+              iconSize: 17,
               tooltip: isSavedMessage ? l10n.postMenuUnflag : l10n.postMenuFlag,
               color: isSavedMessage ? theme.linkColor : null,
               onTap: (_) {
                 context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
               },
             ),
+            _ActionIcon(
+              icon: Icons.grid_view_outlined,
+              iconSize: 17,
+              tooltip: isSavedMessage ? l10n.postMenuUnflag : l10n.postMenuFlag,
+              color: isSavedMessage ? theme.linkColor : null,
+              onTap: (_) {
+                // context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
+              },
+            ),
             if (!isReply)
               _ActionIcon(
                 icon: Icons.reply_outlined,
                 tooltip: l10n.postMenuReply,
-                iconSize: 20,
+                iconSize: 17,
                 onTap: (_) {
                   context.read<RhsBloc>().add(
                     OpenThreadEvent(post.id, post.channelId),
@@ -116,11 +110,13 @@ class PostActions extends StatelessWidget {
                 },
               ),
             PopupMenuButton<String>(
+              borderRadius: .circular(4),
               child: Padding(
                 padding: const EdgeInsets.all(4.0),
                 child: Icon(
                   Icons.more_vert,
-                  size: 18,
+                  size: 16,
+                  color: theme.centerChannelColor.withValues(alpha: 0.65),
                 ),
               ),
               itemBuilder: (_) => [
@@ -135,7 +131,7 @@ class PostActions extends StatelessWidget {
                   child: Row(
                     spacing: 10,
                     children: [
-                      const Icon(Icons.mode_comment_outlined, size: 18),
+                      const Icon(Icons.reply_outlined, size: 16),
                       Text(l10n.postMenuReply),
                     ],
                   ),
@@ -148,7 +144,7 @@ class PostActions extends StatelessWidget {
                   child: Row(
                     spacing: 10,
                     children: [
-                      const Icon(Icons.copy, size: 18),
+                      const Icon(Icons.copy, size: 16),
                       Text(l10n.postMenuCopy),
                     ],
                   ),
@@ -163,7 +159,7 @@ class PostActions extends StatelessWidget {
                   child: Row(
                     spacing: 10,
                     children: [
-                      const Icon(Icons.link, size: 18),
+                      const Icon(Icons.link, size: 16),
                       Text('Copy Link'),
                     ],
                   ),
@@ -172,7 +168,7 @@ class PostActions extends StatelessWidget {
                   value: 'bookmark',
                   child: Row(
                     children: [
-                      const Icon(Icons.bookmark_add_outlined, size: 18),
+                      const Icon(Icons.bookmark_add_outlined, size: 16),
                       Text(l10n.channel_bookmarksAddBookmark),
                     ],
                   ),
@@ -183,7 +179,7 @@ class PostActions extends StatelessWidget {
                     children: [
                       Icon(
                         isSavedMessage ? Icons.flag : Icons.flag_outlined,
-                        size: 18,
+                        size: 16,
                       ),
                       Text(
                         isSavedMessage
@@ -201,7 +197,7 @@ class PostActions extends StatelessWidget {
                     children: [
                       Icon(
                         isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                        size: 18,
+                        size: 16,
                       ),
                       Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
                     ],
@@ -214,7 +210,7 @@ class PostActions extends StatelessWidget {
                   PopupMenuItem(
                     child: Row(
                       children: [
-                        const Icon(Icons.edit_outlined, size: 18),
+                        const Icon(Icons.edit_outlined, size: 16),
                         Text(l10n.postMenuEdit),
                       ],
                     ),
@@ -224,7 +220,7 @@ class PostActions extends StatelessWidget {
                   PopupMenuItem(
                     child: Row(
                       children: [
-                        const Icon(Icons.delete_outline, size: 18),
+                        const Icon(Icons.delete_outline, size: 16),
                         Text(
                           l10n.postMenuDelete,
                           style: const TextStyle(color: Colors.red),

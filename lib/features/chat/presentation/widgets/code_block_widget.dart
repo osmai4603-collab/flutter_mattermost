@@ -86,11 +86,11 @@ class CodeBlockWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final lines = code.split('\n');
     final showNumbers = _shouldShowLineNumbers;
-
+    final colors = AppTheme.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF161B22),
+        // color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
       ),
@@ -102,7 +102,7 @@ class CodeBlockWidget extends StatelessWidget {
           Container(
             height: 30,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            color: const Color(0xFF0D1117),
+            // color: colors.centerChannelBg,
             child: Row(
               children: [
                 // نقاط النوافذ (مؤشر)
@@ -144,6 +144,11 @@ class CodeBlockWidget extends StatelessWidget {
                       _LineNumbers(count: lines.length),
                       const SizedBox(width: 14),
                     ],
+                    VerticalDivider(
+                      width: 0,
+                      thickness: 0.50,
+                      color: colors.centerChannelColor.withValues(alpha: 0.40),
+                    ),
                     RichText(
                       text: TextSpan(
                         children: SyntaxHighlightBuilder.buildSpans(
@@ -151,8 +156,8 @@ class CodeBlockWidget extends StatelessWidget {
                           language: language,
                           syntaxTheme: SyntaxTheme.githubDark(),
                         ),
-                        style: const TextStyle(
-                          color: Color(0xFFE6EDF3),
+                        style: TextStyle(
+                          // color: Colors.black, // colors.centerChannelColor,
                           fontSize: 12.5,
                           height: 1.45,
                           fontFamily: 'monospace',
@@ -239,11 +244,7 @@ class _CopyButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.copy_rounded,
-              size: 13,
-              color: const Color(0xFF8B949E),
-            ),
+            Icon(Icons.copy_rounded, size: 13, color: const Color(0xFF8B949E)),
             const SizedBox(width: 4),
             const Text(
               'Copy',

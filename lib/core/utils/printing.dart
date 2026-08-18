@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/rendering.dart';
 
 void printMap({required String title, required Map<String, dynamic> data}) {
@@ -6,14 +7,22 @@ void printMap({required String title, required Map<String, dynamic> data}) {
   );
 }
 
-String _split(dynamic value) {
+String getPrintMap(Map<String, dynamic> data, spaces) {
+  return '{\n$spaces${data.keys.map((e) => '$e: ${_split(data[e], spaces: spaces)}').join('\n  ')}$spaces}';
+}
+
+String _split(dynamic value, {String spaces = '  '}) {
   if (value is String) {
+    if (value.startsWith('{')) {
+      return getPrintMap(jsonDecode(value), '$spaces  ');
+    }
     return value.split('.').last;
   } else if (value is List) {
     if (value.isEmpty) {
       return '[]';
     } else if (value.first is Map) {
-      return '[(Map<String, dynamic>) ${value.length} items]';
+      return getPrintMap(value.first, '$spaces  ');
+      // return '[(Map<String, dynamic>) ${value.length} items]';
     } else if (value is List<String>) {
       if (value.length > 10) {
         return '[\n    ${value.join(',\n    ')}\n  ]';
@@ -29,7 +38,8 @@ String _split(dynamic value) {
     }
     return '[${value.map((e) => e.toString()).join(', ')}]';
   } else if (value is Map) {
-    return '(Map<String, dynamic>)';
+    return getPrintMap(value as Map<String, dynamic>, '$spaces  ');
+    // return '(Map<String, dynamic>)';
   } else {
     return value.toString();
   }

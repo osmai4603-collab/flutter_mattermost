@@ -43,7 +43,10 @@ Future<void> openGroupMention(BuildContext context, String groupName) async {
 }
 
 /// الانتقال إلى قناة عند الضغط على `~channel` داخل نص الرسالة.
-Future<void> openChannelMention(BuildContext context, String channelName) async {
+Future<void> openChannelMention(
+  BuildContext context,
+  String channelName,
+) async {
   try {
     final teamState = context.read<TeamBloc>().state;
     final teamName = teamState is TeamsLoadedState
@@ -145,11 +148,14 @@ class MarkdownMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).extension<MattermostColors>();
-    final textColor = theme?.centerChannelColor ?? Theme.of(context).colorScheme.onSurface;
+    final textColor =
+        theme?.centerChannelColor ?? Theme.of(context).colorScheme.onSurface;
     final linkColor = theme?.linkColor ?? Theme.of(context).colorScheme.primary;
-    final strongBackground = theme?.centerChannelColor.withValues(alpha: 0.12) ??
+    final strongBackground =
+        theme?.centerChannelColor.withValues(alpha: 0.12) ??
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12);
-    final quoteBackground = theme?.centerChannelColor.withValues(alpha: 0.05) ??
+    final quoteBackground =
+        theme?.centerChannelColor.withValues(alpha: 0.05) ??
         Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.05);
     final codeBlockBackground = const Color(0xFF111827);
 
@@ -164,11 +170,13 @@ class MarkdownMessage extends StatelessWidget {
     }
 
     final markdownStyleSheet = MarkdownStyleSheet(
-      p: style ?? TextStyle(
-        color: textColor.withValues(alpha: 0.96),
-        fontSize: 14,
-        height: 1.55,
-      ),
+      p:
+          style ??
+          TextStyle(
+            color: textColor.withValues(alpha: 0.96),
+            fontSize: 14,
+            height: 1.55,
+          ),
       a: TextStyle(
         color: linkColor,
         fontWeight: FontWeight.w600,
@@ -177,10 +185,7 @@ class MarkdownMessage extends StatelessWidget {
         decorationThickness: 2,
         backgroundColor: linkColor.withValues(alpha: 0.08),
       ),
-      strong: TextStyle(
-        fontWeight: FontWeight.w800,
-        color: textColor,
-      ),
+      strong: TextStyle(fontWeight: FontWeight.w800, color: textColor),
       em: TextStyle(
         fontStyle: FontStyle.italic,
         color: textColor.withValues(alpha: 0.94),
@@ -199,9 +204,7 @@ class MarkdownMessage extends StatelessWidget {
       blockquoteDecoration: BoxDecoration(
         color: quoteBackground,
         borderRadius: BorderRadius.circular(6),
-        border: Border(
-          left: BorderSide(color: linkColor, width: 3),
-        ),
+        border: Border(left: BorderSide(color: linkColor, width: 3)),
       ),
       h1: TextStyle(
         color: textColor,
@@ -233,9 +236,7 @@ class MarkdownMessage extends StatelessWidget {
         color: textColor.withValues(alpha: 0.92),
         fontSize: 13,
       ),
-      tableBorder: TableBorder.all(
-        color: textColor.withValues(alpha: 0.18),
-      ),
+      tableBorder: TableBorder.all(color: textColor.withValues(alpha: 0.18)),
       tableColumnWidth: const IntrinsicColumnWidth(),
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
@@ -256,9 +257,12 @@ class MarkdownMessage extends StatelessWidget {
     return _safeMarkdownBody(
       data: text,
       styleSheet: markdownStyleSheet,
-      onMentionTap: onMentionTap ?? (username) => openUserMention(context, username),
-      onGroupMentionTap: onGroupMentionTap ?? (group) => openGroupMention(context, group),
-      onChannelTap: onChannelTap ?? (channel) => openChannelMention(context, channel),
+      onMentionTap:
+          onMentionTap ?? (username) => openUserMention(context, username),
+      onGroupMentionTap:
+          onGroupMentionTap ?? (group) => openGroupMention(context, group),
+      onChannelTap:
+          onChannelTap ?? (channel) => openChannelMention(context, channel),
       currentUsername: currentUsername,
       currentUserId: currentUserId,
       mentionTime: mentionTime,

@@ -176,14 +176,63 @@ class SyntaxHighlightBuilder {
 
   /// اللغات المدعومة المعروفة (أسماء standard مطابقة لحزمة highlight).
   static const List<String> supportedLanguages = [
-    'python', 'dart', 'go', 'javascript', 'typescript', 'sql', 'yaml',
-    'json', 'bash', 'shell', 'cpp', 'c', 'csharp', 'java', 'kotlin',
-    'swift', 'ruby', 'php', 'rust', 'html', 'css', 'xml', 'objectivec',
-    'scala', 'perl', 'lua', 'r', 'matlab', 'groovy', 'haskell', 'elixir',
-    'erlang', 'clojure', 'd', 'fortran', 'vbnet', 'powershell', 'dockerfile',
-    'nginx', 'gradle', 'ini', 'plaintext', 'markdown', 'diff', 'makefile',
-    'cmake', 'graphql', 'protobuf', 'properties', 'scss', 'less', 'stylus',
-    'handlebars', 'coffeescript', 'crystal', 'fsharp', 'dos',
+    'python',
+    'dart',
+    'go',
+    'javascript',
+    'typescript',
+    'sql',
+    'yaml',
+    'json',
+    'bash',
+    'shell',
+    'cpp',
+    'c',
+    'csharp',
+    'java',
+    'kotlin',
+    'swift',
+    'ruby',
+    'php',
+    'rust',
+    'html',
+    'css',
+    'xml',
+    'objectivec',
+    'scala',
+    'perl',
+    'lua',
+    'r',
+    'matlab',
+    'groovy',
+    'haskell',
+    'elixir',
+    'erlang',
+    'clojure',
+    'd',
+    'fortran',
+    'vbnet',
+    'powershell',
+    'dockerfile',
+    'nginx',
+    'gradle',
+    'ini',
+    'plaintext',
+    'markdown',
+    'diff',
+    'makefile',
+    'cmake',
+    'graphql',
+    'protobuf',
+    'properties',
+    'scss',
+    'less',
+    'stylus',
+    'handlebars',
+    'coffeescript',
+    'crystal',
+    'fsharp',
+    'dos',
   ];
 
   /// يطبّع اسم اللغة المُعطى: يحلّ الأسماء المستعارة، ويرجّع الاسم المعياري
@@ -219,15 +268,14 @@ class SyntaxHighlightBuilder {
     }
   }
 
-  static void _visit(
-    hl.Node node,
-    SyntaxTheme theme,
-    List<InlineSpan> out,
-  ) {
+  static void _visit(hl.Node node, SyntaxTheme theme, List<InlineSpan> out) {
     final text = node.value;
     if (text != null) {
       out.add(
-        TextSpan(text: text, style: TextStyle(color: _colorFor(node.className, theme))),
+        TextSpan(
+          text: text,
+          style: TextStyle(color: _colorFor(node.className, theme)),
+        ),
       );
       return;
     }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
 
 /// منتقي الإيموجي — يُعرض داخل [OverlayEntry] في [Card] بحجم ثابت:
@@ -11,6 +12,7 @@ import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emo
 class EmojiPickerOverlay extends StatefulWidget {
   final Function(String) onEmojiSelected;
   final VoidCallback onClose;
+  final bool multiSelected;
 
   /// الحجم الثابت للبطاقة (يحدده المتصل عبر [OverlayEntry]).
   final double width;
@@ -21,6 +23,7 @@ class EmojiPickerOverlay extends StatefulWidget {
     BuildContext context, {
     required BuildContext anchorContext,
     required Function(String) onEmojiSelected,
+    bool multiSelected = true,
   }) {
     final overlay = Overlay.of(context);
     final overlayBox = overlay.context.findRenderObject()! as RenderBox;
@@ -31,7 +34,10 @@ class EmojiPickerOverlay extends StatefulWidget {
     final cardWidth = (screenSize.width - 32).clamp(280.0, 360.0);
     final cardHeight = (screenSize.height - 140).clamp(300.0, 430.0);
 
-    final anchorPos = anchorBox.localToGlobal(Offset.zero, ancestor: overlayBox);
+    final anchorPos = anchorBox.localToGlobal(
+      Offset.zero,
+      ancestor: overlayBox,
+    );
 
     // حساب الموقع (يفضل فوق الزر إذا وجد مساحة)
     var dx = anchorPos.dx + anchorBox.size.width - cardWidth;
@@ -59,6 +65,7 @@ class EmojiPickerOverlay extends StatefulWidget {
             top: dy,
             child: EmojiPickerOverlay(
               width: cardWidth,
+              multiSelected: multiSelected,
               height: cardHeight,
               onEmojiSelected: (emoji) {
                 onEmojiSelected(emoji);
@@ -78,6 +85,7 @@ class EmojiPickerOverlay extends StatefulWidget {
     super.key,
     required this.onEmojiSelected,
     required this.onClose,
+    this.multiSelected = true,
     this.width = 360,
     this.height = 430,
   });
@@ -117,9 +125,7 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
     _sections = _categories.map((cat) {
-      final emojis = defaultEmojiSet
-          .firstWhere((e) => e.category == cat)
-          .emoji;
+      final emojis = defaultEmojiSet.firstWhere((e) => e.category == cat).emoji;
       return _CategorySection(category: cat, emojis: emojis);
     }).toList();
     _scrollController.addListener(_onScroll);
@@ -149,7 +155,8 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     double cumulativeHeight = 0;
     for (int i = 0; i < _sections.length; i++) {
       // ارتفاع العنوان + عدد صفوف الإيموجي * حجم كل صورة
-      final sectionHeight = 36.0 + // category header
+      final sectionHeight =
+          36.0 + // category header
           ((_sections[i].emojis.length / 8).ceil() * 49.0); // grid rows
       final sectionMiddle = cumulativeHeight + sectionHeight / 2;
       final distance = (middle - sectionMiddle).abs();
@@ -174,13 +181,13 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     }
     _scrollController
         .animateTo(
-      targetOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    )
+          targetOffset,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        )
         .then((_) {
-      _isScrollingFromTabTap = false;
-    });
+          _isScrollingFromTabTap = false;
+        });
     setState(() => _activeTabIndex = index);
     _tabController.index = index;
   }
@@ -280,11 +287,17 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
             return MenuItemButton(
               onPressed: () => _scrollToCategory(index),
               style: MenuItemButton.styleFrom(
-                backgroundColor: isSelected ? theme.linkColor.withValues(alpha: 0.1) : null,
-                foregroundColor: isSelected ? theme.linkColor : theme.centerChannelColor.withValues(alpha: 0.55),
+                backgroundColor: isSelected
+                    ? theme.linkColor.withValues(alpha: 0.1)
+                    : null,
+                foregroundColor: isSelected
+                    ? theme.linkColor
+                    : theme.centerChannelColor.withValues(alpha: 0.55),
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 minimumSize: const Size(40, 40),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               child: Icon(_getCategoryIcon(cat), size: 18),
             );
@@ -359,7 +372,10 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
         return _EmojiCategorySection(
           category: section.category,
           emojis: section.emojis,
-          onEmojiSelected: widget.onEmojiSelected,
+          onEmojiSelected: (emojiName) {
+            widget.onEmojiSelected(emojiName);
+            if (!widget.multiSelected) Navigator.pop(context);
+          },
           onHover: (name) => setState(() => _hoveredEmojiName = name),
         );
       },
@@ -462,29 +478,64 @@ class _EmojiCategorySection extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(4),
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 45,
-            mainAxisSpacing: 4,
-            crossAxisSpacing: 4,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 9,
+            mainAxisSpacing: 1,
+            crossAxisSpacing: 1,
           ),
           itemCount: emojis.length,
           itemBuilder: (context, index) {
-            final emoji = emojis[index];
-            return MouseRegion(
-              onEnter: (_) => onHover(emoji.name),
-              onExit: (_) => onHover(''),
-              child: InkWell(
-                onTap: () => onEmojiSelected(emoji.emoji),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  alignment: Alignment.center,
-                  child: emojiWidget(emoji.emoji, size: 24),
-                ),
-              ),
+            return HoverWidget(
+              builder: (context, isHovered) {
+                return EmojiGridItem(
+                  onHover: onHover,
+                  onEmojiSelected: onEmojiSelected,
+                  emoji: emojis[index],
+                  isHovered: isHovered,
+                );
+              },
             );
           },
         ),
       ],
+    );
+  }
+}
+
+class EmojiGridItem extends StatelessWidget {
+  const EmojiGridItem({
+    super.key,
+    required this.onHover,
+    required this.onEmojiSelected,
+    required this.emoji,
+    required this.isHovered,
+  });
+
+  final Function(String) onHover;
+  final Function(String) onEmojiSelected;
+  final Emoji emoji;
+  final bool isHovered;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => onHover(emoji.name),
+      onExit: (_) => onHover(''),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onEmojiSelected(emoji.emoji),
+          borderRadius: BorderRadius.circular(6),
+          child: AnimatedScale(
+            scale: isHovered ? 1.25 : 1.0,
+            duration: const Duration(milliseconds: 250),
+            child: Container(
+              alignment: Alignment.center,
+              child: emojiWidget(emoji.emoji, size: 24),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

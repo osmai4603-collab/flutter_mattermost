@@ -186,7 +186,7 @@ class _MessageEditorState extends State<MessageEditor> {
   }) async {
     final composer = _composer;
     if (composer == null || channelId.isEmpty) return;
-    
+
     final completer = Completer<PostEntity>();
 
     if (composer.isEditMode) {
@@ -221,7 +221,7 @@ class _MessageEditorState extends State<MessageEditor> {
           ),
         );
       }
-      
+
       try {
         await completer.future;
         if (_alsoSendToChannel) {

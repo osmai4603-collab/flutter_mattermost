@@ -661,10 +661,7 @@ class _GlobalSectionLink extends StatelessWidget {
             if (badgeCount != null && badgeCount! > 0) ...[
               const SizedBox(width: 6),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 1,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
                   color: theme.mentionBg,
                   borderRadius: BorderRadius.circular(10),

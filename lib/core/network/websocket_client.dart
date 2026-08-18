@@ -595,18 +595,9 @@ class WebSocketClientManager {
   void handleIncomingMessage(String payload) => _onMessageReceived(payload);
 
   void _onMessageReceived(dynamic rawData) {
-    if (rawData is Map) {
-      printMap(
-        title: 'RECEIVE DATA FROM Socket Client: ',
-        data: rawData as dynamic,
-      );
-    }
-    if (rawData is String) {
-      debugPrint('RECEIVE DATA FROM Socket Client: $rawData');
-    }
-
     try {
       final decoded = jsonDecode(rawData as String) as Map<String, dynamic>;
+      printMap(title: 'RECEIVE DATA FROM Socket Client: ', data: decoded);
       final seq = decoded['seq'] as int? ?? 0;
       final seqReply = decoded['seq_reply'] as int?;
       final eventName = decoded['event'] as String?;

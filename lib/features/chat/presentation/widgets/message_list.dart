@@ -112,7 +112,7 @@ class _PostListState extends State<PostList> {
                 child: IgnorePointer(
                   ignoring: _atBottom,
                   child: _ScrollToBottomButton(
-                    label: 'أحدث الرسائل',
+                    label: 'Jump recents',
                     onTap: _scrollToBottom,
                   ),
                 ),
@@ -588,9 +588,6 @@ class _TypingRow extends StatelessWidget {
     );
   }
 }
-
-
-
 
 /// وميض خلفية للرسالة المستهدفة عند الانتقال إليها من نتائج البحث
 /// (webapp: focusPost + flash background يتلاشى خلال ثانيتين).
