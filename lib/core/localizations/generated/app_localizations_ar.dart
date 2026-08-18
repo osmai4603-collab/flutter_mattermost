@@ -46716,4 +46716,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String timeRelativeDaysAgo(Object count) {
     return 'منذ $count يوم';
   }
+
+  @override
+  String timeRelativeWeeksAgo(Object count) {
+    return 'منذ $count اسبوع';
+  }
 }

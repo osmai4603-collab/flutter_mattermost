@@ -117,10 +117,7 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
           ? teamState.selectedTeam?.id ?? teamState.teams.firstOrNull?.id
           : null;
       if (teamId == null) throw Exception('No team');
-      await getIt<TeamRepository>().inviteMembersByEmail(
-        teamId,
-        [email],
-      );
+      await getIt<TeamRepository>().inviteMembersByEmail(teamId, [email]);
       if (!mounted) return;
       setState(() {
         _sending = false;
@@ -164,7 +161,7 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
 
   void _openTeamInvite() {
     Navigator.of(context).pop();
-    ModalRegistry.open(context, id: ModalIdentifiers.invitation);
+    ModalRegistry.open(context, id: ModalIdentifiers.invitePeopleInTeam);
   }
 
   @override
@@ -224,11 +221,7 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
   Widget _buildSuccessView(MattermostColors theme, AppLocalizations l10n) {
     return Column(
       children: [
-        const Icon(
-          Icons.check_circle_outline,
-          size: 64,
-          color: Colors.green,
-        ),
+        const Icon(Icons.check_circle_outline, size: 64, color: Colors.green),
         const SizedBox(height: 16),
         Text(
           l10n.invitation_modalConfirmSentHeader,
@@ -269,7 +262,8 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
   }
 
   Widget _buildInviteView(MattermostColors theme, AppLocalizations l10n) {
-    final showNoMatches = _emailController.text.isNotEmpty &&
+    final showNoMatches =
+        _emailController.text.isNotEmpty &&
         _suggestions.isEmpty &&
         !_isSearching;
 
@@ -317,8 +311,9 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
                           )
                         : null,
                     border: OutlineInputBorder(
-                      borderRadius:
-                          BorderRadius.circular(DesignTokens.radiusSm),
+                      borderRadius: BorderRadius.circular(
+                        DesignTokens.radiusSm,
+                      ),
                     ),
                   ),
                 ),
@@ -397,8 +392,9 @@ class _ChannelInviteModalState extends State<ChannelInviteModal> {
                       subtitle: Text(
                         user.email,
                         style: TextStyle(
-                          color:
-                              theme.centerChannelColor.withValues(alpha: 0.6),
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.6,
+                          ),
                         ),
                       ),
                       onTap: () => _selectUser(user),

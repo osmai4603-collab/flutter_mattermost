@@ -6,7 +6,6 @@ import 'package:flutter_mattermost/core/storage/app_database.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
-import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 
@@ -15,10 +14,6 @@ import 'package:flutter_mattermost/features/chat/domain/entities/pending_post_en
 abstract class ChatLocalDataSource {
   Future<void> cacheChannels(List<ChannelEntity> channels);
   Future<List<ChannelEntity>> getCachedChannels(String teamId);
-  Future<void> cachePosts(List<PostEntity> posts);
-  Future<List<PostEntity>> getCachedPosts(String channelId);
-  Future<void> updateCachedPost(PostEntity post);
-  Future<void> markPostDeleted(String postId);
   Future<void> cacheReactions(List<ReactionEntity> reactions);
   Future<Map<String, List<ReactionEntity>>> getCachedReactionsForPosts(
     List<String> postIds,
@@ -102,61 +97,6 @@ class ChatLocalDataSourceImpl implements ChatLocalDataSource {
   }
 
   @override
-  Future<void> cachePosts(List<PostEntity> posts) async {
-    await _db.batch((batch) {
-      for (final post in posts) {
-        batch.insert(
-          _db.cachedPosts,
-          CachedPostsCompanion.insert(
-            serverId: _serverManager.activeServerUrl,
-            id: post.id,
-            channelId: post.channelId,
-            userId: post.userId,
-            message: post.message,
-            rootId: Value(post.rootId),
-            createAt: post.createAt,
-            updateAt: post.updateAt,
-            deleteAt: Value(post.deleteAt),
-            pendingPostId: Value(post.pendingPostId),
-          ),
-          mode: InsertMode.insertOrReplace,
-        );
-      }
-    });
-  }
-
-  @override
-  Future<List<PostEntity>> getCachedPosts(String channelId) async {
-    final query = (_db.select(_db.cachedPosts)
-      ..where(
-        (tbl) =>
-            tbl.channelId.equals(channelId) &
-            tbl.serverId.equals(_serverManager.activeServerUrl),
-      )
-      ..orderBy([
-        (tbl) =>
-            OrderingTerm(expression: tbl.createAt, mode: OrderingMode.desc),
-      ]));
-    final rows = await query.get();
-
-    return rows
-        .map(
-          (row) => PostEntity(
-            id: row.id,
-            channelId: row.channelId,
-            userId: row.userId,
-            message: row.message,
-            rootId: row.rootId,
-            createAt: row.createAt,
-            updateAt: row.updateAt,
-            deleteAt: row.deleteAt,
-            pendingPostId: row.pendingPostId,
-          ),
-        )
-        .toList();
-  }
-
-  @override
   Future<void> enqueuePendingAction(
     String actionType,
     Map<String, dynamic> payload,
@@ -169,36 +109,6 @@ class ChatLocalDataSourceImpl implements ChatLocalDataSource {
             actionType: actionType,
             payloadJson: jsonEncode(payload),
             createdAt: DateTime.now().millisecondsSinceEpoch,
-          ),
-        );
-  }
-
-  @override
-  Future<void> updateCachedPost(PostEntity post) async {
-    await (_db.update(_db.cachedPosts)..where(
-          (tbl) =>
-              tbl.id.equals(post.id) &
-              tbl.serverId.equals(_serverManager.activeServerUrl),
-        ))
-        .write(
-          CachedPostsCompanion(
-            message: Value(post.message),
-            updateAt: Value(post.updateAt),
-            deleteAt: Value(post.deleteAt),
-          ),
-        );
-  }
-
-  @override
-  Future<void> markPostDeleted(String postId) async {
-    await (_db.update(_db.cachedPosts)..where(
-          (tbl) =>
-              tbl.id.equals(postId) &
-              tbl.serverId.equals(_serverManager.activeServerUrl),
-        ))
-        .write(
-          CachedPostsCompanion(
-            deleteAt: Value(DateTime.now().millisecondsSinceEpoch),
           ),
         );
   }

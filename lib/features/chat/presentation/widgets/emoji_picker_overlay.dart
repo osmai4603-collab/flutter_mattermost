@@ -90,8 +90,11 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   String _hoveredEmojiName = '';
+  int _activeTabIndex = 0;
+  bool _isScrollingFromTabTap = false;
 
   // Standard categories from emoji_picker_flutter
   final List<Category> _categories = [
@@ -105,17 +108,81 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
     Category.FLAGS,
   ];
 
+  // كل مجموعة: العناصر = 1 عنوان + عدد الإيموجي
+  // الصورة تبدأ عند index 1+emojisCount لكل فئة
+  late final List<_CategorySection> _sections;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: _categories.length, vsync: this);
+    _sections = _categories.map((cat) {
+      final emojis = defaultEmojiSet
+          .firstWhere((e) => e.category == cat)
+          .emoji;
+      return _CategorySection(category: cat, emojis: emojis);
+    }).toList();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_isScrollingFromTabTap) return;
+    if (!_scrollController.hasClients) return;
+
+    // حساب منتصف المنطقة المرئية
+    final scrollOffset = _scrollController.offset;
+    final viewportHeight = _scrollController.position.viewportDimension;
+    final middle = scrollOffset + viewportHeight / 3;
+
+    // تحديد أي فئة مرئية حالياً
+    int closestIndex = 0;
+    double closestDistance = double.infinity;
+
+    double cumulativeHeight = 0;
+    for (int i = 0; i < _sections.length; i++) {
+      // ارتفاع العنوان + عدد صفوف الإيموجي * حجم كل صورة
+      final sectionHeight = 36.0 + // category header
+          ((_sections[i].emojis.length / 8).ceil() * 49.0); // grid rows
+      final sectionMiddle = cumulativeHeight + sectionHeight / 2;
+      final distance = (middle - sectionMiddle).abs();
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = i;
+      }
+      cumulativeHeight += sectionHeight;
+    }
+
+    if (closestIndex != _activeTabIndex) {
+      setState(() => _activeTabIndex = closestIndex);
+      _tabController.index = closestIndex;
+    }
+  }
+
+  void _scrollToCategory(int index) {
+    _isScrollingFromTabTap = true;
+    double targetOffset = 0;
+    for (int i = 0; i < index; i++) {
+      targetOffset += 36.0 + ((_sections[i].emojis.length / 8).ceil() * 49.0);
+    }
+    _scrollController
+        .animateTo(
+      targetOffset,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    )
+        .then((_) {
+      _isScrollingFromTabTap = false;
+    });
+    setState(() => _activeTabIndex = index);
+    _tabController.index = index;
   }
 
   @override
@@ -162,8 +229,35 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildTopActions(theme, l10n),
+          _buildTopBar(theme, l10n),
           _buildSearchBar(theme, l10n),
+          _buildTopActions(theme, l10n),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopBar(MattermostColors theme, AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          Text(
+            l10n.emoji_pickerHeader,
+            style: TextStyle(
+              color: theme.centerChannelColor,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: widget.onClose,
+            icon: Icon(Icons.close, size: 18),
+            color: theme.centerChannelColor.withValues(alpha: 0.5),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+          ),
         ],
       ),
     );
@@ -179,27 +273,12 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
           padding: const WidgetStatePropertyAll(EdgeInsets.zero),
         ),
         children: [
-          MenuItemButton(
-            onPressed: null,
-            child: Text(
-              l10n.emoji_pickerHeader,
-              style: TextStyle(
-                color: theme.centerChannelColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
           const Spacer(),
           ..._categories.map((cat) {
             final index = _categories.indexOf(cat);
             final isSelected = _tabController.index == index;
             return MenuItemButton(
-              onPressed: () {
-                setState(() {
-                  _tabController.animateTo(index);
-                });
-              },
+              onPressed: () => _scrollToCategory(index),
               style: MenuItemButton.styleFrom(
                 backgroundColor: isSelected ? theme.linkColor.withValues(alpha: 0.1) : null,
                 foregroundColor: isSelected ? theme.linkColor : theme.centerChannelColor.withValues(alpha: 0.55),
@@ -211,15 +290,6 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
             );
           }),
           const SizedBox(width: 4),
-          MenuItemButton(
-            onPressed: widget.onClose,
-            style: MenuItemButton.styleFrom(
-              foregroundColor: theme.centerChannelColor.withValues(alpha: 0.5),
-              minimumSize: const Size(40, 40),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: const Icon(Icons.close, size: 18),
-          ),
         ],
       ),
     );
@@ -280,18 +350,19 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
   }
 
   Widget _buildEmojiGrid(MattermostColors theme) {
-    return TabBarView(
-      controller: _tabController,
-      children: _categories.map((cat) {
-        final emojis = defaultEmojiSet
-            .firstWhere((e) => e.category == cat)
-            .emoji;
-        return _EmojiCategoryGrid(
-          emojis: emojis,
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      itemCount: _sections.length,
+      itemBuilder: (context, index) {
+        final section = _sections[index];
+        return _EmojiCategorySection(
+          category: section.category,
+          emojis: section.emojis,
           onEmojiSelected: widget.onEmojiSelected,
           onHover: (name) => setState(() => _hoveredEmojiName = name),
         );
-      }).toList(),
+      },
     );
   }
 
@@ -345,6 +416,76 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
       default:
         return Icons.emoji_emotions_outlined;
     }
+  }
+}
+
+class _CategorySection {
+  final Category category;
+  final List<Emoji> emojis;
+
+  const _CategorySection({required this.category, required this.emojis});
+}
+
+class _EmojiCategorySection extends StatelessWidget {
+  final Category category;
+  final List<Emoji> emojis;
+  final Function(String) onEmojiSelected;
+  final Function(String) onHover;
+
+  const _EmojiCategorySection({
+    required this.category,
+    required this.emojis,
+    required this.onEmojiSelected,
+    required this.onHover,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Category header
+        Padding(
+          padding: const EdgeInsets.only(left: 4, top: 8, bottom: 4),
+          child: Text(
+            category.name,
+            style: TextStyle(
+              color: theme.centerChannelColor.withValues(alpha: 0.6),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        // Emoji grid
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(4),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 45,
+            mainAxisSpacing: 4,
+            crossAxisSpacing: 4,
+          ),
+          itemCount: emojis.length,
+          itemBuilder: (context, index) {
+            final emoji = emojis[index];
+            return MouseRegion(
+              onEnter: (_) => onHover(emoji.name),
+              onExit: (_) => onHover(''),
+              child: InkWell(
+                onTap: () => onEmojiSelected(emoji.emoji),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  alignment: Alignment.center,
+                  child: emojiWidget(emoji.emoji, size: 24),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 

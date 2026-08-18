@@ -78,7 +78,9 @@ class _DirectMessageCategoryWidgetState
         ...dmCounterpartIds(ch, widget.currentUserId),
     };
     if (widget.currentUserId.isNotEmpty) {
-      context.read<UserStatusBloc>().add(LoadMyStatusEvent(widget.currentUserId));
+      context.read<UserStatusBloc>().add(
+        LoadMyStatusEvent(widget.currentUserId),
+      );
     }
     if (userIds.isEmpty) return;
     context.read<UserStatusBloc>().add(LoadUserStatusesEvent(userIds.toList()));
@@ -242,7 +244,8 @@ class _DirectMessageCategoryWidgetState
                                         child: InkWell(
                                           onTap: () => ModalRegistry.open(
                                             context,
-                                            id: ModalIdentifiers.invitation,
+                                            id: ModalIdentifiers
+                                                .invitePeopleInTeam,
                                           ),
                                           child: SizedBox(
                                             height: DesignTokens

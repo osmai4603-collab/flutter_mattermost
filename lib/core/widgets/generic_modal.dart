@@ -14,6 +14,8 @@ class GenericModal extends StatelessWidget {
   final String? dismissLabel;
   final VoidCallback? onDismiss;
   final double width;
+  final double fontSize;
+  final Widget? extraFooter;
 
   const GenericModal({
     super.key,
@@ -24,6 +26,8 @@ class GenericModal extends StatelessWidget {
     this.dismissLabel,
     this.onDismiss,
     this.width = 600,
+    this.fontSize = 16,
+    this.extraFooter,
   });
 
   @override
@@ -46,8 +50,8 @@ class GenericModal extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                height: 60,
+                padding: const EdgeInsets.symmetric(horizontal: 32),
                 decoration: BoxDecoration(
                   border: Border(
                     bottom: BorderSide(
@@ -64,7 +68,7 @@ class GenericModal extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: theme.centerChannelColor,
-                          fontSize: 16,
+                          fontSize: fontSize,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -94,17 +98,20 @@ class GenericModal extends StatelessWidget {
                   child: body,
                 ),
               ),
-              if (hasFooter)
+              if (hasFooter || extraFooter != null)
                 Container(
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      if (extraFooter != null) extraFooter!,
+                      const Spacer(),
                       if (dismissLabel != null || onDismiss != null)
                         TextButton(
-                          onPressed: onDismiss ??
-                              () => Navigator.of(context).pop(),
-                          child: Text(dismissLabel ?? l10n.generic_modalConfirm),
+                          onPressed:
+                              onDismiss ?? () => Navigator.of(context).pop(),
+                          child: Text(
+                            dismissLabel ?? l10n.generic_modalConfirm,
+                          ),
                         ),
                       if (confirmLabel != null) ...[
                         const SizedBox(width: 8),
@@ -113,8 +120,8 @@ class GenericModal extends StatelessWidget {
                             backgroundColor: theme.buttonBg,
                             foregroundColor: theme.buttonColor,
                           ),
-                          onPressed: onConfirm ??
-                              () => Navigator.of(context).pop(),
+                          onPressed:
+                              onConfirm ?? () => Navigator.of(context).pop(),
                           child: Text(confirmLabel!),
                         ),
                       ],

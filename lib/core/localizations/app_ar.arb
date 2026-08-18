@@ -11904,5 +11904,6 @@
   "timeRelativeJustNow": "الآن",
   "timeRelativeMinutesAgo": "منذ {count} دقيقة",
   "timeRelativeHoursAgo": "منذ {count} ساعة",
-  "timeRelativeDaysAgo": "منذ {count} يوم"
+  "timeRelativeDaysAgo": "منذ {count} يوم",
+  "timeRelativeWeeksAgo": "منذ {count} اسبوع"
 }

@@ -172,10 +172,6 @@ class _ResizableLhsState extends State<_ResizableLhs> {
               fit: StackFit.expand,
               children: [
                 const ChannelSidebar(),
-                // بطاقة المكالمة الواردة أسفل يسار الشاشة — بنفس عرض
-                // الشريط الجانبي (مطابقة call widget في webapp: fixed
-                // bottom-left فوق الـ sidebar). العرض يتبع تحجيم الـ LHS
-                // تلقائياً لأنه داخل نفس الـ SizedBox.
                 const Positioned(
                   left: 0,
                   right: 0,

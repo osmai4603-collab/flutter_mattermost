@@ -3,8 +3,6 @@ import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/app_database.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/chat_local_data_source.dart';
-import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
-import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:drift/drift.dart';
 
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
@@ -43,10 +41,6 @@ class WebsocketDbSyncService {
       if (event.post.pendingPostId.isNotEmpty) {
         await _chatLocalDataSource.deletePendingPost(event.post.pendingPostId);
       }
-    } else if (event is PostUpdatedEvent) {
-      await _chatLocalDataSource.updateCachedPost(event.post);
-    } else if (event is PostDeletedEvent) {
-      await _chatLocalDataSource.markPostDeleted(event.postId);
     } else if (event is ReactionChangedEvent) {
       final entity = event.reaction;
       if (event.added) {
@@ -61,7 +55,7 @@ class WebsocketDbSyncService {
     } else if (event is UserPresenceEvent) {
       await _chatLocalDataSource.cacheUserStatuses([
         UserStatusEntity(
-          serverId: '', 
+          serverId: '',
           userId: event.userId,
           status: event.status,
         ),
@@ -76,15 +70,20 @@ class WebsocketDbSyncService {
     } else if (event is ChannelViewedEvent) {
       // Update last viewed at for the current user
       if (event.lastViewedAt != null) {
-        await (_db.update(_db.cachedChannelMembers)
-              ..where((t) => t.channelId.equals(event.channelId)))
-            .write(CachedChannelMembersCompanion(
-                lastViewedAt: Value(event.lastViewedAt!)));
+        await (_db.update(
+          _db.cachedChannelMembers,
+        )..where((t) => t.channelId.equals(event.channelId))).write(
+          CachedChannelMembersCompanion(
+            lastViewedAt: Value(event.lastViewedAt!),
+          ),
+        );
       }
     } else if (event is UserUpdatedEvent) {
       // Update cached user
       final user = event.userJson;
-      await _db.into(_db.cachedUsers).insert(
+      await _db
+          .into(_db.cachedUsers)
+          .insert(
             CachedUsersCompanion.insert(
               serverId: '', // Need to handle serverId
               id: user['id'] as String? ?? '',
@@ -99,12 +98,14 @@ class WebsocketDbSyncService {
             mode: InsertMode.insertOrReplace,
           );
     } else if (event is PostUnreadEvent) {
-      await (_db.update(_db.cachedChannelMembers)
-            ..where((t) => t.channelId.equals(event.channelId)))
-          .write(CachedChannelMembersCompanion(
-        msgCount: Value(event.msgCount),
-        mentionCount: Value(event.mentionCount),
-      ));
+      await (_db.update(
+        _db.cachedChannelMembers,
+      )..where((t) => t.channelId.equals(event.channelId))).write(
+        CachedChannelMembersCompanion(
+          msgCount: Value(event.msgCount),
+          mentionCount: Value(event.mentionCount),
+        ),
+      );
     }
     // Add more handlers as needed
   }

@@ -1,8 +1,9 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 
 class PostListEntity extends Equatable {
   final List<String>? order;
-  final Map<String, dynamic>? posts;
+  final Map<String, PostEntity>? posts;
   final String? next_post_id;
   final String? prev_post_id;
   final bool? has_next;
@@ -17,16 +18,16 @@ class PostListEntity extends Equatable {
 
   @override
   List<Object?> get props => [
-        order,
-        posts,
-        next_post_id,
-        prev_post_id,
-        has_next,
-      ];
+    order,
+    posts,
+    next_post_id,
+    prev_post_id,
+    has_next,
+  ];
 
   PostListEntity copyWith({
     List<String>? order,
-    Map<String, dynamic>? posts,
+    Map<String, PostEntity>? posts,
     String? next_post_id,
     String? prev_post_id,
     bool? has_next,

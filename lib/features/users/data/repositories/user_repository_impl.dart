@@ -131,14 +131,22 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<List<UserEntity>> getProfilesByIds(List<String> userIds) async {
+    if (userIds.isEmpty) return const [];
     final missing = userIds
         .where((id) => !_profileCache.containsKey(id))
         .toList();
     if (missing.isNotEmpty) {
-      final models = await _remoteDataSource.getProfilesByIds(missing);
-      _mapAndCache(models);
+      try {
+        final models = await _remoteDataSource.getProfilesByIds(missing);
+        _mapAndCache(models);
+      } catch (_) {
+        // Still return cached profiles even if remote call fails
+      }
     }
-    return userIds.map((id) => _profileCache[id]!).toList();
+    return userIds
+        .where((id) => _profileCache.containsKey(id))
+        .map((id) => _profileCache[id]!)
+        .toList();
   }
 
   @override

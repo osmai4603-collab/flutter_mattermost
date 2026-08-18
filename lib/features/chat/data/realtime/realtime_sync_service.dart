@@ -26,13 +26,7 @@ class RealtimeSyncService {
   }
 
   void _handleEvent(TypedWebSocketEvent event) async {
-    if (event is PostCreatedEvent) {
-      await _localDataSource.cachePosts([event.post]);
-    } else if (event is PostUpdatedEvent) {
-      await _localDataSource.updateCachedPost(event.post);
-    } else if (event is PostDeletedEvent) {
-      await _localDataSource.markPostDeleted(event.postId);
-    } else if (event is ReactionChangedEvent) {
+    if (event is ReactionChangedEvent) {
       final entity = event.reaction;
       if (event.added) {
         await _localDataSource.cacheReactions([entity]);

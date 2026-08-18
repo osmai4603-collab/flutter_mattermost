@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
@@ -352,7 +353,8 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
           replies: thread.where((p) => p.id != event.rootPostId).toList(),
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[RhsBloc] _onOpenThread error: $e');
       if (state is RhsThreadState) {
         emit((state as RhsThreadState).copyWith(loading: false));
       }
@@ -374,7 +376,8 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
     try {
       final versions = await _postRepository.getPostEditHistory(event.postId);
       emit(RhsEditHistoryState(postId: event.postId, versions: versions));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[RhsBloc] _onOpenEditHistory error: $e');
       if (state is RhsEditHistoryState) {
         emit((state as RhsEditHistoryState).copyWith(loading: false));
       }
@@ -510,8 +513,15 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
         fileIds: event.fileIds,
         metadata: event.metadata,
       );
+      final alreadyExists = current.replies.any((r) => r.id == sent.id);
+      final updatedReplies =
+          alreadyExists
+              ? current.replies
+                  .map((r) => r.id == sent.id ? sent : r)
+                  .toList()
+              : [...current.replies, sent];
       emit(
-        current.copyWith(sending: false, replies: [...current.replies, sent]),
+        current.copyWith(sending: false, replies: updatedReplies),
       );
       event.completer?.complete(sent);
     } catch (e) {

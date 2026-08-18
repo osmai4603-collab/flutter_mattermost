@@ -112,7 +112,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
         _webSocketClientManager.connect();
         _offlineSyncService.syncPendingActions();
         _outboxRetryService.processOutbox();
-        _deltaSyncService.fullSync();
       },
     );
 
@@ -131,7 +130,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     _webSocketClientManager.connect();
     _offlineSyncService.syncPendingActions();
     _outboxRetryService.processOutbox();
-    _deltaSyncService.fullSync();
   }
 
   Future<void> _onCheckAuthStatus(
@@ -146,7 +144,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
       _outboxRetryService.start();
       _notificationService.startListening();
       _deltaSyncService.start();
-      _deltaSyncService.fullSync();
       _webSocketClientManager.connect();
       emit(AuthenticatedState(user));
     } else {
@@ -175,7 +172,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
         _webSocketClientManager.connect();
         await _offlineSyncService.syncPendingActions();
         await _outboxRetryService.processOutbox();
-        await _deltaSyncService.fullSync();
       } catch (e) {
         debugPrint('[auth] post-login sync failed: $e');
       }

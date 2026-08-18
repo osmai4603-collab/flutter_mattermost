@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:flutter_mattermost/core/enums/post_type.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/chat_local_data_source.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/chat_remote_data_sources.dart';
@@ -10,8 +9,6 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:injectable/injectable.dart';
-import 'package:uuid/uuid.dart';
-import 'package:flutter_mattermost/features/chat/domain/entities/pending_post_entity.dart';
 
 @LazySingleton(as: PostRepository)
 class PostRepositoryImpl implements PostRepository {
@@ -20,7 +17,6 @@ class PostRepositoryImpl implements PostRepository {
   final ReactionsRemoteDataSource _reactionsDataSource;
   final FilesRemoteDataSource _filesDataSource;
   final SecureStorageService _secureStorage;
-  final _uuid = const Uuid();
 
   PostRepositoryImpl(
     this._remoteDataSource,
@@ -41,21 +37,14 @@ class PostRepositoryImpl implements PostRepository {
     String? before,
     String? after,
   }) async {
-    try {
-      final models = await _remoteDataSource.getPostsForChannel(
-        channelId,
-        page: page,
-        perPage: perPage,
-        before: before,
-        after: after,
-      );
-      final entities = models.map((m) => m.toEntity()).toList();
-
-      await _localDataSource.cachePosts(entities);
-      return entities;
-    } catch (_) {
-      return await _localDataSource.getCachedPosts(channelId);
-    }
+    final models = await _remoteDataSource.getPostsForChannel(
+      channelId,
+      page: page,
+      perPage: perPage,
+      before: before,
+      after: after,
+    );
+    return models.map((m) => m.toEntity()).toList();
   }
 
   @override
@@ -68,57 +57,16 @@ class PostRepositoryImpl implements PostRepository {
     Map<String, dynamic>? metadata,
     int? scheduledAt,
   }) async {
-    final pendingId = _uuid.v4();
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    try {
-      final model = await _remoteDataSource.sendPost(
-        channelId,
-        message,
-        rootId: rootId,
-        fileIds: fileIds,
-        alsoSendToChannel: alsoSendToChannel,
-        metadata: {...?metadata, 'pending_post_id': pendingId},
-        scheduledAt: scheduledAt,
-      );
-      final entity = model.toEntity();
-
-      await _localDataSource.cachePosts([entity]);
-      return entity;
-    } catch (e) {
-      final pendingPost = PendingPostEntity(
-        id: pendingId,
-        channelId: channelId,
-        message: message,
-        rootId: rootId ?? '',
-        fileIds: fileIds,
-        createdAt: now,
-        status: PendingPostStatus.pending,
-      );
-      
-      final offlineEntity = PostEntity(
-        id: pendingId,
-        channelId: channelId,
-        userId: await _currentUserId(),
-        message: message,
-        rootId: rootId ?? '',
-        createAt: now,
-        updateAt: now,
-        deleteAt: 0,
-        editAt: 0,
-        originalId: '',
-        type: PostType.defaultType,
-        propsData: const {},
-        hashtag: '',
-        fileIds: fileIds,
-        pendingPostId: pendingId,
-      );
-      
-      await _localDataSource.cachePosts([offlineEntity]);
-      await _localDataSource.savePendingPost(pendingPost);
-      
-      return offlineEntity;
-    }
+    final model = await _remoteDataSource.sendPost(
+      channelId,
+      message,
+      rootId: rootId,
+      fileIds: fileIds,
+      alsoSendToChannel: alsoSendToChannel,
+      metadata: metadata,
+      scheduledAt: scheduledAt,
+    );
+    return model.toEntity();
   }
 
   @override

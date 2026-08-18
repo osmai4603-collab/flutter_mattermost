@@ -14,6 +14,7 @@ import 'package:flutter_mattermost/features/chat/presentation/editor/message_edi
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_bookmarks.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_header.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/message_list.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/no_channel_selected_view.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/domain/repositories/user_repository.dart';
 
@@ -108,9 +109,8 @@ class _ChannelPageState extends State<ChannelPage> {
     team ??= teamState.selectedTeam;
     if (team == null || teamState.teams.isEmpty) return;
 
-    if (_loadedTeamId != team.id) {
-      _loadedTeamId = team.id;
-      context.read<ChannelBloc>().add(LoadChannelsForTeamEvent(team.id, seamless: true));
+    if (team.id != teamState.selectedTeam?.id) {
+      context.read<TeamBloc>().add(SelectTeamEvent(team));
     }
 
     final channelState = context.read<ChannelBloc>().state;
@@ -260,11 +260,13 @@ class _ChannelPageState extends State<ChannelPage> {
         : null;
     final isArchived = (channel?.deleteAt ?? 0) > 0;
 
-    if (channel != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _checkDmRestrictions(channel);
-      });
+    if (channel == null) {
+      return const NoChannelSelectedView();
     }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkDmRestrictions(channel);
+    });
 
     final showsArchivedBar =
         isArchived || _dmUserDeactivated || _isRestrictedDm;
@@ -289,7 +291,10 @@ class _ChannelPageState extends State<ChannelPage> {
             onClose: _closeChannel,
           )
         else
-          MessageEditor(scrollController: _listScrollController),
+          MessageEditor(
+            key: ValueKey('editor_${channel.id}'),
+            scrollController: _listScrollController,
+          ),
       ],
     );
   }

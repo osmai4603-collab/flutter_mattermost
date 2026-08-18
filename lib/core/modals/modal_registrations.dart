@@ -13,6 +13,7 @@ import 'package:flutter_mattermost/features/channels/presentation/modals/keyboar
 import 'package:flutter_mattermost/features/channels/presentation/pages/create_new_channel.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/teams/presentation/modals/team_settings_modal.dart';
 import 'package:flutter_mattermost/features/teams/presentation/widgets/invitation_modal.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_page.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_settings_modal.dart';
@@ -55,8 +56,8 @@ void registerMattermostModals() {
     (context, args) => const UserProfilePage(),
   );
   ModalRegistry.register(
-    ModalIdentifiers.invitation,
-    (context, args) => const InvitationModal(),
+    ModalIdentifiers.invitePeopleInTeam,
+    (context, args) => const InvitePeopleToTeam(),
   );
   ModalRegistry.register(
     ModalIdentifiers.newChannel,
@@ -69,6 +70,10 @@ void registerMattermostModals() {
   ModalRegistry.register(
     ModalIdentifiers.keyboardShortcuts,
     (context, args) => const KeyboardShortcutsModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.teamSettings,
+    (context, args) => const TeamSettingsModal(),
   );
 }
 

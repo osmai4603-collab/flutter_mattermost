@@ -8,7 +8,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/media_attachment_player.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/media_attachment_player.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// معاينة الملف — مطابقة FilePreviewModal في webapp (المرحلة 2):

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
@@ -179,6 +180,7 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
     LoadProfilesByIdsEvent event,
     Emitter<UserProfileState> emit,
   ) async {
+    if (event.userIds.isEmpty) return;
     try {
       final profiles = await _userRepository.getProfilesByIds(event.userIds);
       var existing = const <UserEntity>[];
@@ -198,7 +200,8 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
         ),
       );
     } catch (e) {
-      emit(UserProfileErrorState(e.toString()));
+      debugPrint('[UserProfileBloc] _onLoadProfilesByIds error: $e');
+      // Keep current profiles on failure
     }
   }
 
@@ -309,7 +312,9 @@ class UserProfileBloc extends Bloc<UserProfileEvent, UserProfileState> {
     final user = _currentUser;
     if (user == null) {
       emit(
-        UserProfileSaveErrorState(message: 'No current user to change password'),
+        UserProfileSaveErrorState(
+          message: 'No current user to change password',
+        ),
       );
       return;
     }

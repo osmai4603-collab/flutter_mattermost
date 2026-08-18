@@ -13,8 +13,8 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/reaction_picker.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';

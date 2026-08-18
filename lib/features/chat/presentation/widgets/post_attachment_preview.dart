@@ -4,7 +4,7 @@ import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entit
 import 'package:flutter_mattermost/features/chat/presentation/files/file_display_utils.dart';
 import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/auth_cached_image.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/media_attachment_player.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/media_attachment_player.dart';
 
 /// يعرض مرفقات الرسالة (الصور والملفات والوسائط) بشكل تفاعلي.
 class PostAttachmentPreview extends StatelessWidget {

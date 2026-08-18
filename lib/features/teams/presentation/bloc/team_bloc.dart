@@ -22,6 +22,21 @@ class SelectTeamEvent extends TeamEvent {
 
 class RefreshTeamsEvent extends TeamEvent {}
 
+class CreateTeamEvent extends TeamEvent {
+  final String displayName;
+  final String name;
+  final String type;
+
+  const CreateTeamEvent({
+    required this.displayName,
+    required this.name,
+    required this.type,
+  });
+
+  @override
+  List<Object?> get props => [displayName, name, type];
+}
+
 // States
 abstract class TeamState extends Equatable {
   const TeamState();
@@ -57,6 +72,7 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<LoadMyTeamsEvent>(_onLoadMyTeams);
     on<RefreshTeamsEvent>(_onLoadMyTeams);
     on<SelectTeamEvent>(_onSelectTeam);
+    on<CreateTeamEvent>(_onCreateTeam);
   }
 
   Future<void> _onLoadMyTeams(TeamEvent event, Emitter<TeamState> emit) async {
@@ -74,6 +90,30 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     if (state is TeamsLoadedState) {
       final current = state as TeamsLoadedState;
       emit(TeamsLoadedState(teams: current.teams, selectedTeam: event.team));
+    }
+  }
+
+  Future<void> _onCreateTeam(
+    CreateTeamEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    try {
+      final team = await _teamRepository.createTeam({
+        'display_name': event.displayName,
+        'name': event.name,
+        'type': event.type,
+      });
+      if (state is TeamsLoadedState) {
+        final current = state as TeamsLoadedState;
+        emit(TeamsLoadedState(
+          teams: [...current.teams, team],
+          selectedTeam: team,
+        ));
+      } else {
+        add(LoadMyTeamsEvent());
+      }
+    } catch (e) {
+      emit(TeamErrorState(e.toString()));
     }
   }
 }

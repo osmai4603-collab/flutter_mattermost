@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_message.dart';
 
 /// نافذة منبثقة للوصف الكامل لقناة (Header/Purpose) — يطابق
 /// channel_header_text_popover.tsx في webapp: تعرض الـ Markdown كاملاً

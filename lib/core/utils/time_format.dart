@@ -4,17 +4,18 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 String formatPostTime(int millis) {
   final dt = DateTime.fromMillisecondsSinceEpoch(millis).toLocal();
   final now = DateTime.now();
-  final h = dt.hour.toString().padLeft(2, '0');
+  final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
   final m = dt.minute.toString().padLeft(2, '0');
+  final period = dt.hour >= 12 ? 'PM' : 'AM';
   final sameDay = dt.year == now.year &&
       dt.month == now.month &&
       dt.day == now.day;
   if (sameDay) {
-    return '$h:$m';
+    return '$h12:$m $period';
   }
   final mm = dt.month.toString().padLeft(2, '0');
   final dd = dt.day.toString().padLeft(2, '0');
-  return '$dd/$mm/${dt.year}';
+  return '$dd/$mm/${dt.year} $h12:$m $period';
 }
 
 /// زمن نسبي مختصر (مطابق formatTimeDistance في webapp) — يُستخدم مثلاً
@@ -32,5 +33,9 @@ String formatRelativeTime(int millis, AppLocalizations l10n) {
   if (diff.inHours < 24) {
     return l10n.timeRelativeHoursAgo(diff.inHours);
   }
-  return l10n.timeRelativeDaysAgo(diff.inDays);
+  if (diff.inDays < 14) {
+    return l10n.timeRelativeDaysAgo(diff.inDays);
+  }
+  final weeks = (diff.inDays / 7).floor();
+  return l10n.timeRelativeWeeksAgo(weeks);
 }

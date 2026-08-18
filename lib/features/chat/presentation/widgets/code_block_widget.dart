@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/syntax_highlight_builder.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/syntax_highlight_builder.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:flutter_markdown/flutter_markdown.dart';
 

@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter_mattermost/core/calls/calls_manager.dart';
 import 'package:flutter_mattermost/core/calls/calls_websocket_client.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
@@ -128,4 +130,11 @@ class FakeCallsManager implements CallsManager {
   @override
   dynamic noSuchMethod(Invocation invocation) =>
       super.noSuchMethod(invocation);
+}
+
+class FakeAuthBloc extends Bloc<AuthEvent, AuthState> implements AuthBloc {
+  FakeAuthBloc() : super(AuthInitialState());
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

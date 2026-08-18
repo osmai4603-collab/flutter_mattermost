@@ -27,7 +27,7 @@ import 'package:flutter_mattermost/features/chat/presentation/editor/formatting_
 import 'package:flutter_mattermost/features/chat/presentation/widgets/attachment_preview.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/emoji_picker_overlay.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/file_upload_overlay.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_message.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/system/domain/repositories/system_repository.dart';
 

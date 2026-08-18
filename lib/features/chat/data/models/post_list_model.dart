@@ -1,3 +1,7 @@
+import 'dart:core';
+
+import 'package:flutter_mattermost/features/chat/data/models/post_model.dart';
+import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_list_entity.dart';
 
 final class PostListModel extends PostListEntity {
@@ -12,10 +16,20 @@ final class PostListModel extends PostListEntity {
   factory PostListModel.fromMap(Map<String, dynamic> map) {
     return PostListModel(
       order: List<String>.from(map["order"] as List<dynamic>? ?? []),
-      posts: map["posts"] as Map<String, dynamic>?,
+      posts: _parsePosts(map["posts"]),
       next_post_id: map["next_post_id"] as String?,
       prev_post_id: map["prev_post_id"] as String?,
       has_next: map["has_next"] as bool?,
+    );
+  }
+
+  static Map<String, PostEntity> _parsePosts(Map<String, dynamic>? data) {
+    if (data == null) return {};
+    return data.map(
+      (key, value) => MapEntry(
+        key,
+        PostModel.fromMap(value as Map<String, dynamic>).toEntity(),
+      ),
     );
   }
 
@@ -42,7 +56,7 @@ final class PostListModel extends PostListEntity {
   @override
   PostListModel copyWith({
     List<String>? order,
-    Map<String, dynamic>? posts,
+    Map<String, PostEntity>? posts,
     String? next_post_id,
     String? prev_post_id,
     bool? has_next,
@@ -57,10 +71,10 @@ final class PostListModel extends PostListEntity {
   }
 
   PostListEntity toEntity() => PostListEntity(
-        order: order,
-        posts: posts,
-        next_post_id: next_post_id,
-        prev_post_id: prev_post_id,
-        has_next: has_next,
-      );
+    order: order,
+    posts: posts,
+    next_post_id: next_post_id,
+    prev_post_id: prev_post_id,
+    has_next: has_next,
+  );
 }

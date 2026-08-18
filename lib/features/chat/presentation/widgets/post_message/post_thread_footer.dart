@@ -156,7 +156,7 @@ class PostThreadFooter extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     l10n.threadingFooterLastReplyAt(
-                      formatPostTime(lastReplyAt),
+                      formatRelativeTime(lastReplyAt, l10n),
                     ),
                     style: TextStyle(
                       fontSize: 12,
@@ -186,7 +186,7 @@ class _ParticipantAvatars extends StatelessWidget {
     final hasMore = participants.length > 4;
     final stackWidth = hasMore
         ? (4 * 20.0) + 20.0
-        : (toShow.length * 20.0);
+        : ((toShow.length - 1) * 20.0);
 
     return SizedBox(
       width: stackWidth,
@@ -194,7 +194,7 @@ class _ParticipantAvatars extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          for (var i = 0; i < toShow.length; i++)
+          for (var i = 0; i < toShow.length - 1; i++)
             Positioned(
               left: i * 20.0,
               child: Container(
@@ -220,9 +220,10 @@ class _ParticipantAvatars extends StatelessWidget {
           if (hasMore)
             Positioned(
               left: 4 * 20.0,
+              top: 2,
               child: Container(
-                width: 20,
-                height: 20,
+                width: 25,
+                height: 25,
                 decoration: BoxDecoration(
                   color: theme.centerChannelColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(DesignTokens.radiusPill),

@@ -256,7 +256,6 @@ class CallPostTile extends StatelessWidget {
                     fontSize: 16,
                     height: 1.5,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Metropolis',
                     color: theme.centerChannelColor,
                   ),
                 ),

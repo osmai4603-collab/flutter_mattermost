@@ -96,7 +96,7 @@ class AutocompleteService {
             q: query,
             perPage: 10,
             includeMemberCount: true,
-            filterAllowReference: true,
+            filterAllowReference: false,
           );
           for (final g in groups) {
             if (g.name.isEmpty) continue;

@@ -113,6 +113,14 @@ class TeamRepositoryImpl implements TeamRepository {
   }
 
   @override
+  Future<TeamEntity> createTeam(Map<String, dynamic> team) async {
+    final model = await _remoteDataSource.createTeam(team);
+    final entity = model.toEntity();
+    _teamCache[entity.id] = entity;
+    return entity;
+  }
+
+  @override
   Future<void> inviteMembersByEmail(
     String teamId,
     List<String> emails,

@@ -11904,5 +11904,6 @@
   "timeRelativeJustNow": "just now",
   "timeRelativeMinutesAgo": "{count} minutes ago",
   "timeRelativeHoursAgo": "{count} hours ago",
-  "timeRelativeDaysAgo": "{count} days ago"
+  "timeRelativeDaysAgo": "{count} days ago",
+  "timeRelativeWeeksAgo": "{count} weeks ago"
 }

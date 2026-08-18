@@ -14,12 +14,7 @@ class FileInfoListEntity extends Equatable {
   });
 
   @override
-  List<Object?> get props => [
-        order,
-        file_infos,
-        next_file_id,
-        prev_file_id,
-      ];
+  List<Object?> get props => [order, file_infos, next_file_id, prev_file_id];
 
   FileInfoListEntity copyWith({
     List<String>? order,

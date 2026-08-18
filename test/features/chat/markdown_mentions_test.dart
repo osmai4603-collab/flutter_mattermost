@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_mentions.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_mentions.dart';
 import 'package:markdown/markdown.dart' as md;
 
 /// يفحص عناصر `mention`/`channel` المستخرجة من شجرة الـ AST.

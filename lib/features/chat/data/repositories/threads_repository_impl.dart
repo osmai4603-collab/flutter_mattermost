@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/threads_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/data/models/thread_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
@@ -47,20 +48,24 @@ class ThreadsRepositoryImpl implements ThreadsRepository {
 
   @override
   Future<void> followThread(String userId, String teamId, String threadId) async {
+    debugPrint('[ThreadsRepository] followThread: userId=$userId, teamId=$teamId, threadId=$threadId');
     await _remoteDataSource.followThread(
       userId,
       teamId,
       threadId,
     );
+    debugPrint('[ThreadsRepository] followThread completed successfully');
   }
 
   @override
   Future<void> unfollowThread(String userId, String teamId, String threadId) async {
+    debugPrint('[ThreadsRepository] unfollowThread: userId=$userId, teamId=$teamId, threadId=$threadId');
     await _remoteDataSource.unfollowThread(
       userId,
       teamId,
       threadId,
     );
+    debugPrint('[ThreadsRepository] unfollowThread completed successfully');
   }
 
   @override

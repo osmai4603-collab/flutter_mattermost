@@ -7,6 +7,7 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/message_editor.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/message_list.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/post_item.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 
 /// جسم لوحة Thread داخل RHS — يُركّب داخل [RhsBody].

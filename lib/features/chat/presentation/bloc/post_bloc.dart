@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
@@ -342,6 +343,11 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   /// يُستخدم لمنع أحداث WebSocket القديمة من إعادة إضافة تفاعل أُزيل بالفعل.
   final Map<String, int> _lastReactionToggleAt = {};
 
+  void _cleanOldToggles() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _lastReactionToggleAt.removeWhere((_, ts) => now - ts > 10000);
+  }
+
   PostBloc(
     this._postRepository,
     this._webSocketManager,
@@ -373,18 +379,21 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     _listenToWebSocketEvents();
 
     // تحميل الرسائل فور اختيار قناة (أو عند أول تحميل للقنوات).
-    _channelSubscription = _channelBloc.stream.listen((channelState) {
+    void checkChannelState(ChannelState channelState) {
       if (channelState is ChannelsLoadedState &&
           channelState.selectedChannel != null) {
+        final selectedId = channelState.selectedChannel!.id;
         final current = state;
-        final alreadyLoaded =
-            current is PostsLoadedState &&
-            current.channelId == channelState.selectedChannel!.id;
-        if (!alreadyLoaded) {
-          add(LoadPostsForChannelEvent(channelState.selectedChannel!.id));
+        final currentChannelId =
+            current is PostsLoadedState ? current.channelId : '';
+        if (currentChannelId != selectedId) {
+          add(LoadPostsForChannelEvent(selectedId));
         }
       }
-    });
+    }
+
+    _channelSubscription = _channelBloc.stream.listen(checkChannelState);
+    checkChannelState(_channelBloc.state);
   }
 
   Future<String> _currentUserId() async =>
@@ -430,8 +439,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           hasMore: posts.length >= 60,
         ),
       );
-      _loadFlagged(emit);
-      _loadChannelExtras(emit);
+      await _loadFlagged(emit);
+      await _loadChannelExtras(emit);
+      await _loadThreadFollowing(emit);
     } catch (e) {
       emit(PostErrorState(e.toString()));
     }
@@ -447,7 +457,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       if (state is PostsLoadedState) {
         emit((state as PostsLoadedState).copyWith(reactions: byPost));
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _loadChannelExtras reactions error: $e');
+    }
 
     final withFiles = current.posts.where((p) => p.fileIds.isNotEmpty).toList();
     if (withFiles.isNotEmpty) {
@@ -512,6 +524,35 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     } catch (_) {}
   }
 
+  Future<void> _loadThreadFollowing(Emitter<PostsState> emit) async {
+    final current = state;
+    if (current is! PostsLoadedState) return;
+    try {
+      final channelState = _channelBloc.state;
+      final teamId = channelState is ChannelsLoadedState
+          ? channelState.teamId
+          : '';
+      if (teamId.isEmpty) return;
+      final userId = await _currentUserId();
+      final threadsRepository = getIt<ThreadsRepository>();
+      final followedThreads = await threadsRepository.getThreadsForUser(
+        userId,
+        teamId,
+        perPage: 200,
+      );
+      if (state is PostsLoadedState) {
+        final followedIds = {
+          for (final t in followedThreads) t.rootPostId: true,
+        };
+        emit(
+          (state as PostsLoadedState).copyWith(threadFollowing: followedIds),
+        );
+      }
+    } catch (e) {
+      debugPrint('[PostBloc] _loadThreadFollowing error: $e');
+    }
+  }
+
   Future<void> _onLoadMorePosts(
     LoadMorePostsEvent event,
     Emitter<PostsState> emit,
@@ -556,8 +597,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           focusPostId: event.postId,
         ),
       );
-      _loadFlagged(emit);
-      _loadChannelExtras(emit);
+      await _loadFlagged(emit);
+      await _loadChannelExtras(emit);
+      await _loadThreadFollowing(emit);
     } catch (e) {
       emit(PostErrorState(e.toString()));
     }
@@ -591,27 +633,31 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       );
       final current = state;
       if (current is PostsLoadedState && current.channelId == event.channelId) {
-        var updatedFiles = current.files;
-        final fileList = _extractFilesFromPost(newPost);
-        if (fileList.isNotEmpty) {
-          updatedFiles = Map<String, List<FileInfoEntity>>.from(current.files)
-            ..[newPost.id] = fileList;
-        } else if (newPost.fileIds.isNotEmpty) {
-          try {
-            final fetched = await _postRepository.getFilesForPost(newPost.id);
-            if (fetched.isNotEmpty) {
-              updatedFiles = Map<String, List<FileInfoEntity>>.from(
-                current.files,
-              )..[newPost.id] = fetched;
-            }
-          } catch (_) {}
+        final alreadyExists = current.posts.any((p) => p.id == newPost.id);
+        if (!alreadyExists) {
+          var updatedFiles = current.files;
+          final fileList = _extractFilesFromPost(newPost);
+          if (fileList.isNotEmpty) {
+            updatedFiles =
+                Map<String, List<FileInfoEntity>>.from(current.files)
+                  ..[newPost.id] = fileList;
+          } else if (newPost.fileIds.isNotEmpty) {
+            try {
+              final fetched = await _postRepository.getFilesForPost(newPost.id);
+              if (fetched.isNotEmpty) {
+                updatedFiles = Map<String, List<FileInfoEntity>>.from(
+                  current.files,
+                )..[newPost.id] = fetched;
+              }
+            } catch (_) {}
+          }
+          emit(
+            current.copyWith(
+              posts: [newPost, ...current.posts],
+              files: updatedFiles,
+            ),
+          );
         }
-        emit(
-          current.copyWith(
-            posts: [newPost, ...current.posts],
-            files: updatedFiles,
-          ),
-        );
       }
       event.completer?.complete(newPost);
     } catch (e) {
@@ -742,7 +788,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       final next = {...current.flaggedIds};
       isFlagged ? next.remove(event.postId) : next.add(event.postId);
       emit(current.copyWith(flaggedIds: next));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _onToggleFlag error: $e');
+    }
   }
 
   Future<void> _onSendTyping(
@@ -754,7 +802,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         event.channelId,
         parentId: event.parentId,
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _onSendTyping error: $e');
+    }
   }
 
   Future<void> _onDeletePost(
@@ -771,7 +821,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           posts: current.posts.where((p) => p.id != event.postId).toList(),
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _onDeletePost error: $e');
+    }
   }
 
   Future<void> _onEditPost(
@@ -792,7 +844,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
               .toList(),
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _onEditPost error: $e');
+    }
   }
 
   Future<void> _onTogglePin(
@@ -811,7 +865,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       final next = {...current.pinnedIds};
       isPinned ? next.remove(event.postId) : next.add(event.postId);
       emit(current.copyWith(pinnedIds: next));
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[PostBloc] _onTogglePin error: $e');
+    }
   }
 
   Future<void> _onToggleReaction(
@@ -834,6 +890,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     // تسجيل وقت التغيير لمنع أحداث WebSocket القديمة من التدخل
     final toggleKey = '${event.postId}:${event.emoji}';
     _lastReactionToggleAt[toggleKey] = DateTime.now().millisecondsSinceEpoch;
+    _cleanOldToggles();
 
     final next = [...existing];
     if (wasReacted) {
@@ -867,7 +924,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       } else {
         await _postRepository.addReaction(event.postId, event.emoji);
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[PostBloc] _onToggleReaction error: $e');
       // تراجع جراحي: نتحقق من الحالة اللحظية قبل التراجع
       final latestState = state;
       if (latestState is PostsLoadedState) {
@@ -921,22 +979,20 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   void _onRealtimeReaction(
     RealtimeReactionEvent event,
     Emitter<PostsState> emit,
-  ) {
+  ) async {
     final currentState = state;
     if (currentState is! PostsLoadedState) return;
 
-    // عند استلام حدث "إضافة" من WebSocket، تحقق مما إذا كان المستخدم قد
-    // أزال التفاعل محلياً بعد هذا الحدث (سباق الضغط السريع).
-    // إذا كان وقت التغيير المحلي أحدث، تجاهل حدث WebSocket.
     if (event.added) {
-      final toggleKey = '${event.reaction.postId}:${event.reaction.emojiName}';
-      final lastToggleAt = _lastReactionToggleAt[toggleKey];
-      if (lastToggleAt != null) {
-        final elapsed = DateTime.now().millisecondsSinceEpoch - lastToggleAt;
-        // إذا تم التغيير محلياً خلال 5 ثوانٍ الماضية، تجاهل حدث الإضافة
-        // لأن المستخدم ربما أزال التفاعل بعد أن أضافه.
-        if (elapsed < 5000) {
-          return;
+      final userId = await _currentUserId();
+      if (event.reaction.userId == userId) {
+        final toggleKey = '${event.reaction.postId}:${event.reaction.emojiName}';
+        final lastToggleAt = _lastReactionToggleAt[toggleKey];
+        if (lastToggleAt != null) {
+          final elapsed = DateTime.now().millisecondsSinceEpoch - lastToggleAt;
+          if (elapsed < 5000) {
+            return;
+          }
         }
       }
     }
@@ -1015,9 +1071,10 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     if (current is! PostsLoadedState) return;
     final channelState = _channelBloc.state;
     final teamId = channelState is ChannelsLoadedState
-        ? channelState.selectedChannel?.teamId ?? ''
+        ? channelState.teamId
         : '';
     final userId = (await _secureStorage.getUserId()) ?? 'me';
+    debugPrint('[PostBloc] _onToggleThreadFollow: follow=${event.follow}, threadId=${event.threadId}, userId=$userId, teamId=$teamId');
     try {
       final threadsRepository = getIt<ThreadsRepository>();
       if (event.follow) {
@@ -1025,6 +1082,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       } else {
         await threadsRepository.unfollowThread(userId, teamId, event.threadId);
       }
+      debugPrint('[PostBloc] _onToggleThreadFollow: remote call succeeded');
       emit(
         current.copyWith(
           threadFollowing: {
@@ -1033,7 +1091,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           },
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[PostBloc] _onToggleThreadFollow error: $e');
       // يحافظ على الحالة عند فشل الشبكة.
     }
   }

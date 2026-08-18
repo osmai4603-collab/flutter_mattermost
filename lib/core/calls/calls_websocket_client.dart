@@ -13,7 +13,13 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 /// بادئة أحداث إضافة المكالمات (custom_com.mattermost.calls_*).
 const String callsEventPrefix = 'custom_com.mattermost.calls_';
 
-enum CallsWebSocketStatus { disconnected, connecting, connected, reconnecting, error }
+enum CallsWebSocketStatus {
+  disconnected,
+  connecting,
+  connected,
+  reconnecting,
+  error,
+}
 
 /// الأحداث الواردة من اتصال المكالمات (`?calls=true`).
 ///
@@ -93,8 +99,12 @@ class CallsEmoji {
     this.literal = '',
   });
 
-  Map<String, dynamic> toJson() =>
-      {'name': name, 'unified': unified, 'skin': skin, 'literal': literal};
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'unified': unified,
+    'skin': skin,
+    'literal': literal,
+  };
 }
 
 /// اتصال WebSocket مخصص للمكالمات (`?calls=true`) — المرحلة 1 من خطة
@@ -440,7 +450,9 @@ class CallsWebSocketClient {
     );
 
     // إعادة الاتصال: نعيد الانضمام للقناة النشطة تلقائياً (مطابق الموبايل).
-    if (_isReconnect && _activeChannelId != null && _originalConnId.isNotEmpty) {
+    if (_isReconnect &&
+        _activeChannelId != null &&
+        _originalConnId.isNotEmpty) {
       _sendReconnect(_activeChannelId!);
     }
   }
@@ -507,9 +519,7 @@ class CallsWebSocketClient {
   @visibleForTesting
   static Uint8List buildSdpFrame(int seq, Map<String, dynamic> sdpPayload) {
     final payloadJson = utf8.encode(jsonEncode(sdpPayload));
-    final compressed = Uint8List.fromList(
-      ZLibCodec().encode(payloadJson),
-    );
+    final compressed = Uint8List.fromList(ZLibCodec().encode(payloadJson));
     return serialize({
       'seq': seq,
       'action': '${callsEventPrefix}sdp',

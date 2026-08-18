@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
-import 'package:meta/meta.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_mattermost/core/utils/printing.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/data/models/channel_bookmark_model.dart';
 import 'package:flutter_mattermost/features/channels/data/models/channel_model.dart';
@@ -579,21 +580,31 @@ class WebSocketClientManager {
   }
 
   void _startHeartbeat() {
-    _pingTimer?.cancel();
-    _pingTimer = Timer.periodic(AppConfig.webSocketPingInterval, (_) {
-      if (_status == WebSocketStatus.connected) {
-        sendJson({
-          'seq': DateTime.now().millisecondsSinceEpoch,
-          'action': 'ping',
-        });
-      }
-    });
+    // _pingTimer?.cancel();
+    // _pingTimer = Timer.periodic(AppConfig.webSocketPingInterval, (_) {
+    //   if (_status == WebSocketStatus.connected) {
+    //     sendJson({
+    //       'seq': DateTime.now().millisecondsSinceEpoch,
+    //       'action': 'ping',
+    //     });
+    //   }
+    // });
   }
 
   @visibleForTesting
   void handleIncomingMessage(String payload) => _onMessageReceived(payload);
 
   void _onMessageReceived(dynamic rawData) {
+    if (rawData is Map) {
+      printMap(
+        title: 'RECEIVE DATA FROM Socket Client: ',
+        data: rawData as dynamic,
+      );
+    }
+    if (rawData is String) {
+      debugPrint('RECEIVE DATA FROM Socket Client: $rawData');
+    }
+
     try {
       final decoded = jsonDecode(rawData as String) as Map<String, dynamic>;
       final seq = decoded['seq'] as int? ?? 0;
@@ -1126,7 +1137,9 @@ class WebSocketClientManager {
             break;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[WebSocket] _onMessageReceived error: $e');
+    }
   }
 
   void sendCallSignal(String action, Map<String, dynamic> data) {

@@ -443,4 +443,10 @@ class CallsBloc extends Bloc<CallsEvent, CallsState> {
     }
     emit(CallIdleState());
   }
+
+  @override
+  Future<void> close() {
+    _endedToIdleTimer?.cancel();
+    return super.close();
+  }
 }

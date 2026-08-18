@@ -50,14 +50,15 @@ class SFUStreamManager {
   String? _getSessionIdFromStats(StatsReport report) {
     // In Mattermost SFU (rtcd), the track identifier follows the pattern:
     // "audio_<sessionId>_<random>" or "video_<sessionId>_<random>"
-    final trackId = report.values['trackIdentifier'] ?? report.values['trackId'];
+    final trackId =
+        report.values['trackIdentifier'] ?? report.values['trackId'];
     if (trackId == null) return null;
 
     final fields = trackId.toString().split('_');
     if (fields.length == 3) {
       return fields[1];
     }
-    
+
     // Fallback: check if the stream identifier itself is the sessionId
     // (In some versions/configurations, stream.id is used directly)
     return null;
@@ -65,7 +66,8 @@ class SFUStreamManager {
 
   void _detectActiveSpeaker() {
     String? loudestSessionId;
-    double maxLevel = 0.05; // Slightly higher threshold to filter background noise
+    double maxLevel =
+        0.05; // Slightly higher threshold to filter background noise
 
     _audioLevels.forEach((sessionId, level) {
       if (level > maxLevel) {
@@ -74,9 +76,10 @@ class SFUStreamManager {
       }
     });
 
-    if (loudestSessionId != null && loudestSessionId != _activeSpeakerSessionId) {
+    if (loudestSessionId != null &&
+        loudestSessionId != _activeSpeakerSessionId) {
       final now = DateTime.now();
-      if (_lastSwitchTime == null || 
+      if (_lastSwitchTime == null ||
           now.difference(_lastSwitchTime!) > _switchCooldown) {
         _activeSpeakerSessionId = loudestSessionId;
         _lastSwitchTime = now;

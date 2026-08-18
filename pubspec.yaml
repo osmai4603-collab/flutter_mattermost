@@ -129,45 +129,6 @@ flutter:
 
 
   fonts:
-    - family: Metropolis
-      fonts:
-        - asset: assets/fonts/Metropolis-Light.ttf
-          weight: 300
-        - asset: assets/fonts/Metropolis-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/Metropolis-SemiBold.ttf
-          weight: 600
-    - family: OpenSans
-      fonts:
-        - asset: assets/fonts/OpenSans-Light.ttf
-          weight: 300
-        - asset: assets/fonts/OpenSans-LightItalic.ttf
-          weight: 300
-          style: italic
-        - asset: assets/fonts/OpenSans-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/OpenSans-Italic.ttf
-          weight: 400
-          style: italic
-        - asset: assets/fonts/OpenSans-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/OpenSans-SemiBoldItalic.ttf
-          weight: 600
-          style: italic
-        - asset: assets/fonts/OpenSans-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/OpenSans-BoldItalic.ttf
-          weight: 700
-          style: italic
-        - asset: assets/fonts/OpenSans-ExtraBold.ttf
-          weight: 800
-        - asset: assets/fonts/OpenSans-ExtraBoldItalic.ttf
-          weight: 800
-          style: italic
-    - family: Nunito
-      fonts:
-        - asset: assets/fonts/nunito-bold.ttf
-          weight: 700
     - family: NotoNaskhArabic
       fonts:
         - asset: assets/fonts/Noto_Naskh_Arabic/NotoNaskhArabic-Regular.ttf

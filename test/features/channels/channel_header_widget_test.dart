@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart';
@@ -34,29 +35,32 @@ void main() {
       ],
     );
 
-    final channelBloc = ChannelBloc(repo, ws);
+    final authBloc = FakeAuthBloc();
+    final teamBloc = TeamBloc(FakeTeamRepository());
+    final channelBloc = ChannelBloc(repo, ws, teamBloc);
     final rhsBloc = RhsBloc(FakePostRepository(), channelBloc);
     final callsBloc = CallsBloc(FakeCallsManager());
-    final teamBloc = TeamBloc(FakeTeamRepository());
+    addTearDown(() => authBloc.close());
     addTearDown(() => channelBloc.close());
     addTearDown(() => rhsBloc.close());
     addTearDown(() => callsBloc.close());
     addTearDown(() => teamBloc.close());
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ChannelBloc>.value(value: channelBloc),
-            BlocProvider<RhsBloc>.value(value: rhsBloc),
-            BlocProvider<CallsBloc>.value(value: callsBloc),
-            BlocProvider<TeamBloc>.value(value: teamBloc),
-          ],
-          child: const Scaffold(body: ChannelHeader()),
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ChannelBloc>.value(value: channelBloc),
+          BlocProvider<RhsBloc>.value(value: rhsBloc),
+          BlocProvider<CallsBloc>.value(value: callsBloc),
+          BlocProvider<TeamBloc>.value(value: teamBloc),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: ChannelHeader()),
         ),
       ),
     );
@@ -95,29 +99,32 @@ void main() {
       channels: [testChannel('c1', name: 'town-square')],
     );
 
-    final channelBloc = ChannelBloc(repo, ws);
+    final authBloc = FakeAuthBloc();
+    final teamBloc = TeamBloc(FakeTeamRepository());
+    final channelBloc = ChannelBloc(repo, ws, teamBloc);
     final rhsBloc = RhsBloc(FakePostRepository(), channelBloc);
     final callsBloc = CallsBloc(FakeCallsManager());
-    final teamBloc = TeamBloc(FakeTeamRepository());
+    addTearDown(() => authBloc.close());
     addTearDown(() => channelBloc.close());
     addTearDown(() => rhsBloc.close());
     addTearDown(() => callsBloc.close());
     addTearDown(() => teamBloc.close());
 
     await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light,
-        locale: const Locale('en'),
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: MultiBlocProvider(
-          providers: [
-            BlocProvider<ChannelBloc>.value(value: channelBloc),
-            BlocProvider<RhsBloc>.value(value: rhsBloc),
-            BlocProvider<CallsBloc>.value(value: callsBloc),
-            BlocProvider<TeamBloc>.value(value: teamBloc),
-          ],
-          child: const Scaffold(body: ChannelHeader()),
+      MultiBlocProvider(
+        providers: [
+          BlocProvider<AuthBloc>.value(value: authBloc),
+          BlocProvider<ChannelBloc>.value(value: channelBloc),
+          BlocProvider<RhsBloc>.value(value: rhsBloc),
+          BlocProvider<CallsBloc>.value(value: callsBloc),
+          BlocProvider<TeamBloc>.value(value: teamBloc),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          locale: const Locale('en'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(body: ChannelHeader()),
         ),
       ),
     );

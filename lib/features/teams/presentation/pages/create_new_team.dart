@@ -18,6 +18,7 @@ class _CreateNewTeamState extends State<CreateNewTeam> {
   final teamNameController = TextEditingController();
   bool isOpen = true;
   bool _submitting = false;
+  bool _isUrlManuallyEdited = false;
   String? _displayNameError;
   String? _nameError;
   String? _error;
@@ -38,18 +39,24 @@ class _CreateNewTeamState extends State<CreateNewTeam> {
         .replaceAll(RegExp(r'^[^a-z0-9]+'), '')
         .replaceAll(RegExp(r'[^a-z0-9]+$'), '');
     if (slug.isEmpty) {
-      slug = 'team-${DateTime.now().millisecondsSinceEpoch}';
+      slug = '';
     }
     return slug;
   }
 
   void _onDisplayNameChanged(String value) {
-    if (teamNameController.text.isEmpty || 
-        teamNameController.text == _teamSlug(teamDisplayNameController.text.substring(0, teamDisplayNameController.text.length - 1 < 0 ? 0 : teamDisplayNameController.text.length - 1))) {
-       teamNameController.text = _teamSlug(value);
+    if (!_isUrlManuallyEdited) {
+      teamNameController.text = _teamSlug(value);
     }
     if (_displayNameError != null) {
       setState(() => _displayNameError = null);
+    }
+  }
+
+  void _onUrlChanged(String value) {
+    _isUrlManuallyEdited = true;
+    if (_nameError != null) {
+      setState(() => _nameError = null);
     }
   }
 
@@ -144,6 +151,7 @@ class _CreateNewTeamState extends State<CreateNewTeam> {
               const SizedBox(height: 24),
               TextField(
                 controller: teamNameController,
+                onChanged: _onUrlChanged,
                 decoration: InputDecoration(
                   hintText: 'team-url',
                   labelText: 'Team URL',
@@ -185,7 +193,7 @@ class _CreateNewTeamState extends State<CreateNewTeam> {
                               if (isOpen)
                                 Expanded(
                                   child: Align(
-                                    alignment: Alignment.centerEnd,
+                                    alignment: AlignmentDirectional.centerEnd,
                                     child: Icon(Icons.check_circle, color: theme.buttonBg, size: 27),
                                   ),
                                 ),
@@ -227,7 +235,7 @@ class _CreateNewTeamState extends State<CreateNewTeam> {
                               if (!isOpen)
                                 Expanded(
                                   child: Align(
-                                    alignment: Alignment.centerEnd,
+                                    alignment: AlignmentDirectional.centerEnd,
                                     child: Icon(Icons.check_circle, color: theme.buttonBg, size: 27),
                                   ),
                                 ),

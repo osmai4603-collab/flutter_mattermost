@@ -9,7 +9,7 @@ import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/core/utils/mention_utils.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/thread_entity.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_message.dart';
 
 class ThreadCard extends StatelessWidget {
   final ThreadEntity thread;
@@ -164,7 +164,7 @@ class ThreadCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   l10n.threadingFooterLastReplyAt(
-                    formatPostTime(thread.lastReplyAt),
+                    formatRelativeTime(thread.lastReplyAt, l10n),
                   ),
                   style: TextStyle(
                     color: theme.centerChannelColor.withValues(alpha: 0.6),

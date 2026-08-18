@@ -7,7 +7,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_message.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_message.dart';
 
 /// جسم لوحة سجل التعديلات داخل RHS — مطابق لوحة Edit History في webapp:
 /// نسخ الرسالة السابقة مرتبة زمنياً، مع زر استعادة لكل نسخة أقدم من الحالية.

@@ -43,42 +43,42 @@ class ChannelGlobalHeader extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              Expanded(
-                flex: showSearch ? 1 : 0,
-                child: Row(
-                  spacing: 8,
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    RightIconButton(
-                      icon: Icons.alternate_email,
-                      tooltip: l10n.sidebar_right_menuRecentMentions,
-                      toggled: false,
-                      onTap: () {
-                        context.read<RhsBloc>().add(ShowMentionsEvent());
-                      },
-                    ),
-                    RightIconButton(
-                      icon: Icons.bookmark_border,
-                      tooltip: 'Saved messages',
-                      toggled: false,
-                      onTap: () {
-                        context.read<RhsBloc>().add(ShowFlaggedPostsEvent());
-                      },
-                    ),
-                    RightIconButton(
-                      icon: Icons.settings_outlined,
-                      tooltip: l10n.global_headerProductSettings,
-                      toggled: false,
-                      onTap: () {
-                        ModalRegistry.open(
-                          context,
-                          id: ModalIdentifiers.appSettings,
-                        );
-                      },
-                    ),
-                    const UserAccountMenuButton(),
-                  ],
-                ),
+              if (showSearch) const Spacer(),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RightIconButton(
+                    icon: Icons.alternate_email,
+                    tooltip: l10n.sidebar_right_menuRecentMentions,
+                    toggled: false,
+                    onTap: () {
+                      context.read<RhsBloc>().add(ShowMentionsEvent());
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  RightIconButton(
+                    icon: Icons.bookmark_border,
+                    tooltip: 'Saved messages',
+                    toggled: false,
+                    onTap: () {
+                      context.read<RhsBloc>().add(ShowFlaggedPostsEvent());
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  RightIconButton(
+                    icon: Icons.settings_outlined,
+                    tooltip: l10n.global_headerProductSettings,
+                    toggled: false,
+                    onTap: () {
+                      ModalRegistry.open(
+                        context,
+                        id: ModalIdentifiers.appSettings,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  const UserAccountMenuButton(),
+                ],
               ),
             ],
           );

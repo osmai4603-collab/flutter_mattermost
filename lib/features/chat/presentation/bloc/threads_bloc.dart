@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
@@ -268,7 +269,8 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onMarkRead error: $e');
       // يحافظ على الحالة الحالية عند الفشل (webapp يظهر toast).
     }
   }
@@ -279,12 +281,14 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
   ) async {
     final current = state;
     if (current is! ThreadsLoadedState) return;
+    debugPrint('[ThreadsBloc] _onFollow: userId=${event.userId}, teamId=${event.teamId}, threadId=${event.threadId}');
     try {
       await _threadsRepository.followThread(
         event.userId,
         event.teamId,
         event.threadId,
       );
+      debugPrint('[ThreadsBloc] _onFollow: remote call succeeded, updating UI');
       emit(
         current.copyWith(
           threads: [
@@ -308,7 +312,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onFollow error: $e');
+    }
   }
 
   Future<void> _onUnfollow(
@@ -317,12 +323,14 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
   ) async {
     final current = state;
     if (current is! ThreadsLoadedState) return;
+    debugPrint('[ThreadsBloc] _onUnfollow: userId=${event.userId}, teamId=${event.teamId}, threadId=${event.threadId}');
     try {
       await _threadsRepository.unfollowThread(
         event.userId,
         event.teamId,
         event.threadId,
       );
+      debugPrint('[ThreadsBloc] _onUnfollow: remote call succeeded, updating UI');
       emit(
         current.copyWith(
           threads: [
@@ -346,7 +354,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onUnfollow error: $e');
+    }
   }
 
   Future<void> _onMarkAllRead(
@@ -377,7 +387,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onMarkAllRead error: $e');
+    }
   }
 
   Future<void> _onSetUnread(
@@ -409,7 +421,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onSetUnread error: $e');
+    }
   }
 
   Future<void> _onMove(
@@ -434,7 +448,9 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onMove error: $e');
+    }
   }
 
   /// thread_follow_changed من WebSocket — تحديث القائمة محلياً
@@ -512,7 +528,8 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
           ],
         ),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[ThreadsBloc] _onToggleSave error: $e');
       // لا نوقف القائمة عند فشل الشبكة — تبقى الحالة القديمة.
     }
   }

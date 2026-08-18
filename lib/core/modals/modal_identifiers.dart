@@ -3,7 +3,7 @@ abstract class ModalIdentifiers {
   static const String userSettings = 'user_settings';
   static const String userProfile = 'user_profile';
   static const String quickSwitch = 'quick_switch';
-  static const String invitation = 'invitation';
+  static const String invitePeopleInTeam = 'invitation';
   static const String channelInvite = 'channel_invite';
   static const String filePreview = 'file_preview';
   static const String channelSettings = 'channel_settings';
@@ -18,4 +18,6 @@ abstract class ModalIdentifiers {
   static const String keyboardShortcuts = 'keyboard_shortcuts';
 
   static const appSettings = 'app_settings';
+
+  static const teamSettings = 'team_settings';
 }

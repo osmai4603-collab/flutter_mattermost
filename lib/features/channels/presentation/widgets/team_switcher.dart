@@ -4,6 +4,7 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_entity.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/teams/presentation/pages/create_new_team.dart';
 import 'package:go_router/go_router.dart';
 
 /// شريط الفرق الرأسي الأيسر (Team Switcher) — مطابق webapp.
@@ -53,7 +54,12 @@ class TeamSwitcher extends StatelessWidget {
                 padding: const EdgeInsets.only(top: 8),
                 child: _AddTeamIcon(
                   tooltip: l10n.teamSwitcherAddTeam,
-                  onTap: () {},
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => const CreateNewTeam(),
+                    );
+                  },
                 ),
               ),
             ],
@@ -93,8 +99,9 @@ class _TeamIcon extends StatelessWidget {
         .split(' ')
         .where((p) => p.isNotEmpty)
         .toList();
-    if (parts.isEmpty)
+    if (parts.isEmpty) {
       return team.name.isEmpty ? '?' : team.name[0].toUpperCase();
+    }
     if (parts.length == 1) {
       return parts.first.characters.take(2).toString().toUpperCase();
     }

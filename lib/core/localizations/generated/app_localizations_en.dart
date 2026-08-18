@@ -46769,4 +46769,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String timeRelativeDaysAgo(Object count) {
     return '$count days ago';
   }
+
+  @override
+  String timeRelativeWeeksAgo(Object count) {
+    return '$count weeks ago';
+  }
 }

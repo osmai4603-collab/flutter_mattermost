@@ -8,12 +8,8 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
-import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
-import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
-import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
-import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// رأس الشريط الجانبي — مطابق sidebar_header.tsx في webapp:
 /// ارتفاع 55px، اسم الفريق Metropolis 16 + قائمة رئيسية (إعدادات/دعوة/كونسول)
@@ -25,13 +21,6 @@ class ChannelSidebarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-    final authState = context.watch<AuthBloc>().state;
-    final user = authState is AuthenticatedState ? authState.user : null;
-    final statusState = context.watch<UserStatusBloc>().state;
-    final myStatus = statusState is UserStatusesLoadedState
-        ? statusState.statusOf('me')
-        : UserStatus.offline;
-
     return Container(
       height: DesignTokens.sidebarHeaderHeight,
       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -42,74 +31,10 @@ class ChannelSidebarHeader extends StatelessWidget {
           Expanded(
             child: ChannelSidebarHeaderMainMenuWidget(theme: theme, l10n: l10n),
           ),
-          if (user != null) ...[
-            const SizedBox(width: 8),
-            _UserChip(
-              theme: theme,
-              l10n: l10n,
-              userId: user.id,
-              username: user.username,
-              displayName: '${user.firstName} ${user.lastName}'.trim().isEmpty
-                  ? user.username
-                  : '${user.firstName} ${user.lastName}'.trim(),
-              status: myStatus,
-            ),
-          ],
           const SizedBox(width: 6),
           _AddChannelMenu(theme: theme, l10n: l10n),
         ],
       ),
-    );
-  }
-}
-
-/// اسم المستخدم + أفاتار مع الحالة (يُفتح قائمة الحساب عند النقر).
-class _UserChip extends StatelessWidget {
-  final MattermostColors theme;
-  final AppLocalizations l10n;
-  final String? userId;
-  final String username;
-  final String displayName;
-  final UserStatus? status;
-
-  const _UserChip({
-    required this.theme,
-    required this.l10n,
-    this.userId,
-    required this.username,
-    required this.displayName,
-    required this.status,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ProfilePicture.sm(
-          userId: userId,
-          username: username,
-          avatarUrl: null,
-          status: status,
-          showStatus: true,
-        ),
-        if (displayName.isNotEmpty) ...[
-          const SizedBox(width: 5),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 72),
-            child: Text(
-              displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: theme.sidebarHeaderTextColor.withValues(alpha: 0.85),
-              ),
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
@@ -167,7 +92,10 @@ class _AddChannelMenu extends StatelessWidget {
           subtitle: 'Add people to the team',
           icon: const Icon(Icons.person_add_outlined, size: 18),
           onTap: () {
-            ModalRegistry.open(context, id: ModalIdentifiers.invitation);
+            ModalRegistry.open(
+              context,
+              id: ModalIdentifiers.invitePeopleInTeam,
+            );
           },
         ),
       ],

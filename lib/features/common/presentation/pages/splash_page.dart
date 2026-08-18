@@ -13,15 +13,22 @@ class SplashPage extends StatefulWidget {
 }
 
 class _SplashPageState extends State<SplashPage> {
+  Timer? _navigationTimer;
 
   @override
   void initState() {
     super.initState();
-    Timer(const Duration(seconds: 5), () {
+    _navigationTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) {
         context.go(ChatRoutes.home);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _navigationTimer?.cancel();
+    super.dispose();
   }
 
   @override

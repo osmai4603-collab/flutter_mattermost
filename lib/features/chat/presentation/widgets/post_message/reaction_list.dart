@@ -6,7 +6,7 @@ import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/custom_emoji.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/reaction_picker.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/reaction_picker.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 
 /// قائمة تفاعلات منشور — نظير ReactionList في webapp: تجمع التفاعلات حسب

@@ -126,7 +126,7 @@ sealed class AppTheme {
       scaffoldBackgroundColor: theme.centerChannelBg,
       canvasColor: theme.centerChannelBg,
       fontFamily: AppFonts.notoNaskhArabic,
-      fontFamilyFallback: const ['OpenSans', 'Roboto', 'sans-serif'],
+      fontFamilyFallback: const ['NotoNaskhArabic', 'Roboto', 'sans-serif'],
       appBarTheme: AppBarTheme(
         backgroundColor: theme.centerChannelBg,
         foregroundColor: theme.centerChannelColor,

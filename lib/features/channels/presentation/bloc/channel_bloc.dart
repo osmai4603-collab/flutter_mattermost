@@ -11,6 +11,7 @@ import 'package:flutter_mattermost/features/channels/domain/entities/channel_ent
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
 // Events
 abstract class ChannelEvent extends Equatable {
@@ -263,6 +264,14 @@ class MarkChannelAsUnreadEvent extends ChannelEvent {
   List<Object?> get props => [channelId];
 }
 
+class InternalMembershipChangeEvent extends ChannelEvent {
+  final String channelId;
+  final int delta;
+  const InternalMembershipChangeEvent(this.channelId, this.delta);
+  @override
+  List<Object?> get props => [channelId, delta];
+}
+
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -334,15 +343,20 @@ class ChannelErrorState extends ChannelState {
 class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   final ChannelRepository _channelRepository;
   final WebSocketClientManager _webSocketManager;
+  final TeamBloc _teamBloc;
   StreamSubscription? _wsSubscription;
+  StreamSubscription? _teamSubscription;
 
   /// بث رسائل فشل العمليات التفاؤلية لعرضها في الواجهة (SnackBar).
   final StreamController<String> _failures =
       StreamController<String>.broadcast();
   Stream<String> get failures => _failures.stream;
 
-  ChannelBloc(this._channelRepository, this._webSocketManager)
-    : super(ChannelInitialState()) {
+  ChannelBloc(
+    this._channelRepository,
+    this._webSocketManager,
+    this._teamBloc,
+  ) : super(ChannelInitialState()) {
     on<LoadChannelsForTeamEvent>(_onLoadChannels);
     on<SelectChannelEvent>(_onSelectChannel);
     on<UpsertChannelEvent>(_onUpsertChannel);
@@ -364,14 +378,29 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     on<MarkChannelAsReadEvent>(_onMarkChannelAsRead);
     on<MarkChannelsAsReadEvent>(_onMarkChannelsAsRead);
     on<MarkChannelAsUnreadEvent>(_onMarkChannelAsUnread);
+    on<InternalMembershipChangeEvent>(_onInternalMembershipChange);
 
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
       if (event is ChannelUpdatedEvent) {
         add(RealtimeChannelChangedEvent());
       } else if (event is UserAddedEvent) {
-        _applyMembershipChange(event.channelId, 1);
+        add(InternalMembershipChangeEvent(event.channelId, 1));
       } else if (event is UserRemovedEvent) {
-        _applyMembershipChange(event.channelId, -1);
+        add(InternalMembershipChangeEvent(event.channelId, -1));
+      }
+    });
+
+    _teamSubscription = _teamBloc.stream.listen((teamState) {
+      if (teamState is TeamsLoadedState && teamState.selectedTeam != null) {
+        final current = state;
+        final currentTeamId = current is ChannelsLoadedState ? current.teamId : '';
+        if (currentTeamId != teamState.selectedTeam!.id) {
+          _statsCache.clear();
+          add(LoadChannelsForTeamEvent(
+            teamState.selectedTeam!.id,
+            userId: current is ChannelsLoadedState ? current.userId : null,
+          ));
+        }
       }
     });
   }
@@ -380,15 +409,18 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   final Map<String, ChannelStats> _statsCache = {};
 
   /// تحديث عدد أعضاء القناة حياً من أحداث WebSocket دون إعادة طلب API.
-  void _applyMembershipChange(String channelId, int delta) {
+  void _onInternalMembershipChange(
+    InternalMembershipChangeEvent event,
+    Emitter<ChannelState> emit,
+  ) {
     final current = state;
     if (current is! ChannelsLoadedState) return;
-    final existing = current.channelStats[channelId];
+    final existing = current.channelStats[event.channelId];
     if (existing == null) return;
     final updated = Map<String, ChannelStats>.of(current.channelStats);
-    updated[channelId] = ChannelStats(
-      channelId: channelId,
-      memberCount: (existing.memberCount + delta).clamp(0, 1 << 31),
+    updated[event.channelId] = ChannelStats(
+      channelId: event.channelId,
+      memberCount: (existing.memberCount + event.delta).clamp(0, 1 << 31),
       guestsCount: existing.guestsCount,
       pinnedPostsCount: existing.pinnedPostsCount,
     );
@@ -506,7 +538,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         ),
       );
       // إحصاءات القناة المختارة (الأعضاء/الضيوف/المثبتات) في الخلفية.
-      unawaited(_refreshChannelStats(selectedChannel?.id ?? ''));
+      final chId = selectedChannel?.id;
+      if (chId != null) {
+        unawaited(_refreshChannelStats(chId));
+      }
     } catch (e) {
       emit(ChannelErrorState(e.toString(), teamId: event.teamId));
     }
@@ -609,8 +644,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
             displayName: event.newCategoryName,
             channelIds: [channel.id],
           );
-        } catch (_) {
-          // فشل إلحاق الفئة الجديدة لا يُفشل إنشاء القناة.
+        } catch (e) {
+          _failures.add('Failed to create category: ${e.toString()}');
         }
       } else if (event.categoryId != null) {
         try {
@@ -630,7 +665,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
             event.userId,
             updated,
           );
-        } catch (_) {}
+        } catch (e) {
+          _failures.add('Failed to add channel to category: ${e.toString()}');
+        }
       }
 
       final current = state;
@@ -638,12 +675,20 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         final channels = await _channelRepository.getChannelsForTeam(
           event.teamId,
         );
+        var categories = current.categories;
+        try {
+          categories = await _channelRepository.getChannelCategories(
+            event.teamId,
+            event.userId,
+          );
+        } catch (_) {}
+
         final unread = await _fetchUnread(event.teamId, channels);
         emit(
           ChannelsLoadedState(
             teamId: event.teamId,
             channels: channels,
-            categories: current.categories,
+            categories: categories,
             unreadCounts: unread,
             selectedChannel: channel,
             userId: current.userId,
@@ -889,8 +934,8 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           members: current.members,
         ),
       );
-    } catch (_) {
-      // إبقاء الحالة الحالية عند فشل تحديث المفضلة.
+    } catch (e) {
+      _failures.add('Failed to update favorite status: ${e.toString()}');
     }
   }
 
@@ -1318,6 +1363,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   @override
   Future<void> close() {
     _wsSubscription?.cancel();
+    _teamSubscription?.cancel();
     _failures.close();
     return super.close();
   }

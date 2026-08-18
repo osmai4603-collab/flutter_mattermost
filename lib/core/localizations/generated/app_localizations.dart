@@ -72916,6 +72916,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} days ago'**
   String timeRelativeDaysAgo(Object count);
+
+  /// No description provided for @timeRelativeWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} weeks ago'**
+  String timeRelativeWeeksAgo(Object count);
 }
 
 class _AppLocalizationsDelegate

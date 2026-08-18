@@ -628,17 +628,13 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i1041.DeltaSyncService>(
       () => _i1041.DeltaSyncService(
-        gh<_i94.ChatLocalDataSource>(),
-        gh<_i20.PostRemoteDataSource>(),
-        gh<_i787.AuthRepository>(),
         gh<_i690.AppDatabase>(),
         gh<_i909.ServerManager>(),
-        gh<_i1065.TeamRepository>(),
         gh<_i777.WebSocketClientManager>(),
       ),
     );
     gh.lazySingleton<_i140.EventBatchProcessor>(
-      () => _i140.EventBatchProcessor(gh<_i94.ChatLocalDataSource>()),
+      () => _i140.EventBatchProcessor(),
     );
     gh.lazySingleton<_i1016.AdminLicenseRepository>(
       () =>
@@ -708,14 +704,15 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i777.WebSocketClientManager>(),
       ),
     );
+    gh.factory<_i859.AdminConfigBloc>(
+      () => _i859.AdminConfigBloc(gh<_i260.AdminConfigRepository>()),
+    );
     gh.lazySingleton<_i515.ChannelBloc>(
       () => _i515.ChannelBloc(
         gh<_i236.ChannelRepository>(),
         gh<_i777.WebSocketClientManager>(),
+        gh<_i550.TeamBloc>(),
       ),
-    );
-    gh.factory<_i859.AdminConfigBloc>(
-      () => _i859.AdminConfigBloc(gh<_i260.AdminConfigRepository>()),
     );
     gh.factory<_i233.AdminLicenseBloc>(
       () => _i233.AdminLicenseBloc(gh<_i1016.AdminLicenseRepository>()),
@@ -731,16 +728,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i174.AdminPluginsBloc>(
       () => _i174.AdminPluginsBloc(gh<_i386.AdminPluginsRepository>()),
     );
-    gh.lazySingleton<_i486.PostBloc>(
-      () => _i486.PostBloc(
-        gh<_i686.PostRepository>(),
-        gh<_i777.WebSocketClientManager>(),
-        gh<_i428.TypingRemoteDataSource>(),
-        gh<_i666.SecureStorageService>(),
-        gh<_i515.ChannelBloc>(),
-        gh<_i478.RhsBloc>(),
-      ),
-    );
     gh.lazySingleton<_i478.RhsBloc>(
       () => _i478.RhsBloc(gh<_i686.PostRepository>(), gh<_i515.ChannelBloc>()),
     );
@@ -754,6 +741,16 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i223.OfflineSyncService>(),
         gh<_i286.ConnectivityMonitor>(),
         gh<_i1041.DeltaSyncService>(),
+      ),
+    );
+    gh.lazySingleton<_i486.PostBloc>(
+      () => _i486.PostBloc(
+        gh<_i686.PostRepository>(),
+        gh<_i777.WebSocketClientManager>(),
+        gh<_i428.TypingRemoteDataSource>(),
+        gh<_i666.SecureStorageService>(),
+        gh<_i515.ChannelBloc>(),
+        gh<_i478.RhsBloc>(),
       ),
     );
     return this;

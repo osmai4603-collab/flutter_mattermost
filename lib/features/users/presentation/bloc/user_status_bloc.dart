@@ -96,7 +96,7 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
       }
     });
 
-    _pollTimer = Timer.periodic(pollInterval, (_) => _pollStatuses());
+    // _pollTimer = Timer.periodic(pollInterval, (_) => _pollStatuses());
   }
 
   @override
@@ -161,7 +161,13 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
         final current = state is UserStatusesLoadedState
             ? (state as UserStatusesLoadedState).statuses
             : const <String, UserStatus>{};
-        emit(UserStatusesLoadedState({...current, 'me': statuses.first.status, event.userId: statuses.first.status}));
+        emit(
+          UserStatusesLoadedState({
+            ...current,
+            'me': statuses.first.status,
+            event.userId: statuses.first.status,
+          }),
+        );
       }
     } catch (_) {}
   }

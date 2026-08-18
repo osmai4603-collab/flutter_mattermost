@@ -1,5 +1,6 @@
 // ignore_for_file: use_null_aware_elements
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_mattermost/features/chat/data/models/post_model.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/api_client.dart';
@@ -114,13 +115,17 @@ class ThreadsRemoteDataSourceImpl implements ThreadsRemoteDataSource {
     String teamId,
     String threadId,
   ) async {
+    final endpoint = UsersEndPoint.teamsThreadsFollowing(userId, teamId, threadId);
+    debugPrint('[ThreadsRemoteDataSource] followThread: userId=$userId, teamId=$teamId, threadId=$threadId, endpoint=$endpoint');
     final result = await _apiClient.put<Map<String, dynamic>>(
-      UsersEndPoint.teamsThreadsFollowing(userId, teamId, threadId),
+      endpoint,
       fromJson: (json) => json as Map<String, dynamic>,
     );
     if (result is ApiSuccess<Map<String, dynamic>>) {
+      debugPrint('[ThreadsRemoteDataSource] followThread success: ${result.data}');
       return result.data;
     }
+    debugPrint('[ThreadsRemoteDataSource] followThread failed: $result');
     throw Exception('Failed to follow thread $threadId');
   }
 
@@ -130,9 +135,12 @@ class ThreadsRemoteDataSourceImpl implements ThreadsRemoteDataSource {
     String teamId,
     String threadId,
   ) async {
-    await _apiClient.delete(
-      UsersEndPoint.teamsThreadsFollowing(userId, teamId, threadId),
+    final endpoint = UsersEndPoint.teamsThreadsFollowing(userId, teamId, threadId);
+    debugPrint('[ThreadsRemoteDataSource] unfollowThread: userId=$userId, teamId=$teamId, threadId=$threadId, endpoint=$endpoint');
+    final result = await _apiClient.delete(
+      endpoint,
     );
+    debugPrint('[ThreadsRemoteDataSource] unfollowThread result: $result');
   }
 
   @override

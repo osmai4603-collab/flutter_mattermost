@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_mattermost/features/chat/presentation/editor/autocomplete/autocomplete_item.dart';
-import 'package:flutter_mattermost/features/chat/presentation/widgets/markdown_mentions.dart';
+import 'package:flutter_mattermost/features/chat/presentation/widgets/post_message/markdown_mentions.dart';
 import 'package:flutter_mattermost/features/groups/data/models/group_model.dart';
 import 'package:markdown/markdown.dart' as md;
 

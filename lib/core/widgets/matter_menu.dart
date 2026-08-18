@@ -253,19 +253,20 @@ class _MatterMenuState extends State<MatterMenu> {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    return MenuAnchor(
-      controller: _controller,
-      style: _menuStyle(theme),
-      menuChildren: _buildMenuChildren(context, widget.items),
-      builder: (context, controller, child) {
-        return GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () =>
-              controller.isOpen ? controller.close() : controller.open(),
-          child: child,
-        );
-      },
-      child: widget.child,
+    return SizedBox(
+      child: MenuAnchor(
+        controller: _controller,
+        style: _menuStyle(theme),
+        menuChildren: _buildMenuChildren(context, widget.items),
+        builder: (context, controller, _) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () =>
+                controller.isOpen ? controller.close() : controller.open(),
+            child: widget.child,
+          );
+        },
+      ),
     );
   }
 }
@@ -291,22 +292,23 @@ class MatterMenuScope extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    return MenuAnchor(
-      style: _menuStyle(theme),
-      menuChildren: _buildMenuChildren(context, items),
-      builder: (context, controller, child) {
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            hoverColor: hoverColor ?? theme.mentionBg.withValues(alpha: 0.15),
-            borderRadius: borderRadius ?? BorderRadius.circular(4.0),
-            onTap: () =>
-                controller.isOpen ? controller.close() : controller.open(),
-            child: child,
-          ),
-        );
-      },
-      child: child,
+    return SizedBox(
+      child: MenuAnchor(
+        style: _menuStyle(theme),
+        menuChildren: _buildMenuChildren(context, items),
+        builder: (context, controller, _) {
+          return Material(
+            color: Colors.transparent,
+            child: InkWell(
+              hoverColor: hoverColor ?? theme.mentionBg.withValues(alpha: 0.15),
+              borderRadius: borderRadius ?? BorderRadius.circular(4.0),
+              onTap: () =>
+                  controller.isOpen ? controller.close() : controller.open(),
+              child: child,
+            ),
+          );
+        },
+      ),
     );
   }
 }

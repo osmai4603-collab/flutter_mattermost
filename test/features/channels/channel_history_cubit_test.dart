@@ -3,6 +3,7 @@ import 'package:flutter_mattermost/features/channels/domain/entities/channel_sta
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_history_cubit.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
 import 'test_fakes.dart';
 
@@ -10,6 +11,7 @@ Future<void> _settle() => Future<void>.delayed(const Duration(milliseconds: 30))
 
 void main() {
   group('ChannelHistoryCubit', () {
+    late TeamBloc teamBloc;
     late ChannelBloc bloc;
     late ChannelHistoryCubit cubit;
     late FakeWebSocketClientManager ws;
@@ -21,9 +23,11 @@ void main() {
         testChannel('c3', name: 'off-topic'),
       ];
       ws = FakeWebSocketClientManager();
+      teamBloc = TeamBloc(FakeTeamRepository());
       bloc = ChannelBloc(
         FakeChannelRepository(channels: channels),
         ws,
+        teamBloc,
       );
       cubit = ChannelHistoryCubit(bloc);
     });
@@ -31,6 +35,7 @@ void main() {
     tearDown(() async {
       await cubit.close();
       await bloc.close();
+      await teamBloc.close();
     });
 
     Future<void> loadAndSelect(String id) async {
@@ -163,7 +168,7 @@ void main() {
           ),
         ],
       );
-      final statsBloc = ChannelBloc(repo, ws);
+      final statsBloc = ChannelBloc(repo, ws, teamBloc);
       final statsCubit = ChannelHistoryCubit(statsBloc);
       statsBloc.add(const LoadChannelsForTeamEvent('team1'));
       await _settle();

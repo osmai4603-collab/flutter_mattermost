@@ -44,7 +44,16 @@ class ApiClient {
     dio.interceptors.addAll([
       AuthInterceptor(_secureStorage, _sessionController),
       RetryInterceptor(dio: dio, maxRetries: AppConfig.maxRetryAttempts),
-      LogInterceptor(requestBody: true, responseBody: true, error: true),
+      LogInterceptor(
+        requestBody: false,
+        responseBody: false,
+        error: false,
+        request: false,
+        requestHeader: false,
+        responseHeader: false,
+        requestUrl: false,
+        responseUrl: false,
+      ),
     ]);
   }
 
