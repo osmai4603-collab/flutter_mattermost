@@ -8,6 +8,11 @@ import 'package:flutter_mattermost/core/widgets/generic_modal.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/features/app/presentation/pages/app_settings_page.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/channel_invite_modal.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/channel_notifications_modal.dart';
+import 'package:flutter_mattermost/features/channels/presentation/modals/channel_settings_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/direct_channels_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/keyboard_shortcuts_modal.dart';
 import 'package:flutter_mattermost/features/channels/presentation/pages/create_new_channel.dart';
@@ -58,6 +63,18 @@ void registerMattermostModals() {
   ModalRegistry.register(
     ModalIdentifiers.invitePeopleInTeam,
     (context, args) => const InvitePeopleToTeam(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.channelInvite,
+    (context, args) => const ChannelInviteModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.channelSettings,
+    (context, args) => const ChannelSettingsModal(),
+  );
+  ModalRegistry.register(
+    ModalIdentifiers.channelNotifications,
+    (context, args) => const ChannelNotificationsModal(),
   );
   ModalRegistry.register(
     ModalIdentifiers.newChannel,
@@ -251,7 +268,31 @@ class _RenameChannelModal extends StatelessWidget {
         ),
       ),
       confirmLabel: l10n.generic_modalConfirm,
-      onConfirm: () => Navigator.of(context).pop(),
+      onConfirm: () async {
+        if (channel == null) {
+          Navigator.of(context).pop();
+          return;
+        }
+        final newName = controller.text.trim();
+        if (newName.isNotEmpty) {
+          try {
+            await getIt<ChannelRepository>().updateChannel(
+              channel.id,
+              name: channel.name,
+              displayName: newName,
+              purpose: channel.purpose,
+              header: channel.header,
+            );
+            final updated = channel.copyWith(displayName: newName);
+            if (context.mounted) {
+              context.read<ChannelBloc>().add(UpdateChannelEvent(updated));
+            }
+          } catch (_) {}
+        }
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }
@@ -278,7 +319,29 @@ class _EditChannelHeaderModal extends StatelessWidget {
         decoration: const InputDecoration(border: OutlineInputBorder()),
       ),
       confirmLabel: l10n.generic_modalConfirm,
-      onConfirm: () => Navigator.of(context).pop(),
+      onConfirm: () async {
+        if (channel == null) {
+          Navigator.of(context).pop();
+          return;
+        }
+        final newHeader = controller.text.trim();
+        try {
+          await getIt<ChannelRepository>().updateChannel(
+            channel.id,
+            name: channel.name,
+            displayName: channel.displayName,
+            purpose: channel.purpose,
+            header: newHeader,
+          );
+          final updated = channel.copyWith(header: newHeader);
+          if (context.mounted) {
+            context.read<ChannelBloc>().add(UpdateChannelEvent(updated));
+          }
+        } catch (_) {}
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }
@@ -305,7 +368,29 @@ class _EditChannelPurposeModal extends StatelessWidget {
         decoration: const InputDecoration(border: OutlineInputBorder()),
       ),
       confirmLabel: l10n.generic_modalConfirm,
-      onConfirm: () => Navigator.of(context).pop(),
+      onConfirm: () async {
+        if (channel == null) {
+          Navigator.of(context).pop();
+          return;
+        }
+        final newPurpose = controller.text.trim();
+        try {
+          await getIt<ChannelRepository>().updateChannel(
+            channel.id,
+            name: channel.name,
+            displayName: channel.displayName,
+            purpose: newPurpose,
+            header: channel.header,
+          );
+          final updated = channel.copyWith(purpose: newPurpose);
+          if (context.mounted) {
+            context.read<ChannelBloc>().add(UpdateChannelEvent(updated));
+          }
+        } catch (_) {}
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
     );
   }
 }

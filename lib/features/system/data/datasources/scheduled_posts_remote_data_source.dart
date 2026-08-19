@@ -58,7 +58,10 @@ class ScheduledPostsRemoteDataSourceImpl
     if (result is ApiSuccess<List<PostModel>>) {
       return result.data;
     }
-    throw Exception('Failed to get scheduled posts for team $teamId');
+    final error = result is ApiFailure ? (result as ApiFailure).error : null;
+    throw Exception(
+      'Failed to get scheduled posts for team $teamId: ${error.runtimeType} - ${error.toString()}',
+    );
   }
 
   @override

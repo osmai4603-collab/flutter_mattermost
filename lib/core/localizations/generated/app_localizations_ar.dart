@@ -46566,7 +46566,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get search_headerSavedMessages => 'الرسائل المحفوظة';
 
   @override
-  String get channel_info_rhsAbout_areaChannel_nameHeading => 'Channel name';
+  String get channel_info_rhsAbout_areaChannel_nameHeading => 'اسم القناة';
 
   @override
   String get rhsNoResultsEditHistory => 'لا يوجد سجل تعديلات بعد.';

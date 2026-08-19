@@ -17,7 +17,9 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 
-enum WebSocketStatus { disconnected, connecting, connected, error }
+import 'package:osm_network/osm_network.dart' show WebSocketStatus;
+export 'package:osm_network/osm_network.dart' show WebSocketStatus;
+
 
 sealed class TypedWebSocketEvent {
   final int seq;

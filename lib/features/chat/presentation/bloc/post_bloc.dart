@@ -8,13 +8,13 @@ import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/typing_remote_data_source.dart';
-import 'package:flutter_mattermost/features/chat/data/models/file_info_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
+import 'package:flutter_mattermost/features/users/data/datasources/users_remote_data_source.dart';
 
 // Events
 abstract class PostEvent extends Equatable {
@@ -384,8 +384,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           channelState.selectedChannel != null) {
         final selectedId = channelState.selectedChannel!.id;
         final current = state;
-        final currentChannelId =
-            current is PostsLoadedState ? current.channelId : '';
+        final currentChannelId = current is PostsLoadedState
+            ? current.channelId
+            : '';
         if (currentChannelId != selectedId) {
           add(LoadPostsForChannelEvent(selectedId));
         }
@@ -396,8 +397,20 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     checkChannelState(_channelBloc.state);
   }
 
-  Future<String> _currentUserId() async =>
-      (await _secureStorage.getUserId()) ?? 'me';
+  Future<String> _currentUserId() async {
+    final stored = await _secureStorage.getUserId();
+    if (stored != null && stored.isNotEmpty && stored != 'me') {
+      return stored;
+    }
+    try {
+      final me = await getIt<UsersRemoteDataSource>().getMe();
+      if (me.id.isNotEmpty) {
+        await _secureStorage.saveUserId(me.id);
+        return me.id;
+      }
+    } catch (_) {}
+    return 'me';
+  }
 
   void _listenToWebSocketEvents() {
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
@@ -638,9 +651,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           var updatedFiles = current.files;
           final fileList = _extractFilesFromPost(newPost);
           if (fileList.isNotEmpty) {
-            updatedFiles =
-                Map<String, List<FileInfoEntity>>.from(current.files)
-                  ..[newPost.id] = fileList;
+            updatedFiles = Map<String, List<FileInfoEntity>>.from(current.files)
+              ..[newPost.id] = fileList;
           } else if (newPost.fileIds.isNotEmpty) {
             try {
               final fetched = await _postRepository.getFilesForPost(newPost.id);
@@ -986,7 +998,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     if (event.added) {
       final userId = await _currentUserId();
       if (event.reaction.userId == userId) {
-        final toggleKey = '${event.reaction.postId}:${event.reaction.emojiName}';
+        final toggleKey =
+            '${event.reaction.postId}:${event.reaction.emojiName}';
         final lastToggleAt = _lastReactionToggleAt[toggleKey];
         if (lastToggleAt != null) {
           final elapsed = DateTime.now().millisecondsSinceEpoch - lastToggleAt;
@@ -1074,7 +1087,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         ? channelState.teamId
         : '';
     final userId = (await _secureStorage.getUserId()) ?? 'me';
-    debugPrint('[PostBloc] _onToggleThreadFollow: follow=${event.follow}, threadId=${event.threadId}, userId=$userId, teamId=$teamId');
+    debugPrint(
+      '[PostBloc] _onToggleThreadFollow: follow=${event.follow}, threadId=${event.threadId}, userId=$userId, teamId=$teamId',
+    );
     try {
       final threadsRepository = getIt<ThreadsRepository>();
       if (event.follow) {

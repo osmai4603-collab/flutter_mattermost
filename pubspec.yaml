@@ -47,6 +47,9 @@ dependencies:
   dio: ^5.4.3+1
   web_socket_channel: ^3.0.0
   connectivity_plus: ^6.0.3
+  osm_network:
+    path: packages/osm_network
+
 
   # Local Storage & Security
   drift: ^2.18.0

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/files/file_display_utils.dart';
 import 'package:flutter_mattermost/features/chat/presentation/files/file_preview_modal.dart';
@@ -16,14 +17,14 @@ class PostAttachmentPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     if (files.isEmpty) return const SizedBox.shrink();
 
-    final images = files.where((f) => isImageExtension(f.extension)).toList();
+    final images = files.where((f) => isImageFile(f)).toList();
     final media = files
-        .where((f) => isMediaExtension(f.extension) && !isImageExtension(f.extension))
+        .where((f) => isMediaExtension(f.extension) && !isImageFile(f))
         .toList();
     final otherFiles = files
         .where(
           (f) =>
-              !isImageExtension(f.extension) &&
+              !isImageFile(f) &&
               !isMediaExtension(f.extension),
         )
         .toList();
@@ -110,19 +111,65 @@ class _SingleImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+    final hasSize = file.width > 0 && file.height > 0;
+
     return GestureDetector(
       onTap: () => _showPreview(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxHeight: 300),
-          child: AuthCachedImage(
-            url: fileApiUrl(file),
-            fit: BoxFit.contain,
-            errorBuilder: (context, error, stack) =>
-                const Icon(Icons.broken_image),
+        child: hasSize
+            ? AspectRatio(
+                aspectRatio: file.width / file.height,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: AuthCachedImage(
+                    url: fileApiUrl(file),
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stack) => _errorWidget(theme),
+                  ),
+                ),
+              )
+            : ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: AuthCachedImage(
+                  url: fileApiUrl(file),
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stack) => _errorWidget(theme),
+                ),
+              ),
+      ),
+    );
+  }
+
+  Widget _errorWidget(MattermostColors theme) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.centerChannelColor.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.image_outlined,
+            size: 24,
+            color: theme.centerChannelColor.withValues(alpha: 0.4),
           ),
-        ),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              file.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 13,
+                color: theme.centerChannelColor.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -144,6 +191,7 @@ class _Thumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
     return GestureDetector(
       onTap: () => _showPreview(context),
       child: ClipRRect(
@@ -151,7 +199,16 @@ class _Thumbnail extends StatelessWidget {
         child: AuthCachedImage(
           url: fileApiUrl(file, suffix: '/thumbnail'),
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stack) => const Icon(Icons.image),
+          errorBuilder: (context, error, stack) => Container(
+            color: theme.centerChannelColor.withValues(alpha: 0.05),
+            child: Center(
+              child: Icon(
+                Icons.image_outlined,
+                size: 32,
+                color: theme.centerChannelColor.withValues(alpha: 0.3),
+              ),
+            ),
+          ),
         ),
       ),
     );

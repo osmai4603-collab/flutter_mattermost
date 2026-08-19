@@ -9,6 +9,8 @@ import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dar
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/users/data/datasources/users_remote_data_source.dart';
 
 @LazySingleton(as: PostRepository)
 class PostRepositoryImpl implements PostRepository {
@@ -26,8 +28,20 @@ class PostRepositoryImpl implements PostRepository {
     this._secureStorage,
   );
 
-  Future<String> _currentUserId() async =>
-      (await _secureStorage.getUserId()) ?? 'me';
+  Future<String> _currentUserId() async {
+    final stored = await _secureStorage.getUserId();
+    if (stored != null && stored.isNotEmpty && stored != 'me') {
+      return stored;
+    }
+    try {
+      final me = await getIt<UsersRemoteDataSource>().getMe();
+      if (me.id.isNotEmpty) {
+        await _secureStorage.saveUserId(me.id);
+        return me.id;
+      }
+    } catch (_) {}
+    return 'me';
+  }
 
   @override
   Future<List<PostEntity>> getPostsForChannel(

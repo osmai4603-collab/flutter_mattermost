@@ -38,11 +38,16 @@ class ScheduledPostsRemoteDataSourceImpl
     if (result is ApiSuccess<List<ScheduledPostModel>>) {
       return result.data;
     }
-    throw Exception('Failed to get scheduled posts');
+    final error = result is ApiFailure ? (result as ApiFailure).error : null;
+    throw Exception(
+      'Failed to get scheduled posts: ${error.runtimeType} - ${error.toString()}',
+    );
   }
 
   @override
-  Future<ScheduledPostModel> createScheduledPost(ScheduledPostModel post) async {
+  Future<ScheduledPostModel> createScheduledPost(
+    ScheduledPostModel post,
+  ) async {
     final result = await _apiClient.post<ScheduledPostModel>(
       PostsEndPoint.schedule,
       data: post.toMap(),
@@ -56,7 +61,9 @@ class ScheduledPostsRemoteDataSourceImpl
   }
 
   @override
-  Future<ScheduledPostModel> updateScheduledPost(ScheduledPostModel post) async {
+  Future<ScheduledPostModel> updateScheduledPost(
+    ScheduledPostModel post,
+  ) async {
     final result = await _apiClient.put<ScheduledPostModel>(
       PostsEndPoint.schedule2(post.id),
       data: post.toMap(),

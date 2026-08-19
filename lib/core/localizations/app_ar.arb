@@ -11860,7 +11860,7 @@
   "reactionPickerTitle": "ردود الفعل",
   "search_headerMentions": "الإشارات",
   "search_headerSavedMessages": "الرسائل المحفوظة",
-  "channel_info_rhsAboutAreaChannel_nameHeading": "اسم القناة",
+  "channel_info_rhsAbout_areaChannel_nameHeading": "اسم القناة",
   "rhsNoResultsEditHistory": "لا يوجد سجل تعديلات بعد.",
   "rhsNoResultsPlugin": "هذه اللوحة مقدمة من إضافة مثبتة.",
   "rhsPluginPanelTitle": "إضافة",

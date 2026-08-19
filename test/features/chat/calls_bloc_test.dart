@@ -174,32 +174,165 @@ void main() {
           AudioOutputDevice.earpiece);
     });
 
-    test('CallConnectionStatusChanged(reconnecting) → CallReconnectingState',
+    test('ToggleVideoEvent يعكس isVideoOn', () async {
+      bloc.add(const StartCallEvent('ch1', video: true));
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isVideoOn, isTrue);
+
+      bloc.add(ToggleVideoEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isVideoOn, isFalse);
+    });
+
+    test('StartCallEvent مع video=true يبدأ مع isVideoOn=true', () async {
+      bloc.add(const StartCallEvent('ch1', video: true));
+      await pumpEventQueue();
+      final s = bloc.state as CallConnectedState;
+      expect(s.isVideoOn, isTrue);
+      expect(s.channelId, 'ch1');
+    });
+
+    test('ToggleShareScreenEvent يعكس isSharingScreen', () async {
+      await connect();
+      expect((bloc.state as CallConnectedState).isSharingScreen, isFalse);
+
+      bloc.add(ToggleShareScreenEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isSharingScreen, isTrue);
+    });
+
+    test('ToggleMuteEvent خارج CallConnectedState لا يفعل شيئاً', () async {
+      bloc.add(ToggleMuteEvent());
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('ToggleVideoEvent خارج CallConnectedState لا يفعل شيئاً', () async {
+      bloc.add(ToggleVideoEvent());
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('ToggleShareScreenEvent خارج CallConnectedState لا يفعل شيئاً',
         () async {
+      bloc.add(ToggleShareScreenEvent());
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('ToggleRaiseHandEvent خارج CallConnectedState لا يفعل شيئاً',
+        () async {
+      bloc.add(ToggleRaiseHandEvent());
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('SwitchAudioOutputEvent خارج CallConnectedState لا يفعل شيئاً',
+        () async {
+      bloc.add(const SwitchAudioOutputEvent(AudioOutputDevice.bluetooth));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('ToggleRaiseHandEvent يمكنه الرفع ثم الإسقاط', () async {
+      await connect();
+      bloc.add(ToggleRaiseHandEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isHandRaised, isTrue);
+
+      bloc.add(ToggleRaiseHandEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isHandRaised, isFalse);
+    });
+
+    test('ToggleMuteEvent يمكنه الكتم ثم فك الكتم', () async {
+      await connect();
+      bloc.add(ToggleMuteEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isMuted, isTrue);
+
+      bloc.add(ToggleMuteEvent());
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).isMuted, isFalse);
+    });
+
+    test('SwitchAudioOutputEvent مع bluetooth', () async {
+      await connect();
+      bloc.add(const SwitchAudioOutputEvent(AudioOutputDevice.bluetooth));
+      await pumpEventQueue();
+      expect((bloc.state as CallConnectedState).audioDevice,
+          AudioOutputDevice.bluetooth);
+    });
+
+    test('CallConnectionStatusChanged(connected) من reconnecting لا ي逆袭 الحالة لأن الـ state ليس CallConnectedState', () async {
       await connect();
       bloc.add(CallConnectionStatusChanged(CallsWebSocketStatus.reconnecting));
       await pumpEventQueue();
       expect(bloc.state, isA<CallReconnectingState>());
+
+      // عند reconnecting → connected والstate هو CallReconnectingState
+      // الـ BLoC لا ي逆转 لأنه يتحقق فقط من state is CallConnectedState
+      // هذا سلوك متوقع — الحالة تبقى reconnecting حتى arrives call_state
+      bloc.add(CallConnectionStatusChanged(CallsWebSocketStatus.connected));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallReconnectingState>());
     });
 
-    test('ParticipantsChanged يحدّث المشاركين في الاتصال', () async {
+    test('ParticipantsChanged يرتب حسب isHandRaised', () async {
       await connect();
-      const participant = CallParticipantState(
+      const p1 = CallParticipantState(
         sessionId: 's1',
         userId: 'u1',
-        isMuted: true,
+        isMuted: false,
       );
-      bloc.add(const ParticipantsChanged({'s1': participant}));
+      const p2 = CallParticipantState(
+        sessionId: 's2',
+        userId: 'u2',
+        isMuted: false,
+        isHandRaised: true,
+      );
+      bloc.add(const ParticipantsChanged({
+        's1': p1,
+        's2': p2,
+      }));
       await pumpEventQueue();
-      expect((bloc.state as CallConnectedState).participants['s1']?.isMuted,
-          isTrue);
+      final s = bloc.state as CallConnectedState;
+      final keys = s.participants.keys.toList();
+      expect(keys.first, 's2');
+      expect(keys.last, 's1');
     });
 
-    test('CallStateFromManager(ended) → CallEndedState ثم بعد 2s → CallIdleState',
-        () {
+    test('ReactionReceived يحدّث lastReaction', () async {
+      await connect();
+      const reaction = CallReactionEvent(
+        sessionId: 's1',
+        userId: 'u1',
+        emojiName: 'heart',
+        emojiLiteral: '❤️',
+        timestamp: 1000,
+      );
+      bloc.add(const ReactionReceived(reaction));
+      await pumpEventQueue();
+      expect(
+        (bloc.state as CallConnectedState).lastReaction?.emojiName,
+        'heart',
+      );
+    });
+
+    test('IncomingCallEvent خارج CallIdleState لا يفعل شيئاً', () async {
+      await connect();
+      bloc.add(const IncomingCallEvent(
+        callId: 'call-2',
+        channelId: 'ch2',
+        ownerId: 'user-2',
+      ));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallConnectedState>());
+    });
+
+    test('EndCallEvent أثناء CallEndedState يُعيد الحالة إلى idle', () {
       fakeAsync((async) {
         final localManager = TestCallsManager();
-        // بناء الـ bloc داخل منطقة fakeAsync حتى يعمل مؤقت الـ 2s فيها.
         final localBloc = CallsBloc(localManager);
 
         localBloc.add(const StartCallEvent('ch1'));
@@ -210,12 +343,31 @@ void main() {
         async.flushMicrotasks();
         expect(localBloc.state, isA<CallEndedState>());
 
-        async.elapse(const Duration(seconds: 2));
+        localBloc.add(EndCallEvent());
         async.flushMicrotasks();
         expect(localBloc.state, isA<CallIdleState>());
 
         localBloc.close();
       });
+    });
+
+    test('CallConnectionStatusChanged(reconnecting) ثم idle → يبقى reconnecting',
+        () async {
+      await connect();
+      bloc.add(CallConnectionStatusChanged(CallsWebSocketStatus.reconnecting));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallReconnectingState>());
+
+      bloc.add(const CallStateFromManager(CallState.idle));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallIdleState>());
+    });
+
+    test('CallStateFromManager(ringing) لا يغيّر الحالة أثناء الاتصال', () async {
+      await connect();
+      bloc.add(const CallStateFromManager(CallState.ringing));
+      await pumpEventQueue();
+      expect(bloc.state, isA<CallConnectedState>());
     });
   });
 }

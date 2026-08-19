@@ -1,15 +1,2 @@
-import 'package:flutter_mattermost/core/network/api_error.dart';
-
-sealed class ApiResult<T> {
-  const ApiResult();
-}
-
-class ApiSuccess<T> extends ApiResult<T> {
-  final T data;
-  const ApiSuccess(this.data);
-}
-
-class ApiFailure<T> extends ApiResult<T> {
-  final ApiError error;
-  const ApiFailure(this.error);
-}
+export 'package:osm_network/osm_network.dart'
+    show ApiResult, ApiSuccess, ApiFailure;

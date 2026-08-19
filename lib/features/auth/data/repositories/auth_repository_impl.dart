@@ -36,6 +36,9 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<UserEntity?> getCurrentUser() async {
     final dto = await _usersRemoteDataSource.getMe();
     final entity = dto.toEntity();
+    if (entity.id.isNotEmpty) {
+      await _secureStorage.saveUserId(entity.id);
+    }
     return entity;
   }
 

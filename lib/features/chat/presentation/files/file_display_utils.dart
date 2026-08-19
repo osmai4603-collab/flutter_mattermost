@@ -22,6 +22,17 @@ bool isImageExtension(String extension) {
   return set.contains(extension.toLowerCase());
 }
 
+bool isImageFile(FileInfoEntity file) {
+  final ext = file.extension.isNotEmpty
+      ? file.extension
+      : file.name.split('.').last.toLowerCase();
+  if (isImageExtension(ext)) return true;
+  if (file.mimeType.toLowerCase().startsWith('image/')) return true;
+  if (file.hasPreviewImage) return true;
+  if (file.width > 0 && file.height > 0) return true;
+  return false;
+}
+
 bool isVideoExtension(String extension) {
   const set = {'mp4', 'webm', 'mov', 'm4v', 'mkv', 'avi', 'ogv', 'mpeg', 'mpg'};
   return set.contains(extension.toLowerCase());

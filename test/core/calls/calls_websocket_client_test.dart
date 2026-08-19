@@ -248,5 +248,125 @@ void main() {
       final decompressed = ZLibCodec().decode(inner['data'] as List<int>);
       expect(jsonDecode(utf8.decode(decompressed))['type'], 'answer');
     });
+
+    test('buildSdpFrame يدعم offer و answer بنفس البنية', () {
+      for (final type in ['offer', 'answer']) {
+        final frame = CallsWebSocketClient.buildSdpFrame(10, {
+          'type': type,
+          'sdp': 'v=0\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\n',
+        });
+
+        final decoded = Map<dynamic, dynamic>.from(
+          deserialize(frame) as Map<dynamic, dynamic>,
+        );
+        final inner = Map<dynamic, dynamic>.from(decoded['data'] as Map);
+        final decompressed = ZLibCodec().decode(inner['data'] as List<int>);
+        expect(jsonDecode(utf8.decode(decompressed))['type'], type);
+      }
+    });
+  });
+
+  group('calls_signal — answer type', () {
+    test('calls_signal with answer emits CallsWSSignalEvent', () async {
+      client.handleIncomingMessage(jsonEncode(helloMessage()));
+      final signalData = jsonEncode({
+        'type': 'answer',
+        'sdp': 'v=0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\n',
+      });
+      client.handleIncomingMessage(
+        '{"seq":1,"event":"custom_com.mattermost.calls_signal",'
+        '"data":{"data":${jsonEncode(signalData)},"connID":"conn-1"}}',
+      );
+      await _settle();
+
+      final signals = events.whereType<CallsWSSignalEvent>();
+      expect(signals, hasLength(1));
+      expect(signals.first.data['type'], 'answer');
+      expect(signals.first.data['sdp'], contains('m=video'));
+      expect(signals.first.sessionId, 'conn-1');
+    });
+
+    test('calls_signal without data field is ignored', () async {
+      client.handleIncomingMessage(jsonEncode(helloMessage()));
+      client.handleIncomingMessage(
+        '{"seq":1,"event":"custom_com.mattermost.calls_signal",'
+        '"data":{"connID":"conn-1"}}',
+      );
+      await _settle();
+
+      expect(events.whereType<CallsWSSignalEvent>(), isEmpty);
+    });
+
+    test('calls_signal with empty data string is ignored', () async {
+      client.handleIncomingMessage(jsonEncode(helloMessage()));
+      client.handleIncomingMessage(
+        '{"seq":1,"event":"custom_com.mattermost.calls_signal",'
+        '"data":{"data":"","connID":"conn-1"}}',
+      );
+      await _settle();
+
+      expect(events.whereType<CallsWSSignalEvent>(), isEmpty);
+    });
+  });
+
+  group('رسائل hello متعددة', () {
+    test('عدة hello messages كلها تُصدر SessionReady', () async {
+      client.handleIncomingMessage(
+        jsonEncode(helloMessage(connectionId: 'c1', seq: 0)),
+      );
+      client.handleIncomingMessage(
+        jsonEncode(helloMessage(connectionId: 'c2', seq: 1)),
+      );
+      client.handleIncomingMessage(
+        jsonEncode(helloMessage(connectionId: 'c3', seq: 2)),
+      );
+      await _settle();
+
+      final ready = events.whereType<CallsWSSessionReadyEvent>();
+      expect(ready, hasLength(3));
+    });
+  });
+
+  group('رسائل خاصة', () {
+    test('hello مع serverVersion فارغ لا يسبب مشاكل', () async {
+      client.handleIncomingMessage(
+        '{"seq":0,"event":"hello","data":{"connection_id":"c1","server_version":""}}',
+      );
+      await _settle();
+
+      final ready = events.whereType<CallsWSSessionReadyEvent>();
+      expect(ready, hasLength(1));
+      expect(client.sessionId, 'c1');
+    });
+
+    test('hello مع connection_id فارغ لا يضبط sessionId', () async {
+      client.handleIncomingMessage(
+        '{"seq":0,"event":"hello","data":{"connection_id":"","server_version":"1.0"}}',
+      );
+      await _settle();
+
+      expect(client.sessionId, isNull);
+    });
+
+    test('calls_call_state مع call string فارغة يُصدر null call', () async {
+      client.handleIncomingMessage(jsonEncode(helloMessage()));
+      client.handleIncomingMessage(
+        '{"seq":1,"event":"custom_com.mattermost.calls_call_state",'
+        '"data":{"channel_id":"c1","call":""}}',
+      );
+      await _settle();
+
+      final states = events.whereType<CallsWSCallStateEvent>();
+      expect(states, hasLength(1));
+      expect(states.first.call, isNull);
+    });
+
+    test('pong OK لا يُصدر أي event', () async {
+      client.handleIncomingMessage(
+        '{"status":"OK","data":{"text":"pong"},"seq_reply":100}',
+      );
+      await _settle();
+      expect(events, isEmpty);
+    });
   });
 }
