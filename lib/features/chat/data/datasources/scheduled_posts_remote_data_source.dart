@@ -1,3 +1,6 @@
+// ignore_for_file: avoid_print
+
+import 'package:flutter_mattermost/core/network/api_error.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/endpoints/endpoints.dart';
 import 'package:flutter_mattermost/core/network/api_client.dart';
@@ -31,14 +34,38 @@ class ScheduledPostsRemoteDataSourceImpl
     final result = await _apiClient.get<List<ScheduledPostModel>>(
       PostsEndPoint.scheduledTeam(teamId),
       queryParameters: {'page': page, 'per_page': perPage},
-      fromJson: (json) => (json as List<dynamic>)
-          .map((e) => ScheduledPostModel.fromMap(e as Map<String, dynamic>))
-          .toList(),
+      fromJson: (json) {
+        print('SCHEDULED POSTS RAW JSON TYPE: ${json.runtimeType}');
+        print('SCHEDULED POSTS RAW JSON: $json');
+        if (json is List) {
+          return json
+              .map((e) => ScheduledPostModel.fromMap(e as Map<String, dynamic>))
+              .toList();
+        } else if (json is Map<String, dynamic>) {
+          // If response is a map (e.g. key containing list or paginated response object)
+          if (json.containsKey('posts') && json['posts'] is List) {
+            return (json['posts'] as List)
+                .map(
+                  (e) => ScheduledPostModel.fromMap(e as Map<String, dynamic>),
+                )
+                .toList();
+          }
+        }
+        return (json as List<dynamic>)
+            .map((e) => ScheduledPostModel.fromMap(e as Map<String, dynamic>))
+            .toList();
+      },
     );
     if (result is ApiSuccess<List<ScheduledPostModel>>) {
       return result.data;
     }
     final error = result is ApiFailure ? (result as ApiFailure).error : null;
+    print('SCHEDULED POSTS API FAILURE ERROR: $error');
+    if (error is ValidationError) {
+      print('ValidationError message: ${(error as dynamic).message}');
+      print('ValidationError details: ${(error as dynamic).details}');
+      print('ValidationError errors: ${(error as dynamic).errors}');
+    }
     throw Exception(
       'Failed to get scheduled posts: ${error.runtimeType} - ${error.toString()}',
     );

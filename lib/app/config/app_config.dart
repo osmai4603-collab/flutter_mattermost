@@ -11,8 +11,7 @@ abstract class AppConfig {
   static int get activePort => useSSL ? sslPort : defaultPort;
 
   // عنوان خادم Mattermost.
-  static const String host = '127.0.0.1';
-  // '192.168.137.1'; // '127.0.0.1'; // 'mm.yourdomain.com' للإنتاج
+  static const String host = '10.205.108.10';
 
   static String get defaultBaseUrl =>
       '${useSSL ? "https" : "http"}://$host${useSSL ? "" : ":$defaultPort"}/api/v4';

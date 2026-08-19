@@ -460,24 +460,23 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                                 title: title,
                                 rows: list,
                               ),
-                          if (dmChannels.isNotEmpty)
-                            DirectMessageCategoryWidget(
-                              categoryId: dmCategoryId,
-                              dmCategory: dmCategory,
-                              channels: dmChannels,
-                              unreadCounts: widget.unreadCounts,
-                              selectedChannelId: widget.selectedChannelId,
-                              currentUserId: widget.currentUserId,
-                              mutedChannelIds: widget.mutedChannelIds,
-                              onChannelTap: (ch) => openChannelIn(context, ch),
-                              onMoveChannel: (channelId, fromId) =>
-                                  _moveChannel(
-                                    context,
-                                    channelId,
-                                    fromId,
-                                    dmCategoryId,
-                                  ),
-                            ),
+                          DirectMessageCategoryWidget(
+                            categoryId: dmCategoryId,
+                            dmCategory: dmCategory,
+                            channels: dmChannels,
+                            unreadCounts: widget.unreadCounts,
+                            selectedChannelId: widget.selectedChannelId,
+                            currentUserId: widget.currentUserId,
+                            mutedChannelIds: widget.mutedChannelIds,
+                            onChannelTap: (ch) => openChannelIn(context, ch),
+                            onMoveChannel: (channelId, fromId) =>
+                                _moveChannel(
+                                  context,
+                                  channelId,
+                                  fromId,
+                                  dmCategoryId,
+                                ),
+                          ),
                         ],
                       ),
                     ),

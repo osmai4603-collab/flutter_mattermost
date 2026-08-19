@@ -78,9 +78,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
         // تبقى الأسماء احتياطية من معرف العضو عند فشل جلب الملفات.
       }
       if (mounted) {
-        context
-            .read<UserStatusBloc>()
-            .add(LoadUserStatusesEvent(ids));
+        context.read<UserStatusBloc>().add(LoadUserStatusesEvent(ids));
       }
     }
     return _MembersData(members, users);
@@ -103,7 +101,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     final channelState = context.read<ChannelBloc>().state;
     if (channelState is! ChannelsLoadedState) return false;
     final member = channelState.members[widget.channelId];
-    return member != null && _isChannelAdmin(member);
+    return (member != null && _isChannelAdmin(member));
   }
 
   bool _isCurrentUser(String userId) {
@@ -123,10 +121,8 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     if (teamId == null) return;
     final added = await showDialog<bool>(
       context: context,
-      builder: (_) => AddChannelMembersModal(
-        channelId: widget.channelId,
-        teamId: teamId,
-      ),
+      builder: (_) =>
+          AddChannelMembersModal(channelId: widget.channelId, teamId: teamId),
     );
     if (added == true && mounted) setState(_reload);
   }
@@ -168,7 +164,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
           style: TextStyle(color: theme.centerChannelColor),
         ),
         content: Text(
-          formatMemberName(name) + '?',
+          '${formatMemberName(name)}?',
           style: TextStyle(
             color: theme.centerChannelColor.withValues(alpha: 0.7),
           ),
@@ -206,16 +202,17 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     }
   }
 
-  bool _matchesQuery(ChannelMemberEntity member, Map<String, UserEntity> users) {
+  bool _matchesQuery(
+    ChannelMemberEntity member,
+    Map<String, UserEntity> users,
+  ) {
     final q = _query.trim().toLowerCase();
     if (q.isEmpty) return true;
     final user = users[member.userId];
     if (user == null) {
       return member.userId.toLowerCase().contains(q);
     }
-    return '${user.firstName} ${user.lastName}'
-            .toLowerCase()
-            .contains(q) ||
+    return '${user.firstName} ${user.lastName}'.toLowerCase().contains(q) ||
         user.username.toLowerCase().contains(q) ||
         user.email.toLowerCase().contains(q) ||
         user.nickname.toLowerCase().contains(q);
@@ -270,10 +267,9 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
                     return Text(
                       count == null
                           ? ''
-                          : l10n
-                                .channel_members_rhsAction_barMembers_count_title(
-                                count,
-                              ),
+                          : l10n.channel_members_rhsAction_barMembers_count_title(
+                              count,
+                            ),
                       style: TextStyle(
                         color: theme.centerChannelColor,
                         fontSize: 14,
@@ -375,8 +371,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
                       l10n.channel_members_rhsListChannel_admin_title,
                     ),
                     ...admins.map(
-                      (m) =>
-                          _memberRow(theme, l10n, m, data.users, canManage),
+                      (m) => _memberRow(theme, l10n, m, data.users, canManage),
                     ),
                   ],
                   if (members.isNotEmpty) ...[
@@ -385,8 +380,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
                       l10n.channel_members_rhsListChannel_members_title,
                     ),
                     ...members.map(
-                      (m) =>
-                          _memberRow(theme, l10n, m, data.users, canManage),
+                      (m) => _memberRow(theme, l10n, m, data.users, canManage),
                     ),
                   ],
                 ],
@@ -517,9 +511,7 @@ class _ChannelMembersPanelState extends State<ChannelMembersPanel> {
     if (!canManage || isSelf || _busy) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [tappable],
-        ),
+        child: Row(children: [tappable]),
       );
     }
 

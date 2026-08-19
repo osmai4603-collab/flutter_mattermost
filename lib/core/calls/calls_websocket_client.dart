@@ -414,10 +414,12 @@ class CallsWebSocketClient {
           }
           break;
         case '${callsEventPrefix}call_state':
-          final callRaw = data['call'] as String?;
+          final callField = data['call'];
           Map<String, dynamic>? call;
-          if (callRaw != null && callRaw.isNotEmpty) {
-            call = jsonDecode(callRaw) as Map<String, dynamic>;
+          if (callField is String && callField.isNotEmpty) {
+            call = jsonDecode(callField) as Map<String, dynamic>;
+          } else if (callField is Map<String, dynamic>) {
+            call = callField;
           }
           _eventController.add(
             CallsWSCallStateEvent(

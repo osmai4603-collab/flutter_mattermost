@@ -23,6 +23,7 @@ class EmojiPickerOverlay extends StatefulWidget {
     BuildContext context, {
     required BuildContext anchorContext,
     required Function(String) onEmojiSelected,
+    VoidCallback? onDismissed,
     bool multiSelected = true,
   }) {
     final overlay = Overlay.of(context);
@@ -39,12 +40,9 @@ class EmojiPickerOverlay extends StatefulWidget {
       ancestor: overlayBox,
     );
 
-    // حساب الموقع (يفضل فوق الزر إذا وجد مساحة)
-    var dx = anchorPos.dx + anchorBox.size.width - cardWidth;
+    // محاذاة البطاقة مع الحافة اليمنى للشاشة
+    var dx = overlayBox.size.width - cardWidth - 8;
     if (dx < 8) dx = 8;
-    if (dx + cardWidth > overlayBox.size.width - 8) {
-      dx = overlayBox.size.width - cardWidth - 8;
-    }
 
     var dy = anchorPos.dy - cardHeight - 12;
     // إذا لم تكن هناك مساحة فوق، نعرضه تحت
@@ -56,7 +54,10 @@ class EmojiPickerOverlay extends StatefulWidget {
         children: [
           // خلفية شفافة للإغلاق عند النقر خارجاً
           GestureDetector(
-            onTap: () => entry.remove(),
+            onTap: () {
+              entry.remove();
+              onDismissed?.call();
+            },
             behavior: HitTestBehavior.opaque,
             child: const SizedBox.expand(),
           ),
@@ -71,7 +72,10 @@ class EmojiPickerOverlay extends StatefulWidget {
                 onEmojiSelected(emoji);
                 entry.remove();
               },
-              onClose: () => entry.remove(),
+              onClose: () {
+                entry.remove();
+                onDismissed?.call();
+              },
             ),
           ),
         ],

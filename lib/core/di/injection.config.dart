@@ -382,7 +382,10 @@ extension GetItInjectableX on _i174.GetIt {
       () => _i777.WebSocketClientManager(gh<_i666.SecureStorageService>()),
     );
     gh.lazySingleton<_i1065.TeamRepository>(
-      () => _i437.TeamRepositoryImpl(gh<_i222.TeamsRemoteDataSource>()),
+      () => _i437.TeamRepositoryImpl(
+        gh<_i222.TeamsRemoteDataSource>(),
+        gh<_i865.TeamMembersRemoteDataSource>(),
+      ),
     );
     gh.lazySingleton<_i580.ChannelBookmarksRemoteDataSource>(
       () => _i580.ChannelBookmarksRemoteDataSourceImpl(gh<_i557.ApiClient>()),

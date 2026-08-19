@@ -78,7 +78,6 @@ class PostItem extends StatefulWidget {
   State<PostItem> createState() => _PostItemState();
 }
 
-
 class _PostItemState extends State<PostItem> {
   bool _hovered = false;
   final _menuActionController = MenuController();
@@ -316,6 +315,7 @@ class _PostItemState extends State<PostItem> {
                             postId: post.id,
                             reactions: widget.reactions,
                             myUserId: widget.myUserId,
+                            isHovered: _hovered,
                           ),
                           if (effectiveFiles.isNotEmpty)
                             PostAttachmentPreview(files: effectiveFiles),
@@ -384,8 +384,6 @@ class _PostItemState extends State<PostItem> {
     return Color.alphaBlend(hover, base);
   }
 }
-
-
 
 /// رابط صورة المستخدم (يتطلب ترخيص — يقع الاحتياط على الأحرف الأولى عند الفشل).
 String _avatarUrlFor(String userId) {

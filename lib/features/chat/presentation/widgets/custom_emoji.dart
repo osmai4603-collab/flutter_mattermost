@@ -53,6 +53,21 @@ Widget emojiWidget(
       },
     );
   }
+
+  // Resolve Mattermost shortcode (e.g. '+1', 'heart') to unicode for display.
+  final resolved = EmojiUtils.resolveToUnicode(value);
+  if (resolved != null) {
+    return Image.asset(
+      EmojiUtils.emojiAssetPath(resolved),
+      width: size,
+      height: size,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        return Text(value, style: TextStyle(fontSize: size));
+      },
+    );
+  }
+
   final emoji = _customEmojisCache?[value];
   if (emoji == null) {
     return Text(value, style: TextStyle(fontSize: size));

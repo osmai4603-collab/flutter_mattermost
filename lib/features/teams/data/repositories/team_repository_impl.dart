@@ -2,6 +2,7 @@ import 'package:flutter_mattermost/features/teams/domain/entities/team_stats_ent
 import 'package:flutter_mattermost/features/teams/domain/entities/team_unread_entity.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/features/teams/data/models/team_model.dart';
+import 'package:flutter_mattermost/features/teams/data/datasources/team_members_remote_data_source.dart';
 import 'package:flutter_mattermost/features/teams/data/datasources/teams_remote_data_source.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_entity.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_member_entity.dart';
@@ -10,9 +11,10 @@ import 'package:flutter_mattermost/features/teams/domain/repositories/team_repos
 @LazySingleton(as: TeamRepository)
 class TeamRepositoryImpl implements TeamRepository {
   final TeamsRemoteDataSource _remoteDataSource;
+  final TeamMembersRemoteDataSource _membersRemoteDataSource;
   final Map<String, TeamEntity> _teamCache = {};
 
-  TeamRepositoryImpl(this._remoteDataSource);
+  TeamRepositoryImpl(this._remoteDataSource, this._membersRemoteDataSource);
 
   @override
   Future<List<TeamEntity>> getMyTeams({int page = 0, int perPage = 60}) async {
@@ -137,5 +139,23 @@ class TeamRepositoryImpl implements TeamRepository {
         'emails': emails,
         'channels': channelIds,
       });
+  }
+
+  @override
+  Future<TeamMemberEntity> addToTeam(String teamId, String userId) async {
+    final model = await _membersRemoteDataSource.addToTeam(teamId, userId);
+    return model.toEntity();
+  }
+
+  @override
+  Future<List<TeamMemberEntity>> addUsersToTeam(
+    String teamId,
+    List<String> userIds,
+  ) async {
+    final models = await _membersRemoteDataSource.addUsersToTeam(
+      teamId,
+      userIds,
+    );
+    return models.map((m) => m.toEntity()).toList();
   }
 }

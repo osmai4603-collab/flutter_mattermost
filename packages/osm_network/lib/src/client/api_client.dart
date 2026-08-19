@@ -32,7 +32,7 @@ class OsmApiClient {
     this._authDelegate,
     this._sessionController,
     List<Interceptor>? customInterceptors,
-  })  : _config = config {
+  }) : _config = config {
     dio = Dio(
       BaseOptions(
         baseUrl: config.baseUrl,
@@ -68,7 +68,7 @@ class OsmApiClient {
       LogInterceptor(
         requestBody: false,
         responseBody: false,
-        error: false,
+        error: true,
         request: false,
         requestHeader: false,
         responseHeader: false,
@@ -93,8 +93,9 @@ class OsmApiClient {
         endpoint.startsWith('/plugins/playbooks/') ||
         endpoint.startsWith('plugins/com.') ||
         endpoint.startsWith('plugins/playbooks/')) {
-      final formattedEndpoint =
-          endpoint.startsWith('/') ? endpoint : '/$endpoint';
+      final formattedEndpoint = endpoint.startsWith('/')
+          ? endpoint
+          : '/$endpoint';
       final baseUri = Uri.parse(dio.options.baseUrl);
       return '${baseUri.origin}$formattedEndpoint';
     }

@@ -6,6 +6,7 @@ import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/network/websocket_client.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
+import 'package:flutter_mattermost/core/utils/emoji_utils.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/typing_remote_data_source.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
@@ -887,6 +888,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     Emitter<PostsState> emit,
   ) async {
     final userId = await _currentUserId();
+    // Normalize unicode emoji to Mattermost shortcode name.
+    final emojiName = EmojiUtils.resolveToMattermostName(event.emoji);
 
     // جلب الحالة الحالية فوراً قبل البدء بالتحديث المتفائل
     if (state is! PostsLoadedState) return;
@@ -896,11 +899,11 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     final wasReacted = existing.any(
       (r) =>
           (r.userId == userId || r.userId == 'me') &&
-          r.emojiName == event.emoji,
+          r.emojiName == emojiName,
     );
 
     // تسجيل وقت التغيير لمنع أحداث WebSocket القديمة من التدخل
-    final toggleKey = '${event.postId}:${event.emoji}';
+    final toggleKey = '${event.postId}:$emojiName';
     _lastReactionToggleAt[toggleKey] = DateTime.now().millisecondsSinceEpoch;
     _cleanOldToggles();
 
@@ -909,7 +912,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       next.removeWhere(
         (r) =>
             (r.userId == userId || r.userId == 'me') &&
-            r.emojiName == event.emoji,
+            r.emojiName == emojiName,
       );
     } else {
       next.add(
@@ -917,7 +920,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           serverId: '',
           userId: userId,
           postId: event.postId,
-          emojiName: event.emoji,
+          emojiName: emojiName,
           createAt: DateTime.now().millisecondsSinceEpoch,
         ),
       );
@@ -932,9 +935,9 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
 
     try {
       if (wasReacted) {
-        await _postRepository.removeReaction(event.postId, event.emoji);
+        await _postRepository.removeReaction(event.postId, emojiName);
       } else {
-        await _postRepository.addReaction(event.postId, event.emoji);
+        await _postRepository.addReaction(event.postId, emojiName);
       }
     } catch (e) {
       debugPrint('[PostBloc] _onToggleReaction error: $e');
@@ -950,14 +953,14 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
             currentForPost.any(
               (r) =>
                   r.serverId.isEmpty &&
-                  r.emojiName == event.emoji &&
+                  r.emojiName == emojiName &&
                   (r.userId == userId || r.userId == 'me'),
             );
         final failedToRemove =
             wasReacted &&
             !currentForPost.any(
               (r) =>
-                  r.emojiName == event.emoji &&
+                  r.emojiName == emojiName &&
                   (r.userId == userId || r.userId == 'me'),
             );
 
@@ -965,7 +968,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
           final reverted = [...currentForPost];
           if (isStillOptimistic) {
             reverted.removeWhere(
-              (r) => r.serverId.isEmpty && r.emojiName == event.emoji,
+              (r) => r.serverId.isEmpty && r.emojiName == emojiName,
             );
           } else {
             reverted.add(
@@ -973,7 +976,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
                 serverId: '',
                 userId: userId,
                 postId: event.postId,
-                emojiName: event.emoji,
+                emojiName: emojiName,
                 createAt: DateTime.now().millisecondsSinceEpoch,
               ),
             );

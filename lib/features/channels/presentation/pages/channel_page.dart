@@ -154,6 +154,7 @@ class _ChannelPageState extends State<ChannelPage> {
 
       if (channel == null) {
         channel = await getIt<ChannelRepository>().createDirectChannel([
+          myId,
           targetId,
         ]);
         channelBloc.add(UpsertChannelEvent(channel));

@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_entity.dart';
+import 'package:flutter_mattermost/features/teams/domain/entities/team_member_entity.dart';
+import 'package:flutter_mattermost/features/teams/domain/repositories/team_repository.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/teams/presentation/modals/add_team_members_modal.dart';
+import 'package:flutter_mattermost/features/users/domain/repositories/user_repository.dart';
+import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_modal.dart';
 
 /// نافذة إعدادات الفريق — مطابقة team_settings_modal.tsx في webapp:
-/// Modal بعرض 800px + قائمة جانبية (SettingsSidebar) بتبويبات Info / Access
+/// Modal بعرض 800px + قائمة جانبية (SettingsSidebar) بتبويبات Info / Access / Members
 /// + لوحة محتوى مقسمة لأقسام.
 enum TeamSettingsTab {
   info,
   access,
+  members,
 }
 
 extension TeamSettingsTabLabels on TeamSettingsTab {
   String label(AppLocalizations l10n) => switch (this) {
     TeamSettingsTab.info => 'Info',
     TeamSettingsTab.access => 'Access',
+    TeamSettingsTab.members => 'Members',
   };
 
   IconData get icon => switch (this) {
     TeamSettingsTab.info => Icons.info_outline,
     TeamSettingsTab.access => Icons.group_outlined,
+    TeamSettingsTab.members => Icons.people_outline,
   };
 }
 
@@ -84,6 +95,7 @@ class _TeamSettingsModalState extends State<TeamSettingsModal> {
   Widget _buildTabContent(TeamSettingsTab tab) => switch (tab) {
     TeamSettingsTab.info => const _TeamInfoTab(),
     TeamSettingsTab.access => const _TeamAccessTab(),
+    TeamSettingsTab.members => const _TeamMembersTab(),
   };
 }
 
@@ -875,6 +887,197 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 0.3,
         ),
       ),
+    );
+  }
+}
+
+/// ===== تبويب Members — إدارة أعضاء الفريق =====
+class _TeamMembersTab extends StatefulWidget {
+  const _TeamMembersTab();
+
+  @override
+  State<_TeamMembersTab> createState() => _TeamMembersTabState();
+}
+
+class _TeamMembersTabState extends State<_TeamMembersTab> {
+  List<TeamMemberEntity> _members = [];
+  Map<String, UserEntity> _userMap = {};
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    setState(() => _loading = true);
+    try {
+      final state = context.read<TeamBloc>().state;
+      final team = state is TeamsLoadedState ? state.selectedTeam : null;
+      if (team == null) {
+        setState(() => _loading = false);
+        return;
+      }
+      final members = await getIt<TeamRepository>().getTeamMembers(
+        team.id,
+        perPage: 200,
+      );
+      final userIds = members.map((m) => m.userId).toList();
+      final users = await getIt<UserRepository>().getProfilesByIds(userIds);
+      final userMap = {for (final u in users) u.id: u};
+      if (!mounted) return;
+      setState(() {
+        _members = members;
+        _userMap = userMap;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  String _displayNameOf(UserEntity user) {
+    final full = '${user.firstName} ${user.lastName}'.trim();
+    return full.isNotEmpty ? full : user.username;
+  }
+
+  Future<void> _openAddMembers() async {
+    final state = context.read<TeamBloc>().state;
+    final team = state is TeamsLoadedState ? state.selectedTeam : null;
+    if (team == null) return;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AddTeamMembersModal(teamId: team.id),
+    );
+    if (result == true) {
+      _loadMembers();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: theme.centerChannelColor.withValues(alpha: 0.1),
+              ),
+            ),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_members.length} Members',
+                  style: TextStyle(
+                    color: theme.centerChannelColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: _openAddMembers,
+                icon: const Icon(Icons.person_add, size: 16),
+                label: const Text('Add Members'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.buttonBg,
+                  foregroundColor: theme.buttonColor,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  minimumSize: const Size(0, 32),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _members.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No members found',
+                        style: TextStyle(
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.6,
+                          ),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: _members.length,
+                      itemBuilder: (context, index) {
+                        final member = _members[index];
+                        final user = _userMap[member.userId];
+                        if (user == null) return const SizedBox.shrink();
+                        final isOwner = member.roles.contains('team_admin');
+                        return ListTile(
+                          dense: true,
+                          leading: ProfilePicture.sm(
+                            userId: user.id,
+                            avatarUrl: userAvatarUrl(user.id),
+                            username: user.username,
+                          ),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _displayNameOf(user),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: theme.centerChannelColor,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                              if (isOwner)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.buttonBg.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Admin',
+                                    style: TextStyle(
+                                      color: theme.buttonBg,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          subtitle: Text(
+                            '@${user.username}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: theme.centerChannelColor.withValues(
+                                alpha: 0.6,
+                              ),
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
     );
   }
 }

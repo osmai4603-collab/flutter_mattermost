@@ -4,9 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
 
 /// لوحات RHS المطابقة لـ RHSStates في utils/constants.tsx (webapp).
 enum RhsPanel {
@@ -523,6 +525,13 @@ class RhsBloc extends Bloc<RhsEvent, RhsState> {
       emit(
         current.copyWith(sending: false, replies: updatedReplies),
       );
+
+      // Update PostBloc so the channel message list reflects the new reply
+      // (reply count, participants, last reply time in PostThreadFooter).
+      try {
+        getIt<PostBloc>().add(RealtimePostReceivedEvent(sent));
+      } catch (_) {}
+
       event.completer?.complete(sent);
     } catch (e) {
       emit(current.copyWith(sending: false));

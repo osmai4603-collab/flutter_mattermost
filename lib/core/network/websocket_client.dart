@@ -663,9 +663,10 @@ class WebSocketClientManager {
             );
             break;
           case 'posted':
-            final postJson =
-                jsonDecode(data['post'] as String? ?? '{}')
-                    as Map<String, dynamic>;
+            final postField = data['post'];
+            final postJson = (postField is String && postField.isNotEmpty)
+                ? jsonDecode(postField) as Map<String, dynamic>
+                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
             final postEntity = _parsePost(postJson);
             final channelId =
                 (data['channel_id'] as String?)?.isNotEmpty == true
@@ -680,9 +681,10 @@ class WebSocketClientManager {
             );
             break;
           case 'post_edited':
-            final postJson =
-                jsonDecode(data['post'] as String? ?? '{}')
-                    as Map<String, dynamic>;
+            final postField = data['post'];
+            final postJson = (postField is String && postField.isNotEmpty)
+                ? jsonDecode(postField) as Map<String, dynamic>
+                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
             final postEntity = _parsePost(postJson);
             final channelId =
                 (data['channel_id'] as String?)?.isNotEmpty == true
@@ -697,9 +699,10 @@ class WebSocketClientManager {
             );
             break;
           case 'post_deleted':
-            final postJson =
-                jsonDecode(data['post'] as String? ?? '{}')
-                    as Map<String, dynamic>;
+            final postField = data['post'];
+            final postJson = (postField is String && postField.isNotEmpty)
+                ? jsonDecode(postField) as Map<String, dynamic>
+                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
             _typedEventStreamController.add(
               PostDeletedEvent(
                 postId: postJson['id'] as String? ?? '',
@@ -710,10 +713,10 @@ class WebSocketClientManager {
             break;
           case 'reaction_added':
           case 'reaction_removed':
-            final reactionRaw = data['reaction'] as String?;
-            final reactionJson = (reactionRaw != null && reactionRaw.isNotEmpty)
-                ? jsonDecode(reactionRaw) as Map<String, dynamic>
-                : (data['reaction'] as Map<String, dynamic>? ?? {});
+            final reactionField = data['reaction'];
+            final reactionJson = (reactionField is String && reactionField.isNotEmpty)
+                ? jsonDecode(reactionField) as Map<String, dynamic>
+                : (reactionField is Map<String, dynamic> ? reactionField : <String, dynamic>{});
             final reactionEntity = _parseReaction(reactionJson);
             _typedEventStreamController.add(
               ReactionChangedEvent(
@@ -726,10 +729,10 @@ class WebSocketClientManager {
           case 'channel_updated':
           case 'channel_created':
           case 'channel_deleted':
-            final channelRaw = data['channel'] as String?;
-            final channelJson = (channelRaw != null && channelRaw.isNotEmpty)
-                ? jsonDecode(channelRaw) as Map<String, dynamic>
-                : (data['channel'] as Map<String, dynamic>? ?? {});
+            final channelField = data['channel'];
+            final channelJson = (channelField is String && channelField.isNotEmpty)
+                ? jsonDecode(channelField) as Map<String, dynamic>
+                : (channelField is Map<String, dynamic> ? channelField : <String, dynamic>{});
             final channelEntity = _parseChannel(channelJson);
             _typedEventStreamController.add(
               ChannelUpdatedEvent(
@@ -787,10 +790,10 @@ class WebSocketClientManager {
             );
             break;
           case 'user_updated':
-            final userRaw = data['user'] as String?;
-            final userJson = (userRaw != null && userRaw.isNotEmpty)
-                ? jsonDecode(userRaw) as Map<String, dynamic>
-                : (data['user'] as Map<String, dynamic>? ?? {});
+            final userField = data['user'];
+            final userJson = (userField is String && userField.isNotEmpty)
+                ? jsonDecode(userField) as Map<String, dynamic>
+                : (userField is Map<String, dynamic> ? userField : <String, dynamic>{});
             _typedEventStreamController.add(
               UserUpdatedEvent(userJson: userJson, seq: seq),
             );

@@ -156,14 +156,19 @@ class _AdminConsoleServerLogsPageState
             side: const BorderSide(color: Colors.white12),
           ),
           title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Icon(Icons.code, color: Colors.blueAccent),
-              const SizedBox(width: 8),
-              const Text(
-                'Full Log Event',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.code, color: Colors.blueAccent),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'Full Log Event',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ],
               ),
-              const Spacer(),
               IconButton(
                 icon: const Icon(Icons.close, color: Colors.white54, size: 20),
                 onPressed: () => Navigator.of(context).pop(),

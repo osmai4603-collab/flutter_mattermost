@@ -32,4 +32,9 @@ abstract class TeamRepository {
     required List<String> emails,
     required List<String> channelIds,
   });
+  Future<TeamMemberEntity> addToTeam(String teamId, String userId);
+  Future<List<TeamMemberEntity>> addUsersToTeam(
+    String teamId,
+    List<String> userIds,
+  );
 }

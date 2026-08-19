@@ -241,7 +241,7 @@ class _DirectMessageCategoryWidgetState
                                           onTap: () => ModalRegistry.open(
                                             context,
                                             id: ModalIdentifiers
-                                                .invitePeopleInTeam,
+                                                .moreDirectChannels,
                                           ),
                                           child: SizedBox(
                                             height: DesignTokens
@@ -251,6 +251,41 @@ class _DirectMessageCategoryWidgetState
                                                 const SizedBox(width: 24),
                                                 Icon(
                                                   Icons.add_box_rounded,
+                                                  size: 18,
+                                                  color: theme.sidebarText
+                                                      .withValues(alpha: 0.65),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                Text(
+                                                  'Add Direct Message',
+                                                  style: TextStyle(
+                                                    color: theme.sidebarText
+                                                        .withValues(
+                                                          alpha: 0.65,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      Material(
+                                        color: Colors.transparent,
+                                        child: InkWell(
+                                          onTap: () => ModalRegistry.open(
+                                            context,
+                                            id: ModalIdentifiers
+                                                .invitePeopleInTeam,
+                                          ),
+                                          child: SizedBox(
+                                            height: DesignTokens
+                                                .sidebarCategoryHeaderHeight,
+                                            child: Row(
+                                              children: [
+                                                const SizedBox(width: 24),
+                                                Icon(
+                                                  Icons.person_add_outlined,
                                                   size: 18,
                                                   color: theme.sidebarText
                                                       .withValues(alpha: 0.65),

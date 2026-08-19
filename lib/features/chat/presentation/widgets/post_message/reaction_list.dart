@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
@@ -16,12 +17,14 @@ class ReactionList extends StatelessWidget {
   final String postId;
   final List<ReactionEntity> reactions;
   final String myUserId;
+  final bool isHovered;
 
   const ReactionList({
     super.key,
     required this.postId,
     required this.reactions,
     required this.myUserId,
+    required this.isHovered,
   });
 
   @override
@@ -47,7 +50,7 @@ class ReactionList extends StatelessWidget {
               reactions: entry.value,
               myUserId: myUserId,
             ),
-          _AddReactionChip(postId: postId),
+          if (isHovered) _AddReactionChip(postId: postId),
         ],
       ),
     );
@@ -82,17 +85,13 @@ class ReactionChip extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(4),
         child: Container(
-          height: 24,
+          height: 26,
           padding: const EdgeInsets.symmetric(horizontal: 6),
           decoration: BoxDecoration(
             color: mine
                 ? theme.buttonBg.withValues(alpha: 0.08)
                 : theme.centerChannelColor.withValues(alpha: 0.06),
-            border: Border.all(
-              color: mine
-                  ? theme.buttonBg.withValues(alpha: 0.5)
-                  : theme.centerChannelColor.withValues(alpha: 0.15),
-            ),
+            border: Border.all(color: theme.linkColor),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Row(
@@ -151,33 +150,41 @@ class _AddReactionChip extends StatelessWidget {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return Tooltip(
-      message: l10n.post_infoTooltipAdd_reactions,
-      waitDuration: const Duration(milliseconds: 400),
-      child: InkWell(
-        onTap: () async {
-          final emoji = await showReactionPicker(context);
-          if (emoji == null || !context.mounted) return;
-          context.read<PostBloc>().add(ToggleReactionEvent(postId, emoji));
-        },
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          height: 24,
-          width: 28,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: theme.centerChannelColor.withValues(alpha: 0.2),
-            ),
+    return HoverWidget(
+      builder: (context, isHovered) {
+        return Tooltip(
+          message: l10n.post_infoTooltipAdd_reactions,
+          waitDuration: const Duration(milliseconds: 400),
+          child: InkWell(
+            onTap: () async {
+              final emoji = await showReactionPicker(context);
+              if (emoji == null || !context.mounted) return;
+              context.read<PostBloc>().add(ToggleReactionEvent(postId, emoji));
+            },
             borderRadius: BorderRadius.circular(4),
+            child: Container(
+              height: 26,
+              width: 28,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isHovered
+                    ? theme.centerChannelBg
+                    : theme.centerChannelBg.withValues(alpha: 0.05),
+                border: Border.all(
+                  color: theme.centerChannelColor.withValues(alpha: 0.2),
+                ),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              padding: .all(2),
+              child: Icon(
+                Icons.add_reaction_outlined,
+                size: 16,
+                color: theme.centerChannelColor.withValues(alpha: 0.6),
+              ),
+            ),
           ),
-          child: Icon(
-            Icons.add,
-            size: 16,
-            color: theme.centerChannelColor.withValues(alpha: 0.6),
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

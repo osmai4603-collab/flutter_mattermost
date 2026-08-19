@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/app/routes/app_router.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
@@ -100,9 +101,16 @@ class _DirectChannelsModalState extends State<DirectChannelsModal> {
     final teamName = teamState is TeamsLoadedState
         ? teamState.selectedTeam?.name
         : null;
+    final route = teamName != null
+        ? '/$teamName/channels/${channel.name}'
+        : null;
     Navigator.of(context).pop();
-    if (teamName != null) {
-      context.go('/$teamName/channels/${channel.name}');
+    if (route != null) {
+      if (context.mounted) {
+        context.go(route);
+      } else {
+        appRouter.go(route);
+      }
     }
   }
 
@@ -110,15 +118,16 @@ class _DirectChannelsModalState extends State<DirectChannelsModal> {
     setState(() => _opening = true);
     try {
       final channel = await getIt<ChannelRepository>().createDirectChannel([
+        _me?.id ?? '',
         user.id,
       ]);
       if (!mounted) return;
       await _openChannel(channel);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _opening = false;
-        _error = 'Failed to open direct message';
+        _error = 'Failed to open direct message: $e';
       });
     }
   }
@@ -134,11 +143,11 @@ class _DirectChannelsModalState extends State<DirectChannelsModal> {
       ]);
       if (!mounted) return;
       await _openChannel(channel);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _opening = false;
-        _error = 'Failed to open direct message';
+        _error = 'Failed to open direct message: $e';
       });
     }
   }
@@ -156,11 +165,11 @@ class _DirectChannelsModalState extends State<DirectChannelsModal> {
       ]);
       if (!mounted) return;
       await _openChannel(channel);
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _opening = false;
-        _error = 'Failed to start group message';
+        _error = 'Failed to start group message: $e';
       });
     }
   }

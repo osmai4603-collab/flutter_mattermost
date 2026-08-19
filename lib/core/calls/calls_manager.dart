@@ -541,7 +541,14 @@ class CallsManager {
     if (isCurrentlySharing) {
       // Switch back to camera
       final senders = await _peerConnection!.getSenders();
-      final videoSender = senders.firstWhere((s) => s.track?.kind == 'video');
+      RTCRtpSender? videoSender;
+      for (final sender in senders) {
+        if (sender.track?.kind == 'video') {
+          videoSender = sender;
+          break;
+        }
+      }
+      if (videoSender == null) return;
       final cameraStream = await navigator.mediaDevices.getUserMedia({
         'audio': false,
         'video': true,
@@ -559,7 +566,14 @@ class CallsManager {
       final displayTrack = displayStream.getVideoTracks().first;
       
       final senders = await _peerConnection!.getSenders();
-      final videoSender = senders.firstWhere((s) => s.track?.kind == 'video');
+      RTCRtpSender? videoSender;
+      for (final sender in senders) {
+        if (sender.track?.kind == 'video') {
+          videoSender = sender;
+          break;
+        }
+      }
+      if (videoSender == null) return;
       await videoSender.replaceTrack(displayTrack);
       
       _localRenderer.srcObject = displayStream;

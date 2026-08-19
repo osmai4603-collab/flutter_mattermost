@@ -50,9 +50,9 @@ class _UserProfileModalState extends State<_UserProfileModal> {
   @override
   void initState() {
     super.initState();
-    context
-        .read<UserProfileBloc>()
-        .add(LoadProfilesByIdsEvent([widget.userId]));
+    context.read<UserProfileBloc>().add(
+      LoadProfilesByIdsEvent([widget.userId]),
+    );
     context.read<UserStatusBloc>().add(LoadUserStatusesEvent([widget.userId]));
   }
 
@@ -105,7 +105,12 @@ class _UserProfileModalState extends State<_UserProfileModal> {
   Future<void> _startDirectMessage() async {
     setState(() => _sendingDm = true);
     try {
+      final channelState = context.read<ChannelBloc>().state;
+      final myId = channelState is ChannelsLoadedState
+          ? channelState.userId
+          : '';
       final channel = await getIt<ChannelRepository>().createDirectChannel([
+        myId,
         widget.userId,
       ]);
       if (!mounted) return;
@@ -120,7 +125,12 @@ class _UserProfileModalState extends State<_UserProfileModal> {
   Future<void> _startCall() async {
     setState(() => _sendingDm = true);
     try {
+      final channelState = context.read<ChannelBloc>().state;
+      final myId = channelState is ChannelsLoadedState
+          ? channelState.userId
+          : '';
       final channel = await getIt<ChannelRepository>().createDirectChannel([
+        myId,
         widget.userId,
       ]);
       if (!mounted) return;
@@ -140,7 +150,7 @@ class _UserProfileModalState extends State<_UserProfileModal> {
 
     return Dialog(
       child: Container(
-        width: 350,
+        width: 500,
         padding: const EdgeInsets.all(20),
         child: BlocBuilder<UserProfileBloc, UserProfileState>(
           builder: (context, profState) {
@@ -159,11 +169,10 @@ class _UserProfileModalState extends State<_UserProfileModal> {
                 : '';
             final isSelf = user != null && user.id == myUserId;
 
-            final status = context
-                .watch<UserStatusBloc>()
-                .state is UserStatusesLoadedState
+            final status =
+                context.watch<UserStatusBloc>().state is UserStatusesLoadedState
                 ? (context.read<UserStatusBloc>().state
-                        as UserStatusesLoadedState)
+                          as UserStatusesLoadedState)
                       .statusOf(widget.userId)
                 : null;
 

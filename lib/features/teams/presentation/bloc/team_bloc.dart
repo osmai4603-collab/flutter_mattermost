@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_entity.dart';
+import 'package:flutter_mattermost/features/teams/domain/entities/team_member_entity.dart';
 import 'package:flutter_mattermost/features/teams/domain/repositories/team_repository.dart';
 
 // Events
@@ -37,6 +38,26 @@ class CreateTeamEvent extends TeamEvent {
   List<Object?> get props => [displayName, name, type];
 }
 
+class AddTeamMemberEvent extends TeamEvent {
+  final String teamId;
+  final String userId;
+
+  const AddTeamMemberEvent({required this.teamId, required this.userId});
+
+  @override
+  List<Object?> get props => [teamId, userId];
+}
+
+class AddTeamMembersEvent extends TeamEvent {
+  final String teamId;
+  final List<String> userIds;
+
+  const AddTeamMembersEvent({required this.teamId, required this.userIds});
+
+  @override
+  List<Object?> get props => [teamId, userIds];
+}
+
 // States
 abstract class TeamState extends Equatable {
   const TeamState();
@@ -57,6 +78,15 @@ class TeamsLoadedState extends TeamState {
   List<Object?> get props => [teams, selectedTeam];
 }
 
+class TeamMemberAddedState extends TeamState {
+  final TeamMemberEntity member;
+
+  const TeamMemberAddedState(this.member);
+
+  @override
+  List<Object?> get props => [member];
+}
+
 class TeamErrorState extends TeamState {
   final String message;
   const TeamErrorState(this.message);
@@ -73,6 +103,8 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<RefreshTeamsEvent>(_onLoadMyTeams);
     on<SelectTeamEvent>(_onSelectTeam);
     on<CreateTeamEvent>(_onCreateTeam);
+    on<AddTeamMemberEvent>(_onAddTeamMember);
+    on<AddTeamMembersEvent>(_onAddTeamMembers);
   }
 
   Future<void> _onLoadMyTeams(TeamEvent event, Emitter<TeamState> emit) async {
@@ -111,6 +143,38 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
         ));
       } else {
         add(LoadMyTeamsEvent());
+      }
+    } catch (e) {
+      emit(TeamErrorState(e.toString()));
+    }
+  }
+
+  Future<void> _onAddTeamMember(
+    AddTeamMemberEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    try {
+      final member = await _teamRepository.addToTeam(
+        event.teamId,
+        event.userId,
+      );
+      emit(TeamMemberAddedState(member));
+    } catch (e) {
+      emit(TeamErrorState(e.toString()));
+    }
+  }
+
+  Future<void> _onAddTeamMembers(
+    AddTeamMembersEvent event,
+    Emitter<TeamState> emit,
+  ) async {
+    try {
+      final members = await _teamRepository.addUsersToTeam(
+        event.teamId,
+        event.userIds,
+      );
+      if (members.isNotEmpty) {
+        emit(TeamMemberAddedState(members.first));
       }
     } catch (e) {
       emit(TeamErrorState(e.toString()));
