@@ -1,7 +1,6 @@
-import 'package:flutter_mattermost/features/chat/data/models/file_info_list_model.dart';
+import 'package:flutter_mattermost/features/chat/data/models/file_info_model.dart';
 import 'package:flutter_mattermost/features/chat/data/models/reaction_model.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/file_info_entity.dart';
-import 'package:flutter_mattermost/features/chat/domain/entities/file_info_list_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_metadata_entity.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity.dart';
 import 'package:flutter_mattermost/features/system/data/models/emoji_model.dart';
@@ -32,7 +31,7 @@ final class PostMetadataModel extends PostMetadataEntity {
       ),
       files: List<FileInfoEntity>.from(
         (map["files"] as List<dynamic>? ?? []).map(
-          (e) => FileInfoListModel.fromMap(e as Map<String, dynamic>),
+          (e) => FileInfoModel.fromMap(e as Map<String, dynamic>),
         ),
       ),
       images: map["images"] as Map<String, dynamic>?,

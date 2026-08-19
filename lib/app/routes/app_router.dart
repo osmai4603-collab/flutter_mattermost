@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/app/routes/auth_routes.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 
 final GoRouter appRouter = GoRouter(
@@ -18,6 +17,8 @@ final GoRouter appRouter = GoRouter(
 );
 
 /// يجمع تدفقات الـ Blocs المعنية ليُعيد تشغيل redirect عند تغيرها.
+/// يقتصر على AuthBloc وTeamBloc لأن أحداث ChannelBloc (عدادات غير المقروء،
+/// تفاعلات، إلخ) لا تؤثر على التوجيه وتسبب إعادة حساب غير ضرورية.
 class _AppRefreshListenable extends ChangeNotifier {
   final List<StreamSubscription> _subscriptions = [];
 
@@ -27,9 +28,6 @@ class _AppRefreshListenable extends ChangeNotifier {
     );
     _subscriptions.add(
       getIt<TeamBloc>().stream.listen((_) => notifyListeners()),
-    );
-    _subscriptions.add(
-      getIt<ChannelBloc>().stream.listen((_) => notifyListeners()),
     );
   }
 

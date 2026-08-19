@@ -325,6 +325,11 @@ class FileUploadController extends ChangeNotifier {
     mimeType: dto.mimeType,
     width: dto.width,
     height: dto.height,
+    updateAt: dto.updateAt,
+    createAt: dto.createAt,
+    deleteAt: dto.deleteAt,
+    hasPreviewImage: dto.hasPreviewImage,
+    localPath: dto.localPath,
   );
 
   @override

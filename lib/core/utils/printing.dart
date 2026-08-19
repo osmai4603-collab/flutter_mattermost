@@ -7,22 +7,22 @@ void printMap({required String title, required Map<String, dynamic> data}) {
   );
 }
 
-String getPrintMap(Map<String, dynamic> data, spaces) {
-  return '{\n$spaces${data.keys.map((e) => '$e: ${_split(data[e], spaces: spaces)}').join('\n  ')}$spaces}';
+String getPrintMap(Map<String, dynamic> data, String spaces) {
+  return '{\n$spaces${data.keys.map((e) => '$e: ${_split(data[e], spaces: spaces)}').join('\n$spaces')}\n${spaces.substring(0, spaces.length - 2)}}';
 }
 
 String _split(dynamic value, {String spaces = '  '}) {
   if (value is String) {
     if (value.startsWith('{')) {
-      return getPrintMap(jsonDecode(value), '$spaces  ');
+      final json = jsonDecode(value) as Map<String, dynamic>;
+      return json.isEmpty ? '{}' : getPrintMap(json, '$spaces  ');
     }
     return value.split('.').last;
   } else if (value is List) {
     if (value.isEmpty) {
       return '[]';
     } else if (value.first is Map) {
-      return getPrintMap(value.first, '$spaces  ');
-      // return '[(Map<String, dynamic>) ${value.length} items]';
+      return '[\n$spaces  ${value.map((e) => getPrintMap(e, '$spaces    '))}\n$spaces  ]';
     } else if (value is List<String>) {
       if (value.length > 10) {
         return '[\n    ${value.join(',\n    ')}\n  ]';
@@ -38,8 +38,9 @@ String _split(dynamic value, {String spaces = '  '}) {
     }
     return '[${value.map((e) => e.toString()).join(', ')}]';
   } else if (value is Map) {
-    return getPrintMap(value as Map<String, dynamic>, '$spaces  ');
-    // return '(Map<String, dynamic>)';
+    return value.isEmpty
+        ? '{}'
+        : getPrintMap(value as Map<String, dynamic>, '$spaces  ');
   } else {
     return value.toString();
   }

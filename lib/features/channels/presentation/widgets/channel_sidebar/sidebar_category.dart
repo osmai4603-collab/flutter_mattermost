@@ -11,6 +11,7 @@ import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_category_row.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_channel_row.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
@@ -67,11 +68,12 @@ bool isSidebarDropDisabled(
 /// رأس 32px UPPERCASE 12px + طي بأنيميشن 180ms (height transition 0.18s).
 /// تدعم سحب القنوات (long-press) نحو فئات أخرى عبر [onMoveChannel]،
 /// وقائمة فئة (إعادة تسمية/كتم/حذف/إنشاء) عبر [category].
-class SidebarCategory extends StatelessWidget {
+class SidebarCategory extends StatefulWidget {
   final String categoryId;
   final String title;
   final List<ChannelEntity> channels;
   final Map<String, ChannelUnreadCounts> unreadCounts;
+  final bool isCollapsed;
   final String? selectedChannelId;
   final bool showNewDirectButton;
   final void Function(ChannelEntity) onChannelTap;
@@ -84,15 +86,14 @@ class SidebarCategory extends StatelessWidget {
   /// قنوات مكتومة (نصوصها تُعتَّم) — مطابق .muted في SidebarLink.
   final Set<String> mutedChannelIds;
 
-  /// باني مفاتيح الصفوف — لقياس موضعها في مؤشرات غير المقروءة.
-  final Key Function(ChannelEntity)? rowKeyBuilder;
-
   /// استدعاء عند إفلات قناة على هذه الفئة — يُمكّن السحب والإفلات.
   final void Function(String channelId, String fromCategoryId)? onMoveChannel;
+  final void Function(bool) onToggleChanged;
 
   const SidebarCategory({
     super.key,
     required this.categoryId,
+    required this.isCollapsed,
     required this.title,
     required this.channels,
     required this.unreadCounts,
@@ -103,177 +104,148 @@ class SidebarCategory extends StatelessWidget {
     this.showNewDirectButton = true,
     this.category,
     this.mutedChannelIds = const {},
-    this.rowKeyBuilder,
     this.onMoveChannel,
+    required this.onToggleChanged,
   });
+
+  @override
+  State<SidebarCategory> createState() => _SidebarCategoryState();
+}
+
+class _SidebarCategoryState extends State<SidebarCategory> {
+  bool isCollapsed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    isCollapsed = widget.isCollapsed;
+  }
+
+  @override
+  void didUpdateWidget(covariant SidebarCategory oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCollapsed != widget.isCollapsed) {
+      isCollapsed = widget.isCollapsed;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    return MouseRegion(
-      onEnter: (_) {},
-      child: BlocBuilder<LhsBloc, LhsState>(
-        builder: (context, lhsState) {
-          final lhsCollapsed =
-              lhsState is LhsSearchState &&
-              lhsState.collapsedCategories.contains(categoryId);
-          // حالة الطي: محلية (LhsBloc) أو محفوظة على الخادم (entity.collapsed).
-          final collapsed = lhsCollapsed || (category?.collapsed ?? false);
-          // القنوات مسبقة الفرز حسب ترتيب الفئة (تُفرز في channelSectionsFor
-          // مرة واحدة لكل اشتقاق حالة، وليس في كل build هنا).
-
-          return DragTarget<SidebarCategoryDragData>(
-            onWillAcceptWithDetails: (details) {
-              if (details.data.fromCategoryId == categoryId) return false;
-              // منع الإفلات غير المسموح به (مطابق isDropDisabled في webapp).
-              return !isSidebarDropDisabled(
-                category?.type,
-                details.data.channelType,
-              );
+    return SizedBox(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ChannelCategoryRow(
+            categoryId: widget.categoryId,
+            category: widget.category,
+            userId: widget.userId,
+            teamId: widget.teamId,
+            title: widget.title,
+            channels: widget.channels,
+            unreadCounts: widget.unreadCounts,
+            context: context,
+            collapsed: isCollapsed,
+            theme: theme,
+            l10n: l10n,
+            onToggleChanged: (value) {
+              setState(() => isCollapsed = value);
+              widget.onToggleChanged(value);
             },
-            onAcceptWithDetails: (details) {
-              onMoveChannel?.call(
-                details.data.channelId,
-                details.data.fromCategoryId,
-              );
-            },
-            builder: (context, candidateData, rejectedData) {
-              final isDropTarget =
-                  onMoveChannel != null &&
-                  candidateData.isNotEmpty &&
-                  !isSidebarDropDisabled(
-                    category?.type,
-                    candidateData.first?.channelType ??
-                        DraggingChannelType.channel,
-                  );
-
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          if (!isCollapsed)
+            Column(
+              children: [
+                for (final channel in widget.channels)
+                  SidebarChannelRow(
+                    channel: channel,
+                    unread: widget.unreadCounts[channel.id],
+                    isSelected: channel.id == widget.selectedChannelId,
+                    isMuted: widget.mutedChannelIds.contains(channel.id),
+                    onTap: () {
+                      widget.onChannelTap(channel);
+                    },
+                  ),
+              ],
+            ),
+          InkWell(
+            onTap: () =>
+                ModalRegistry.open(context, id: ModalIdentifiers.newChannel),
+            child: Padding(
+              padding: EdgeInsetsDirectional.only(start: 24, top: 4, bottom: 4),
+              child: Row(
+                spacing: 8,
                 children: [
-                  ChannelCategoryRow(
-                    categoryId: categoryId,
-                    category: category,
-                    userId: userId,
-                    teamId: teamId,
-                    title: title,
-                    channels: channels,
-                    unreadCounts: unreadCounts,
-                    context: context,
-                    collapsed: collapsed,
-                    theme: theme,
-                    l10n: l10n,
+                  Icon(
+                    Icons.add_box_rounded,
+                    size: 18,
+                    color: theme.sidebarText.withValues(alpha: 0.70),
                   ),
-                  AnimatedSize(
-                    duration: DesignTokens.sidebarCollapseDuration,
-                    curve: Curves.easeInOut,
-                    alignment: Alignment.topCenter,
-                    child: collapsed
-                        ? const SizedBox(width: double.infinity)
-                        : Container(
-                            decoration: isDropTarget
-                                ? BoxDecoration(
-                                    color: theme.sidebarText.withValues(
-                                      alpha: 0.06,
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                  )
-                                : null,
-                            child: Column(
-                              children: [
-                                for (final channel in channels)
-                                  _buildRow(channel, theme),
-                              ],
-                            ),
-                          ),
-                  ),
-                  InkWell(
-                    onTap: () => ModalRegistry.open(
-                      context,
-                      id: ModalIdentifiers.newChannel,
-                    ),
-                    child: Padding(
-                      padding: EdgeInsetsDirectional.only(
-                        start: 24,
-                        top: 4,
-                        bottom: 4,
-                      ),
-                      child: Row(
-                        spacing: 8,
-                        children: [
-                          Icon(
-                            Icons.add_box_rounded,
-                            size: 18,
-                            color: theme.sidebarText.withValues(alpha: 0.70),
-                          ),
-                          Text(
-                            'Add channel',
-                            style: TextStyle(
-                              color: theme.sidebarText.withValues(alpha: 0.70),
-                            ),
-                          ),
-                        ],
-                      ),
+                  Text(
+                    'Add channel',
+                    style: TextStyle(
+                      color: theme.sidebarText.withValues(alpha: 0.70),
                     ),
                   ),
                 ],
-              );
-            },
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildRow(ChannelEntity channel, MattermostColors theme) {
-    final row = SidebarChannelRow(
-      channel: channel,
-      unread: unreadCounts[channel.id],
-      isSelected: channel.id == selectedChannelId,
-      isMuted: mutedChannelIds.contains(channel.id),
-      onTap: () => onChannelTap(channel),
-      rowKey: rowKeyBuilder?.call(channel),
-    );
-
-    if (onMoveChannel == null) return row;
-
-    final isDirect =
-        channel.type == ChannelType.direct || channel.type == ChannelType.group;
-    return LongPressDraggable<SidebarCategoryDragData>(
-      data: SidebarCategoryDragData(
-        channelId: channel.id,
-        fromCategoryId: categoryId,
-        channelType: isDirect
-            ? DraggingChannelType.directMessage
-            : DraggingChannelType.channel,
-      ),
-      feedback: Material(
-        color: Colors.transparent,
-        child: Container(
-          // padding: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: theme.sidebarBg,
-            // borderRadius: BorderRadius.circular(6),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 8,
               ),
-            ],
+            ),
           ),
-          child: Text(
-            channel.displayName,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: theme.sidebarText, fontSize: 14),
-          ),
-        ),
+        ],
       ),
-      childWhenDragging: Opacity(opacity: 0.3, child: row),
-      child: row,
     );
   }
+
+  // Widget _buildRow(ChannelEntity channel, MattermostColors theme) {
+  //   final row = SidebarChannelRow(
+  //     channel: channel,
+  //     unread: widget.unreadCounts[channel.id],
+  //     isSelected: channel.id == widget.selectedChannelId,
+  //     isMuted: widget.mutedChannelIds.contains(channel.id),
+  //     onTap: () => widget.onChannelTap(channel),
+  //     rowKey: widget.rowKeyBuilder?.call(channel),
+  //   );
+
+  //   if (widget.onMoveChannel == null) return row;
+
+  //   final isDirect =
+  //       channel.type == ChannelType.direct || channel.type == ChannelType.group;
+  //   return LongPressDraggable<SidebarCategoryDragData>(
+  //     data: SidebarCategoryDragData(
+  //       channelId: channel.id,
+  //       fromCategoryId: widget.categoryId,
+  //       channelType: isDirect
+  //           ? DraggingChannelType.directMessage
+  //           : DraggingChannelType.channel,
+  //     ),
+  //     feedback: Material(
+  //       color: Colors.transparent,
+  //       child: Container(
+  //         // padding: const EdgeInsets.symmetric(vertical: 6),
+  //         decoration: BoxDecoration(
+  //           color: theme.sidebarBg,
+  //           // borderRadius: BorderRadius.circular(6),
+  //           boxShadow: [
+  //             BoxShadow(
+  //               color: Colors.black.withValues(alpha: 0.3),
+  //               blurRadius: 8,
+  //             ),
+  //           ],
+  //         ),
+  //         child: Text(
+  //           channel.displayName,
+  //           maxLines: 1,
+  //           overflow: TextOverflow.ellipsis,
+  //           style: TextStyle(color: theme.sidebarText, fontSize: 14),
+  //         ),
+  //       ),
+  //     ),
+  //     childWhenDragging: Opacity(opacity: 0.3, child: row),
+  //     child: row,
+  //   );
+  // }
 }
 
 class _CategoryIconButton extends StatelessWidget {

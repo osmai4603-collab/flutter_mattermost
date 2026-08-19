@@ -31,7 +31,6 @@ class DirectMessageCategoryWidget extends StatefulWidget {
   final String? selectedChannelId;
   final String currentUserId;
   final Set<String> mutedChannelIds;
-  final Key Function(ChannelEntity)? rowKeyBuilder;
   final void Function(ChannelEntity) onChannelTap;
   final void Function(String channelId, String fromCategoryId) onMoveChannel;
 
@@ -44,7 +43,6 @@ class DirectMessageCategoryWidget extends StatefulWidget {
     required this.selectedChannelId,
     required this.currentUserId,
     this.mutedChannelIds = const {},
-    this.rowKeyBuilder,
     required this.onChannelTap,
     required this.onMoveChannel,
   });
@@ -217,9 +215,7 @@ class _DirectMessageCategoryWidgetState
                                           channel: channel,
                                           isMuted: widget.mutedChannelIds
                                               .contains(channel.id),
-                                          rowKey: widget.rowKeyBuilder?.call(
-                                            channel,
-                                          ),
+
                                           status: _statusFor(
                                             channel,
                                             widget.currentUserId,

@@ -5,6 +5,7 @@ import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
@@ -14,7 +15,7 @@ import 'package:flutter_mattermost/features/channels/presentation/widgets/channe
 /// + خط عمودي 4px، unread = نص عريض sidebar-unread-text، شارة منشنات pill،
 /// hover = sidebar-text-hover-bg، وقائمة ⋯ (sidebar_channel_menu) عند التمرير
 /// أو النقر اليميني: مفضلة/نقل/كتم/تفضيلات/نسخ/معلومات/إعدادات/مغادرة/أرشفة.
-class SidebarChannelRow extends StatefulWidget {
+class SidebarChannelRow extends StatelessWidget {
   final ChannelEntity channel;
   final ChannelUnreadCounts? unread;
   final bool isSelected;
@@ -23,9 +24,6 @@ class SidebarChannelRow extends StatefulWidget {
   final bool isMuted;
   final VoidCallback onTap;
 
-  /// خارجي (GlobalKey) لقياس موضع الصف لمؤشرات غير المقروءة.
-  final Key? rowKey;
-
   const SidebarChannelRow({
     super.key,
     required this.channel,
@@ -33,77 +31,26 @@ class SidebarChannelRow extends StatefulWidget {
     required this.isSelected,
     this.isMuted = false,
     required this.onTap,
-    this.rowKey,
   });
-
-  @override
-  State<SidebarChannelRow> createState() => _SidebarChannelRowState();
-}
-
-class _SidebarChannelRowState extends State<SidebarChannelRow> {
-  bool isHovered = false;
-
-  /// هل النص مقصوص فعلياً؟ — يُظهر tooltip بالاسم الكامل فقط عند الاقتطاع
-  /// (مطابق enableToolTipIfNeeded في sidebar_channel_link.tsx).
-  bool _isTruncated = false;
-  final GlobalKey _textKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTruncation());
-  }
-
-  @override
-  void didUpdateWidget(covariant SidebarChannelRow oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkTruncation());
-  }
-
-  void _checkTruncation() {
-    final context = _textKey.currentContext;
-    if (context == null) return;
-    final renderObject = context.findRenderObject();
-    if (renderObject is! RenderBox) return;
-    final size = renderObject.size;
-    if (size.height == 0) return;
-    final painter = TextPainter(
-      text: TextSpan(
-        text: widget.channel.displayName,
-        style: const TextStyle(fontSize: 14),
-      ),
-      textDirection: Directionality.of(context),
-      maxLines: 1,
-      ellipsis: '…',
-    )..layout(maxWidth: size.width);
-    final truncated = painter.didExceedMaxLines || painter.width > size.width;
-    if (truncated != _isTruncated) {
-      setState(() => _isTruncated = truncated);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final channel = widget.channel;
-    final hasUnreads = widget.unread?.hasUnreads ?? false;
-    final hasMentions = (widget.unread?.mentions ?? 0) > 0;
+    final hasUnreads = unread?.hasUnreads ?? false;
+    final hasMentions = (unread?.mentions ?? 0) > 0;
     final isArchived = channel.deleteAt > 0;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => isHovered = true),
-      onExit: (_) => setState(() => isHovered = false),
+    return HoverWidget(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        key: widget.rowKey,
-        onTap: widget.onTap,
-        onSecondaryTapDown: (details) {
-          showChannelContextMenu(context, channel, details.globalPosition);
-        },
+      builder: (_, isHovered) => GestureDetector(
+        onTap: onTap,
+        // onSecondaryTapDown: (details) {
+        //   showChannelContextMenu(context, channel, details.globalPosition);
+        // },
         behavior: HitTestBehavior.opaque,
         child: Container(
           height: DesignTokens.sidebarRowHeight,
-          color: widget.isSelected
+          color: isSelected
               ? theme.sidebarText.withValues(alpha: 0.08)
               : isHovered
               ? theme.sidebarTextHoverBg
@@ -112,7 +59,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
             alignment: AlignmentDirectional.centerStart,
             children: [
               // خط نشط عمودي 4px (SidebarLink.active::before)
-              if (widget.isSelected)
+              if (isSelected)
                 PositionedDirectional(
                   start: 0,
                   top: 0,
@@ -124,7 +71,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                   ),
                 ),
               Opacity(
-                opacity: widget.isMuted ? 0.5 : 1,
+                opacity: isMuted ? 0.5 : 1,
                 child: Row(
                   children: [
                     const SizedBox(width: 24),
@@ -138,29 +85,25 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                     if (channel.type != .open)
                       _ChannelIcon(
                         type: channel.type,
-                        active: hasUnreads || widget.isSelected,
+                        active: hasUnreads || isSelected,
                         theme: theme,
                         archived: isArchived,
                       ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: Tooltip(
-                        message: _isTruncated ? channel.displayName : '',
-                        child: Text(
-                          channel.displayName,
-                          key: _textKey,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14,
-                            decoration: isArchived
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: theme.sidebarText.withValues(alpha: 0.65),
-                            fontWeight: hasUnreads || widget.isSelected
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
+                      child: Text(
+                        channel.displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          decoration: isArchived
+                              ? TextDecoration.lineThrough
+                              : null,
+                          color: theme.sidebarText.withValues(alpha: 0.65),
+                          fontWeight: hasUnreads || isSelected
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -176,7 +119,7 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '${widget.unread!.mentions}',
+                          '${unread!.mentions}',
                           style: TextStyle(
                             color: theme.mentionColor,
                             fontSize: 12,
@@ -199,8 +142,9 @@ class _SidebarChannelRowState extends State<SidebarChannelRow> {
                     ListenableBuilder(
                       listenable: getIt<DraftStorageService>(),
                       builder: (context, _) {
-                        final hasDraft =
-                            getIt<DraftStorageService>().hasDraft(channel.id);
+                        final hasDraft = getIt<DraftStorageService>().hasDraft(
+                          channel.id,
+                        );
                         if (!hasDraft) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsetsDirectional.only(end: 4),

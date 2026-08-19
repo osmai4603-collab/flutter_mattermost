@@ -399,6 +399,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           add(LoadChannelsForTeamEvent(
             teamState.selectedTeam!.id,
             userId: current is ChannelsLoadedState ? current.userId : null,
+            seamless: true,
           ));
         }
       }

@@ -39,7 +39,6 @@ class ChannelPage extends StatefulWidget {
 }
 
 class _ChannelPageState extends State<ChannelPage> {
-  StreamSubscription? _teamSub;
   StreamSubscription? _channelSub;
   String? _loadedTeamId;
 
@@ -59,7 +58,6 @@ class _ChannelPageState extends State<ChannelPage> {
   @override
   void initState() {
     super.initState();
-    _teamSub = context.read<TeamBloc>().stream.listen((_) => _syncWithRoute());
 
     // فقط عند انتقال الحالة من غير محمّلة إلى محمّلة
     ChannelState? _prevChannelState;
@@ -81,7 +79,6 @@ class _ChannelPageState extends State<ChannelPage> {
     if (oldWidget.channelName != widget.channelName ||
         oldWidget.dmUsername != widget.dmUsername ||
         oldWidget.teamName != widget.teamName) {
-      // إعادة تعيين الحالات المرتبطة بالقناة السابقة
       _resolvedDmUsername = null;
       _dmCheckedChannelId = '';
       _syncWithRoute();
@@ -90,7 +87,6 @@ class _ChannelPageState extends State<ChannelPage> {
 
   @override
   void dispose() {
-    _teamSub?.cancel();
     _channelSub?.cancel();
     _listScrollController.dispose();
     super.dispose();
@@ -109,7 +105,8 @@ class _ChannelPageState extends State<ChannelPage> {
     team ??= teamState.selectedTeam;
     if (team == null || teamState.teams.isEmpty) return;
 
-    if (team.id != teamState.selectedTeam?.id) {
+    if (team.id != teamState.selectedTeam?.id &&
+        widget.teamName != null) {
       context.read<TeamBloc>().add(SelectTeamEvent(team));
     }
 

@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_mattermost/app/config/app_config.dart';
 import 'package:flutter_mattermost/core/storage/secure_storage_service.dart';
+import 'package:flutter_mattermost/core/utils/printing.dart';
 import 'package:injectable/injectable.dart';
 import 'package:msgpack_dart/msgpack_dart.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -352,6 +353,7 @@ class CallsWebSocketClient {
   void _onMessageReceived(dynamic rawData) {
     try {
       final decoded = jsonDecode(rawData as String) as Map<String, dynamic>;
+      printMap(title: 'RECEIVE DATA FROM CALL Socket Client: ', data: decoded);
 
       // استجابة لطلب أرسلناه (authentication_challenge/ping) — بلا event.
       if (decoded.containsKey('seq_reply')) {

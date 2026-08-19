@@ -260,11 +260,11 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
 
   /// مفاتيح صفوف القنوات المعروضة فعلياً — تُستخدم لقياس موضعها
   /// في مؤشرات غير المقروءة (ترتيب الإدراج = الترتيب البصري).
-  final Map<String, GlobalKey> _rowKeys = {};
   bool _showTopUnread = false;
   bool _showBottomUnread = false;
   int _unreadAbove = 0;
   int _unreadBelow = 0;
+  final Map<String, bool> isCollapsed = {};
 
   /// هوامش المنطق المطابق لـ updateUnreadIndicators في sidebar_list.tsx
   /// (scrollMargin + categoryHeaderHeight للأعلى، scrollMargin للأسفل).
@@ -288,21 +288,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
   void didUpdateWidget(covariant _ChannelSidebarBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.unreadCounts != widget.unreadCounts ||
-        oldWidget.channels != widget.channels) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _pruneRowKeys();
-        _updateUnreadIndicators();
-      });
-    }
-  }
-
-  /// يزيل مفاتيح الصفوف التي لم تعد معروضة (مطوية/مغلقة/محذوفة).
-  void _pruneRowKeys() {
-    final live = _rowKeys.entries
-        .where((e) => e.value.currentContext != null)
-        .map((e) => e.key)
-        .toSet();
-    _rowKeys.removeWhere((id, key) => !live.contains(id));
+        oldWidget.channels != widget.channels) {}
   }
 
   /// يحسب ظهور مؤشري غير المقروء أعلى/أسفل — مطابق updateUnreadIndicators
@@ -319,35 +305,6 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
     var showBottom = false;
     var aboveCount = 0;
     var belowCount = 0;
-
-    for (final entry in _rowKeys.entries) {
-      if (!(widget.unreadCounts[entry.key]?.hasUnreads ?? false)) continue;
-      final ctx = entry.value.currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject();
-      if (box is! RenderBox) continue;
-      final relTop = box.localToGlobal(Offset.zero).dy - listTopLeft.dy;
-      if (relTop + box.size.height - _topMargin < 0) {
-        aboveCount++;
-        if (aboveCount == 1) showTop = true;
-      } else if (relTop + _bottomMargin > viewportHeight) {
-        belowCount++;
-      }
-    }
-
-    // آخر قناة غير مقروءة أسفل الرؤية — نفس قاعدة webapp للأخيرة.
-    for (final entry in _rowKeys.entries.toList().reversed) {
-      if (!(widget.unreadCounts[entry.key]?.hasUnreads ?? false)) continue;
-      final ctx = entry.value.currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject();
-      if (box is! RenderBox) continue;
-      final relTop = box.localToGlobal(Offset.zero).dy - listTopLeft.dy;
-      if (relTop + _bottomMargin > viewportHeight) {
-        showBottom = true;
-        break;
-      }
-    }
 
     if (showTop != _showTopUnread ||
         showBottom != _showBottomUnread ||
@@ -400,10 +357,6 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
       widget.lhs.unreadsOnly &&
       !(widget.unreadCounts[ch.id]?.hasUnreads ?? false);
 
-  /// باني مفاتيح صفوف القنوات — GlobalKey لكل قناة لقياس موضعها.
-  Key _rowKeyFor(ChannelEntity channel) =>
-      _rowKeys.putIfAbsent(channel.id, () => GlobalKey());
-
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
@@ -451,75 +404,84 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
           Expanded(
             child: Stack(
               children: [
-                ListView(
-                  key: _listKey,
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  children: [
-                    _GlobalSectionLink(
-                      icon: Icons.message_outlined,
-                      label: l10n.globalThreadsSidebarLink,
-                      onTap: () {
-                        final teamName = _teamName(context);
-                        if (teamName != null) {
-                          context.go('/$teamName/threads');
-                        }
-                      },
-                    ),
-                    ListenableBuilder(
-                      listenable: getIt<DraftStorageService>(),
-                      builder: (context, _) => _GlobalSectionLink(
-                        icon: Icons.edit_outlined,
-                        label: l10n.draftsSidebarLink,
-                        badgeCount: getIt<DraftStorageService>()
-                            .channelsWithDrafts
-                            .length,
-                        onTap: () {
-                          final teamName = _teamName(context);
-                          if (teamName != null) {
-                            context.go('/$teamName/drafts');
-                          }
-                        },
+                RawScrollbar(
+                  interactive: false,
+                  thumbVisibility: false,
+                  trackVisibility: false,
+                  scrollbarOrientation: .left,
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Column(
+                        key: _listKey,
+                        children: [
+                          _GlobalSectionLink(
+                            icon: Icons.message_outlined,
+                            label: l10n.globalThreadsSidebarLink,
+                            onTap: () {
+                              final teamName = _teamName(context);
+                              if (teamName != null) {
+                                context.go('/$teamName/threads');
+                              }
+                            },
+                          ),
+                          ListenableBuilder(
+                            listenable: getIt<DraftStorageService>(),
+                            builder: (context, _) => _GlobalSectionLink(
+                              icon: Icons.edit_outlined,
+                              label: l10n.draftsSidebarLink,
+                              badgeCount: getIt<DraftStorageService>()
+                                  .channelsWithDrafts
+                                  .length,
+                              onTap: () {
+                                final teamName = _teamName(context);
+                                if (teamName != null) {
+                                  context.go('/$teamName/drafts');
+                                }
+                              },
+                            ),
+                          ),
+                          _GlobalSectionLink(
+                            icon: Icons.bookmark_border,
+                            label: l10n.sidebar_right_menuFlagged,
+                            onTap: () {
+                              final teamName = _teamName(context);
+                              if (teamName != null) {
+                                context.go('/$teamName/saved');
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          for (final (categoryId, title, list) in sections)
+                            if (list.isNotEmpty)
+                              _buildCategory(
+                                context,
+                                categoryId: categoryId,
+                                title: title,
+                                rows: list,
+                              ),
+                          if (dmChannels.isNotEmpty)
+                            DirectMessageCategoryWidget(
+                              categoryId: dmCategoryId,
+                              dmCategory: dmCategory,
+                              channels: dmChannels,
+                              unreadCounts: widget.unreadCounts,
+                              selectedChannelId: widget.selectedChannelId,
+                              currentUserId: widget.currentUserId,
+                              mutedChannelIds: widget.mutedChannelIds,
+                              onChannelTap: (ch) => openChannelIn(context, ch),
+                              onMoveChannel: (channelId, fromId) =>
+                                  _moveChannel(
+                                    context,
+                                    channelId,
+                                    fromId,
+                                    dmCategoryId,
+                                  ),
+                            ),
+                        ],
                       ),
                     ),
-                    _GlobalSectionLink(
-                      icon: Icons.bookmark_border,
-                      label: l10n.sidebar_right_menuFlagged,
-                      onTap: () {
-                        final teamName = _teamName(context);
-                        if (teamName != null) {
-                          context.go('/$teamName/saved');
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    for (final (categoryId, title, list) in sections)
-                      if (list.isNotEmpty)
-                        _buildCategory(
-                          context,
-                          categoryId: categoryId,
-                          title: title,
-                          rows: list,
-                        ),
-                    if (dmChannels.isNotEmpty)
-                      DirectMessageCategoryWidget(
-                        categoryId: dmCategoryId,
-                        dmCategory: dmCategory,
-                        channels: dmChannels,
-                        unreadCounts: widget.unreadCounts,
-                        selectedChannelId: widget.selectedChannelId,
-                        currentUserId: widget.currentUserId,
-                        mutedChannelIds: widget.mutedChannelIds,
-                        onChannelTap: (ch) => openChannelIn(context, ch),
-                        onMoveChannel: (channelId, fromId) => _moveChannel(
-                          context,
-                          channelId,
-                          fromId,
-                          dmCategoryId,
-                        ),
-                        rowKeyBuilder: _rowKeyFor,
-                      ),
-                  ],
+                  ),
                 ),
                 Positioned(
                   left: 0,
@@ -565,21 +527,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
     final listTopLeft = listBox.localToGlobal(Offset.zero);
 
     double? target;
-    for (final entry in _rowKeys.entries) {
-      if (!(widget.unreadCounts[entry.key]?.hasUnreads ?? false)) continue;
-      final ctx = entry.value.currentContext;
-      if (ctx == null) continue;
-      final box = ctx.findRenderObject();
-      if (box is! RenderBox) continue;
-      final relTop = box.localToGlobal(Offset.zero).dy - listTopLeft.dy;
-      final isAbove = relTop + box.size.height - _topMargin < 0;
-      final isBelow = relTop + _bottomMargin > viewportHeight;
-      if (direction < 0 && isAbove) target = relTop;
-      if (direction > 0 && isBelow) {
-        target = relTop - viewportHeight / 2;
-        break;
-      }
-    }
+
     if (target != null) {
       _scrollController.animateTo(
         (position.pixels + target).clamp(0, position.maxScrollExtent),
@@ -601,6 +549,7 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
         : null;
     return SidebarCategory(
       categoryId: categoryId,
+      isCollapsed: isCollapsed.putIfAbsent(categoryId, () => false),
       title: title,
       channels: rows,
       unreadCounts: widget.unreadCounts,
@@ -610,7 +559,8 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
       userId: widget.currentUserId,
       teamId: teamId ?? '',
       mutedChannelIds: widget.mutedChannelIds,
-      rowKeyBuilder: _rowKeyFor,
+      onToggleChanged: (value) =>
+          isCollapsed.putIfAbsent(categoryId, () => value),
       onMoveChannel: (channelId, fromId) =>
           _moveChannel(context, channelId, fromId, categoryId),
     );

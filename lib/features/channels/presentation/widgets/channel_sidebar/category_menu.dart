@@ -140,7 +140,7 @@ class CategoryMenu extends StatelessWidget {
       ],
     ];
 
-    return MatterMenuScope(
+    return MatterMenu(
       items: items,
       child: Padding(
         padding: const EdgeInsets.all(4),

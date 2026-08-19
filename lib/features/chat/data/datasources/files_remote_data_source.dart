@@ -89,7 +89,6 @@ class FilesRemoteDataSourceImpl implements FilesRemoteDataSource {
       data: formData,
       cancelToken: cancelToken,
       onSendProgress: onProgress,
-      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
     );
     if (response.statusCode != 201) {
       throw Exception('Failed to upload file');
@@ -234,7 +233,6 @@ class FilesRemoteDataSourceImpl implements FilesRemoteDataSource {
     final response = await _apiClient.dio.post(
       UploadsEndPoint.byUploadId(uploadId),
       data: formData,
-      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
     );
     if (response.statusCode != 201) {
       throw Exception('Failed to upload chunk to $uploadId');

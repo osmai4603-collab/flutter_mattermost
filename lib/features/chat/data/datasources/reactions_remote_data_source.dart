@@ -45,7 +45,8 @@ class ReactionsRemoteDataSourceImpl implements ReactionsRemoteDataSource {
     if (result is ApiSuccess<ReactionModel>) {
       return result.data;
     }
-    throw Exception('Failed to add reaction to post $postId');
+    final error = (result as ApiFailure<ReactionModel>).error;
+    throw Exception('Failed to add reaction to post $postId: $error');
   }
 
   @override
@@ -70,7 +71,8 @@ class ReactionsRemoteDataSourceImpl implements ReactionsRemoteDataSource {
     if (result is ApiSuccess<List<ReactionModel>>) {
       return result.data;
     }
-    throw Exception('Failed to get reactions for post $postId');
+    final error = (result as ApiFailure<List<ReactionModel>>).error;
+    throw Exception('Failed to get reactions for post $postId: $error');
   }
 
   @override
@@ -95,6 +97,7 @@ class ReactionsRemoteDataSourceImpl implements ReactionsRemoteDataSource {
     if (result is ApiSuccess<Map<String, List<ReactionModel>>>) {
       return result.data;
     }
-    throw Exception('Failed to get reactions for multiple posts');
+    final error = (result as ApiFailure<Map<String, List<ReactionModel>>>).error;
+    throw Exception('Failed to get reactions for multiple posts: $error');
   }
 }
