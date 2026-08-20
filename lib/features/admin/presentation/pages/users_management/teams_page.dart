@@ -7,16 +7,14 @@ import 'package:flutter_mattermost/features/teams/domain/repositories/team_repos
 
 /// صفحة إدارة الفرق (Teams Management Page)
 /// تتيح للمسؤولين استعراض وإدارة جميع الفرق من خادم Mattermost باستخدام كائنات TeamEntity.
-class AdminConsoleTeamsManagementPage extends StatefulWidget {
-  const AdminConsoleTeamsManagementPage({super.key});
+class TeamsPage extends StatefulWidget {
+  const TeamsPage({super.key});
 
   @override
-  State<AdminConsoleTeamsManagementPage> createState() =>
-      _AdminConsoleTeamsManagementPageState();
+  State<TeamsPage> createState() => _TeamsPageState();
 }
 
-class _AdminConsoleTeamsManagementPageState
-    extends State<AdminConsoleTeamsManagementPage> {
+class _TeamsPageState extends State<TeamsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _filterType = 'all';
@@ -120,14 +118,20 @@ class _AdminConsoleTeamsManagementPageState
                           SizedBox(height: 4),
                           Text(
                             'View, configure, and manage all teams across your workspace.',
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
                       Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
+                            icon: const Icon(
+                              Icons.refresh_rounded,
+                              color: Colors.white70,
+                            ),
                             onPressed: _loadTeams,
                             tooltip: 'Refresh Teams List',
                           ),
@@ -167,16 +171,31 @@ class _AdminConsoleTeamsManagementPageState
                         Expanded(
                           child: TextField(
                             controller: _searchController,
-                            onChanged: (val) =>
-                                setState(() => _searchQuery = val.trim().toLowerCase()),
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            onChanged: (val) => setState(
+                              () => _searchQuery = val.trim().toLowerCase(),
+                            ),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                            ),
                             decoration: InputDecoration(
                               hintText: 'Search teams by name or handle...',
-                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                              prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 18),
+                              hintStyle: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 13,
+                              ),
+                              prefixIcon: const Icon(
+                                Icons.search,
+                                color: Colors.white38,
+                                size: 18,
+                              ),
                               suffixIcon: _searchQuery.isNotEmpty
                                   ? IconButton(
-                                      icon: const Icon(Icons.clear, color: Colors.white38, size: 16),
+                                      icon: const Icon(
+                                        Icons.clear,
+                                        color: Colors.white38,
+                                        size: 16,
+                                      ),
                                       onPressed: () {
                                         _searchController.clear();
                                         setState(() => _searchQuery = '');
@@ -186,7 +205,10 @@ class _AdminConsoleTeamsManagementPageState
                               filled: true,
                               fillColor: const Color(0xFF212433),
                               isDense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 10,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -198,12 +220,24 @@ class _AdminConsoleTeamsManagementPageState
                         DropdownButton<String>(
                           value: _filterType,
                           dropdownColor: const Color(0xFF212433),
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                          ),
                           underline: const SizedBox(),
                           items: const [
-                            DropdownMenuItem(value: 'all', child: Text('All Types')),
-                            DropdownMenuItem(value: 'public', child: Text('Public Teams')),
-                            DropdownMenuItem(value: 'private', child: Text('Private Teams')),
+                            DropdownMenuItem(
+                              value: 'all',
+                              child: Text('All Types'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'public',
+                              child: Text('Public Teams'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'private',
+                              child: Text('Private Teams'),
+                            ),
                           ],
                           onChanged: (val) {
                             if (val != null) setState(() => _filterType = val);
@@ -225,18 +259,83 @@ class _AdminConsoleTeamsManagementPageState
                       children: [
                         // Table Header Row
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
                           decoration: const BoxDecoration(
-                            border: Border(bottom: BorderSide(color: Colors.white10)),
+                            border: Border(
+                              bottom: BorderSide(color: Colors.white10),
+                            ),
                           ),
                           child: Row(
                             children: const [
-                              Expanded(flex: 3, child: Text('TEAM NAME', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('HANDLE', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('TYPE', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('MEMBERS', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
-                              Expanded(flex: 2, child: Text('CHANNELS', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
-                              SizedBox(width: 80, child: Text('ACTIONS', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold))),
+                              Expanded(
+                                flex: 3,
+                                child: Text(
+                                  'TEAM NAME',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'HANDLE',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'TYPE',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'MEMBERS',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                flex: 2,
+                                child: Text(
+                                  'CHANNELS',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 80,
+                                child: Text(
+                                  'ACTIONS',
+                                  style: TextStyle(
+                                    color: Colors.white54,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -248,7 +347,10 @@ class _AdminConsoleTeamsManagementPageState
                             child: Center(
                               child: Text(
                                 'No matching teams found.',
-                                style: TextStyle(color: Colors.white38, fontSize: 14),
+                                style: TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 14,
+                                ),
                               ),
                             ),
                           )
@@ -257,14 +359,22 @@ class _AdminConsoleTeamsManagementPageState
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: filteredTeams.length,
-                            separatorBuilder: (_, _) => const Divider(height: 1, color: Colors.white10),
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 1, color: Colors.white10),
                             itemBuilder: (context, index) {
                               final team = filteredTeams[index];
-                              final isPublic = team.type == TeamType.open || team.allowOpenInvite;
-                              final displayName = team.displayName.isNotEmpty ? team.displayName : team.name;
+                              final isPublic =
+                                  team.type == TeamType.open ||
+                                  team.allowOpenInvite;
+                              final displayName = team.displayName.isNotEmpty
+                                  ? team.displayName
+                                  : team.name;
 
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
                                 child: Row(
                                   children: [
                                     Expanded(
@@ -274,14 +384,19 @@ class _AdminConsoleTeamsManagementPageState
                                           CircleAvatar(
                                             radius: 15,
                                             backgroundColor: isPublic
-                                                ? Colors.blueAccent.withValues(alpha: 0.2)
-                                                : Colors.purpleAccent.withValues(alpha: 0.2),
+                                                ? Colors.blueAccent.withValues(
+                                                    alpha: 0.2,
+                                                  )
+                                                : Colors.purpleAccent
+                                                      .withValues(alpha: 0.2),
                                             child: Text(
                                               displayName.isNotEmpty
                                                   ? displayName[0].toUpperCase()
                                                   : 'T',
                                               style: TextStyle(
-                                                color: isPublic ? Colors.blueAccent : Colors.purpleAccent,
+                                                color: isPublic
+                                                    ? Colors.blueAccent
+                                                    : Colors.purpleAccent,
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -290,17 +405,26 @@ class _AdminConsoleTeamsManagementPageState
                                           const SizedBox(width: 12),
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   displayName,
-                                                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 13,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                                 if (team.description.isNotEmpty)
                                                   Text(
                                                     team.description,
-                                                    style: const TextStyle(color: Colors.white54, fontSize: 11),
-                                                    overflow: TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      color: Colors.white54,
+                                                      fontSize: 11,
+                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
                                                   ),
                                               ],
                                             ),
@@ -312,23 +436,37 @@ class _AdminConsoleTeamsManagementPageState
                                       flex: 2,
                                       child: Text(
                                         '@${team.name}',
-                                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                     Expanded(
                                       flex: 2,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: isPublic
-                                              ? Colors.blueAccent.withValues(alpha: 0.15)
-                                              : Colors.purpleAccent.withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(6),
+                                              ? Colors.blueAccent.withValues(
+                                                  alpha: 0.15,
+                                                )
+                                              : Colors.purpleAccent.withValues(
+                                                  alpha: 0.15,
+                                                ),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
                                         child: Text(
                                           isPublic ? 'Public' : 'Private',
                                           style: TextStyle(
-                                            color: isPublic ? Colors.blueAccent : Colors.purpleAccent,
+                                            color: isPublic
+                                                ? Colors.blueAccent
+                                                : Colors.purpleAccent,
                                             fontSize: 11,
                                             fontWeight: FontWeight.bold,
                                           ),
@@ -339,20 +477,30 @@ class _AdminConsoleTeamsManagementPageState
                                       flex: 2,
                                       child: Text(
                                         '${_teamStats[team.id]?.total_member_count ?? 0} members',
-                                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                     const Expanded(
                                       flex: 2,
                                       child: Text(
                                         'N/A',
-                                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                     SizedBox(
                                       width: 80,
                                       child: IconButton(
-                                        icon: const Icon(Icons.more_vert_rounded, color: Colors.white54, size: 18),
+                                        icon: const Icon(
+                                          Icons.more_vert_rounded,
+                                          color: Colors.white54,
+                                          size: 18,
+                                        ),
                                         onPressed: () {},
                                       ),
                                     ),
@@ -375,7 +523,10 @@ class _AdminConsoleTeamsManagementPageState
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF212433),
-        title: const Text('Create New Team', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Create New Team',
+          style: TextStyle(color: Colors.white),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
@@ -384,7 +535,9 @@ class _AdminConsoleTeamsManagementPageState
               decoration: InputDecoration(
                 labelText: 'Team Name',
                 labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white38),
+                ),
               ),
             ),
             SizedBox(height: 12),
@@ -393,7 +546,9 @@ class _AdminConsoleTeamsManagementPageState
               decoration: InputDecoration(
                 labelText: 'Team Handle / URL',
                 labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white38),
+                ),
               ),
             ),
           ],
@@ -401,7 +556,10 @@ class _AdminConsoleTeamsManagementPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: Colors.white54),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(ctx).pop(),

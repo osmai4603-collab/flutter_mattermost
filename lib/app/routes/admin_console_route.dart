@@ -1,4 +1,4 @@
-import 'package:flutter_mattermost/features/admin/presentation/pages/access_control_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/access_control_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_email_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_guest_access_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_ldap_page.dart';
@@ -7,28 +7,28 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/authenticat
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_password_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_signup_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/authentication_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/channels_management_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/compliance_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/content_flagging_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/data_retention_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/delegated_admin_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/environment_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/general_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/jobs_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/license_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/notifications_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/plugins_management_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/roles_schemes_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/authentication_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/channels_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/compliance_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/experimental/content_flagging_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/delegated_admin_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/environment_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/web_server_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/jobs_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/about/license_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/notifications_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/plugins_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/roles_schemes_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/security_settings_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/server_logs_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/server_logs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/site_overview_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/system_analytics_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/teams_management_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/users_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/system_analytics_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/teams_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/users_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_console_shell.dart';
-import 'package:flutter_mattermost/features/groups/presentation/pages/groups_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/groups_page.dart';
 import 'package:go_router/go_router.dart';
 
 sealed class AdminConsoleRoutes {
@@ -98,13 +98,11 @@ final _routes = [
   ),
   GoRoute(
     path: AdminConsoleRoutes.users,
-    pageBuilder: (context, state) =>
-        const NoTransitionPage(child: AdminConsoleUsersManagementPage()),
+    pageBuilder: (context, state) => const NoTransitionPage(child: UsersPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.teams,
-    pageBuilder: (context, state) =>
-        const NoTransitionPage(child: AdminConsoleTeamsManagementPage()),
+    pageBuilder: (context, state) => const NoTransitionPage(child: TeamsPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.channels,
@@ -119,7 +117,7 @@ final _routes = [
   GoRoute(
     path: AdminConsoleRoutes.general,
     pageBuilder: (context, state) =>
-        const NoTransitionPage(child: AdminConsoleGeneralSettingsPage()),
+        const NoTransitionPage(child: WebServerPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.webServer,
@@ -157,8 +155,7 @@ final _routes = [
   ),
   GoRoute(
     path: AdminConsoleRoutes.authEmail,
-    pageBuilder: (context, state) =>
-        const NoTransitionPage(child: AdminConsoleAuthEmailPage()),
+    pageBuilder: (context, state) => const NoTransitionPage(child: EmailPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.authPassword,

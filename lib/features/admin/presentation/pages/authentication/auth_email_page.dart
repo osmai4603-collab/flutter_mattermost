@@ -3,16 +3,14 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة مصادقة البريد الإلكتروني (Email Authentication Page)
-class AdminConsoleAuthEmailPage extends StatefulWidget {
-  const AdminConsoleAuthEmailPage({super.key});
+class EmailPage extends StatefulWidget {
+  const EmailPage({super.key});
 
   @override
-  State<AdminConsoleAuthEmailPage> createState() =>
-      _AdminConsoleAuthEmailPageState();
+  State<EmailPage> createState() => _EmailPageState();
 }
 
-class _AdminConsoleAuthEmailPageState
-    extends State<AdminConsoleAuthEmailPage> {
+class _EmailPageState extends State<EmailPage> {
   final AdminConfigRepository _repository = getIt<AdminConfigRepository>();
 
   bool _isLoading = true;
@@ -119,7 +117,10 @@ class _AdminConsoleAuthEmailPageState
                           SizedBox(height: 4),
                           Text(
                             'Configure email and username sign-in options.',
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 13,
+                            ),
                           ),
                         ],
                       ),
@@ -177,7 +178,10 @@ class _AdminConsoleAuthEmailPageState
                           ),
                           subtitle: const Text(
                             'When true, users can register new accounts using email and password.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         const Divider(color: Colors.white10, height: 24),
@@ -196,7 +200,10 @@ class _AdminConsoleAuthEmailPageState
                           ),
                           subtitle: const Text(
                             'When true, users must verify their email address before logging in.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         const Divider(color: Colors.white10, height: 24),
@@ -215,7 +222,10 @@ class _AdminConsoleAuthEmailPageState
                           ),
                           subtitle: const Text(
                             'Allow users to log in using their email address.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                         const Divider(color: Colors.white10, height: 24),
@@ -234,7 +244,10 @@ class _AdminConsoleAuthEmailPageState
                           ),
                           subtitle: const Text(
                             'Allow users to log in using their username.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],

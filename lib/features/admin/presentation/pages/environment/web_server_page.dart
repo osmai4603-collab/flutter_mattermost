@@ -4,14 +4,14 @@ import 'package:flutter_mattermost/features/admin/domain/repositories/admin_conf
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 
 /// صفحة الإعدادات العامة: Site Settings + Localization.
-class AdminConsoleGeneralSettingsPage extends StatefulWidget {
-  const AdminConsoleGeneralSettingsPage({super.key});
+class WebServerPage extends StatefulWidget {
+  const WebServerPage({super.key});
 
   @override
-  State<AdminConsoleGeneralSettingsPage> createState() => _AdminConsoleGeneralSettingsPageState();
+  State<WebServerPage> createState() => _WebServerPageState();
 }
 
-class _AdminConsoleGeneralSettingsPageState extends State<AdminConsoleGeneralSettingsPage> {
+class _WebServerPageState extends State<WebServerPage> {
   final AdminConfigRepository _repository = getIt<AdminConfigRepository>();
 
   Map<String, dynamic> _config = {};

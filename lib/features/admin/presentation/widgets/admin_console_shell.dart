@@ -6,7 +6,7 @@ import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_sid
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class AdminConsoleShell extends StatelessWidget {
+class AdminConsoleShell extends StatefulWidget {
   final GoRouterState state;
   final Widget child;
 
@@ -16,14 +16,21 @@ class AdminConsoleShell extends StatelessWidget {
     required this.child,
   });
 
+  @override
+  State<AdminConsoleShell> createState() => _AdminConsoleShellState();
+}
+
+class _AdminConsoleShellState extends State<AdminConsoleShell> {
+  final ValueNotifier<Widget> bodyNotifier = ValueNotifier(Container());
+
   AdminConsoleSection _determineSelectedSection(String path) {
     for (final section in AdminConsoleSection.values) {
-      final sectionPath = '${AdminConsoleRoutes.home}/${section.routeName}';
+      final sectionPath = '${AdminConsoleRoutes.home}/${section.name}';
       if (path == sectionPath || path.startsWith('$sectionPath/')) {
         return section;
       }
     }
-    return AdminConsoleSection.overview;
+    return AdminConsoleSection.editionAndLicense;
   }
 
   void _onBack(BuildContext context) {
@@ -40,7 +47,9 @@ class AdminConsoleShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selectedSection = _determineSelectedSection(state.matchedLocation);
+    final selectedSection = _determineSelectedSection(
+      widget.state.matchedLocation,
+    );
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     if (isMobile) {
@@ -55,7 +64,7 @@ class AdminConsoleShell extends StatelessWidget {
             onPressed: () => _onBack(context),
           ),
           title: Text(
-            selectedSection.title,
+            selectedSection.name,
             style: const TextStyle(color: Colors.white, fontSize: 16),
           ),
         ),
@@ -64,27 +73,33 @@ class AdminConsoleShell extends StatelessWidget {
           backgroundColor: const Color(0xFF161922),
           child: AdminConsoleSideBar(
             selected: selectedSection,
-            onSelected: (section) {
-              Navigator.of(context).pop();
-              context.go('${AdminConsoleRoutes.home}/${section.routeName}');
-            },
+            onBodyChange: (value) => bodyNotifier.value = value,
           ),
         ),
-        body: child,
+        body: ValueListenableBuilder<Widget>(
+          builder: (_, value, widget) {
+            return value;
+          },
+          valueListenable: bodyNotifier,
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
       body: Row(
         children: [
           AdminConsoleSideBar(
             selected: selectedSection,
-            onSelected: (section) {
-              context.go('${AdminConsoleRoutes.home}/${section.routeName}');
-            },
+            onBodyChange: (widget) => bodyNotifier.value = widget,
           ),
-          Expanded(child: child),
+          Expanded(
+            child: ValueListenableBuilder<Widget>(
+              builder: (_, value, widget) {
+                return value;
+              },
+              valueListenable: bodyNotifier,
+            ),
+          ),
         ],
       ),
     );

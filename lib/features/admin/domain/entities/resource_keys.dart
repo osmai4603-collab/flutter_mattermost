@@ -17,8 +17,6 @@ class ResourceKeys {
   // Subsections
   static const String editionAndLicense = 'about.edition_and_license';
   static const String siteStatistics = 'reporting.site_statistics';
-  static const String teamStatistics = 'reporting.team_statistics';
-  static const String serverLogs = 'reporting.server_logs';
 
   static const String users = 'user_management.users';
   static const String groups = 'user_management.groups';
@@ -38,7 +36,8 @@ class ResourceKeys {
   static const String rateLimiting = 'environment.rate_limiting';
   static const String logging = 'environment.logging';
   static const String sessionLengths = 'environment.session_lengths';
-  static const String performanceMonitoring = 'environment.performance_monitoring';
+  static const String performanceMonitoring =
+      'environment.performance_monitoring';
   static const String developer = 'environment.developer';
 
   static const String customization = 'site.customization';
@@ -61,7 +60,8 @@ class ResourceKeys {
   static const String guestAccess = 'authentication.guest_access';
 
   static const String pluginManagement = 'plugins.plugin_management';
-  static const String integrationManagement = 'integrations.integration_management';
+  static const String integrationManagement =
+      'integrations.integration_management';
   static const String botAccounts = 'integrations.bot_accounts';
   static const String gif = 'integrations.gif';
   static const String cors = 'integrations.cors';
@@ -69,7 +69,13 @@ class ResourceKeys {
   static const String dataRetentionPolicy = 'compliance.data_retention_policy';
   static const String complianceExport = 'compliance.compliance_export';
   static const String complianceMonitoring = 'compliance.compliance_monitoring';
-  static const String customTermsOfService = 'compliance.custom_terms_of_service';
+  static const String customTermsOfService =
+      'compliance.custom_terms_of_service';
 
   static const String experimentalFeatures = 'experimental.features';
+
+  static const workSpaceOptimization = '$reporting.workspace-optimization';
+  static const systemStatistics = '$reporting.system-statistics';
+  static const teamStatistics = '$reporting.team-statistics';
+  static const serverLogs = '$reporting.server_logs';
 }

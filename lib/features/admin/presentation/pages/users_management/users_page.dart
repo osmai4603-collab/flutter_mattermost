@@ -6,16 +6,14 @@ import 'package:flutter_mattermost/features/users/data/datasources/users_remote_
 
 /// صفحة إدارة المستخدمين المتقدمة (System Users Management Page)
 /// مستنبطة بالكامل من تصميم ووظائف مشروع Mattermost WebApp (system_users.tsx).
-class AdminConsoleUsersManagementPage extends StatefulWidget {
-  const AdminConsoleUsersManagementPage({super.key});
+class UsersPage extends StatefulWidget {
+  const UsersPage({super.key});
 
   @override
-  State<AdminConsoleUsersManagementPage> createState() =>
-      _AdminConsoleUsersManagementPageState();
+  State<UsersPage> createState() => _UsersPageState();
 }
 
-class _AdminConsoleUsersManagementPageState
-    extends State<AdminConsoleUsersManagementPage> {
+class _UsersPageState extends State<UsersPage> {
   final UsersRemoteDataSource _dataSource = getIt<UsersRemoteDataSource>();
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounceTimer;
