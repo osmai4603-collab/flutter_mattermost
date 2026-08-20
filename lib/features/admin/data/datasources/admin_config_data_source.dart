@@ -20,7 +20,7 @@ abstract class AdminConfigDataSource {
   Future<ClientConfigModel> getClientConfig();
   Future<Map<String, dynamic>> getEnvironmentConfig();
   Future<void> reloadConfig();
-  Future<AnalyticsEntity> getAnalytics();
+  Future<AnalyticsEntity> getAnalytics({String? teamId});
   Future<List<String>> getPlainLogs({int page = 0, int perPage = 100});
   Future<List<LogEntryModel>> getLogs({
     int page = 0,
@@ -69,6 +69,7 @@ abstract class AdminConfigDataSource {
   Future<void> postLog(Map<String, dynamic> log);
   Future<void> setAIBridgeTestHelper(Map<String, dynamic> data);
   Future<void> updateMarketplaceVisitedByAdmin();
+  Future<List<Map<String, dynamic>>> getDataRetentionPoliciesCount();
 }
 
 @LazySingleton(as: AdminConfigDataSource)
@@ -152,14 +153,13 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
   }
 
   @override
-  Future<AnalyticsEntity> getAnalytics() async {
+  Future<AnalyticsEntity> getAnalytics({String? teamId}) async {
     final result = await _apiClient.get<List<AnalyticsItemModel>>(
       AnalyticsEndPoint.old,
-      fromJson: (list) => (list as List<dynamic>? ?? [])
-          .map(
-            (data) => AnalyticsItemModel.fromMap(data as Map<String, dynamic>),
-          )
+      fromJson: (json) => (json as List<dynamic>)
+          .map((data) => AnalyticsItemModel.fromMap(data))
           .toList(),
+      queryParameters: teamId != null ? {'team_id': teamId} : null,
     );
     if (result is ApiSuccess<List<AnalyticsItemModel>>) {
       return AnalyticsEntity(items: result.data);
@@ -623,5 +623,17 @@ class AdminConfigDataSourceImpl implements AdminConfigDataSource {
       PluginsEndPoint.marketplaceVisited,
       fromJson: (_) {},
     );
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getDataRetentionPoliciesCount() async {
+    final result = await _apiClient.get<Map<String, dynamic>>(
+      DataRetentionEndPoint.policiesCount,
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+    if (result is ApiSuccess<Map<String, dynamic>>) {
+      return [result.data];
+    }
+    throw Exception('Failed to get data retention policies count');
   }
 }

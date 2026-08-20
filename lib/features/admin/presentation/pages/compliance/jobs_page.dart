@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/enums/job_status.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/admin/data/models/job_model.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/job_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_jobs_repository.dart';
@@ -50,6 +52,7 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
   }
 
   Future<void> _runType(String type) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.createJob(
         jobType: type,
@@ -65,13 +68,14 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _cancelJob(JobEntity job) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.cancelJob(job.id);
       if (!mounted) return;
@@ -81,13 +85,14 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _removeJob(JobEntity job) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.removeJob(job.id);
       if (!mounted) return;
@@ -97,79 +102,67 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
-  Color _statusColor(JobStatus status) {
+  Color _statusColor(JobStatus status, MattermostColors colors) {
     return switch (status) {
-      JobStatus.success => Colors.lightGreenAccent,
-      JobStatus.inProgress => Colors.blueAccent,
-      JobStatus.pending => Colors.orangeAccent,
-      JobStatus.canceled || JobStatus.cancelRequested => Colors.redAccent,
-      JobStatus.error => Colors.redAccent,
-      _ => Colors.white54,
+      JobStatus.success => colors.onlineIndicator,
+      JobStatus.inProgress => colors.buttonBg,
+      JobStatus.pending => colors.awayIndicator,
+      JobStatus.canceled || JobStatus.cancelRequested => colors.errorTextColor,
+      JobStatus.error => colors.errorTextColor,
+      _ => colors.centerChannelColor.withValues(alpha: 0.54),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        Expanded(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-              : _error != null
-              ? Center(
-                  child: Text(
-                    'Could not load jobs: $_error',
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 13,
-                    ),
-                  ),
-                )
-              : _buildContent(context),
-        ),
-      ],
-    );
-  }
+    final colors = AppTheme.of(context);
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.schedule_outlined,
-            color: Colors.blueAccent,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            'Jobs',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Jobs',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-          const Spacer(),
-          IconButton(
-            tooltip: 'Refresh',
-            onPressed: _loading ? null : _load,
-            icon: const Icon(Icons.refresh, color: Colors.white54),
+        ),
+      ),
+      body: Column(
+        spacing: 24,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.buttonBg),
+                  )
+                : _error != null
+                ? Center(
+                    child: Text(
+                      'Could not load jobs: $_error',
+                      style: TextStyle(
+                        color: colors.errorTextColor,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                : _buildContent(context),
           ),
         ],
       ),
@@ -177,15 +170,20 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_types.isNotEmpty) ...[
-            const Text(
+            Text(
               'Run a job type:',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+                fontSize: 12,
+              ),
             ),
             const SizedBox(height: 8),
             Wrap(
@@ -195,9 +193,11 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                   ActionChip(
                     label: Text(type, style: const TextStyle(fontSize: 12)),
                     onPressed: () => _runType(type),
-                    backgroundColor: const Color(0xFF181825),
-                    side: const BorderSide(color: Colors.white12),
-                    labelStyle: const TextStyle(color: Colors.blueAccent),
+                    backgroundColor: colors.mentionHighlightBg,
+                    side: BorderSide(
+                      color: colors.centerChannelColor.withValues(alpha: 0.12),
+                    ),
+                    labelStyle: TextStyle(color: colors.buttonBg),
                   ),
               ],
             ),
@@ -205,16 +205,22 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
           ],
           Expanded(
             child: _jobs.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No jobs recorded',
-                      style: TextStyle(color: Colors.white38),
+                      style: TextStyle(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.38,
+                        ),
+                      ),
                     ),
                   )
                 : ListView.separated(
                     itemCount: _jobs.length,
-                    separatorBuilder: (_, _) =>
-                        const Divider(color: Colors.white10, height: 1),
+                    separatorBuilder: (_, _) => Divider(
+                      color: colors.centerChannelColor.withValues(alpha: 0.10),
+                      height: 1,
+                    ),
                     itemBuilder: (context, index) {
                       final job = _jobs[index];
                       return Padding(
@@ -225,8 +231,8 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                               width: 130,
                               child: Text(
                                 job.type.value,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: colors.centerChannelColor,
                                   fontSize: 13,
                                 ),
                               ),
@@ -236,7 +242,7 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                               child: Text(
                                 job.status.value,
                                 style: TextStyle(
-                                  color: _statusColor(job.status),
+                                  color: _statusColor(job.status, colors),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -249,8 +255,10 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                                     : (job.data.toString()),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white54,
+                                style: TextStyle(
+                                  color: colors.centerChannelColor.withValues(
+                                    alpha: 0.54,
+                                  ),
                                   fontSize: 12,
                                 ),
                               ),
@@ -258,8 +266,10 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                             Text(
                               job.createAtDate?.toString().split('.').first ??
                                   '—',
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: colors.centerChannelColor.withValues(
+                                  alpha: 0.38,
+                                ),
                                 fontSize: 11,
                               ),
                             ),
@@ -269,18 +279,20 @@ class _AdminConsoleJobsPageState extends State<AdminConsoleJobsPage> {
                               IconButton(
                                 tooltip: 'Cancel',
                                 onPressed: () => _cancelJob(job),
-                                icon: const Icon(
+                                icon: Icon(
                                   Icons.stop_circle_outlined,
-                                  color: Colors.orangeAccent,
+                                  color: colors.awayIndicator,
                                   size: 18,
                                 ),
                               ),
                             IconButton(
                               tooltip: 'Delete Job',
                               onPressed: () => _removeJob(job),
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.delete_outline,
-                                color: Colors.white38,
+                                color: colors.centerChannelColor.withValues(
+                                  alpha: 0.38,
+                                ),
                                 size: 18,
                               ),
                             ),

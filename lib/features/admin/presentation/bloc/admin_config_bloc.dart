@@ -12,7 +12,13 @@ abstract class AdminConfigEvent extends Equatable {
 }
 
 /// تحميل إحصاءات السيرفر لصفحة "نظرة عامة".
-class LoadAdminOverviewEvent extends AdminConfigEvent {}
+class LoadAdminOverviewEvent extends AdminConfigEvent {
+  final String? teamId;
+  const LoadAdminOverviewEvent({this.teamId});
+
+  @override
+  List<Object?> get props => [teamId];
+}
 
 /// إعادة تحميل إعدادات السيرفر.
 class ReloadAdminConfigEvent extends AdminConfigEvent {}
@@ -104,7 +110,7 @@ class AdminConfigBloc extends Bloc<AdminConfigEvent, AdminConfigState> {
   ) async {
     emit(AdminConfigLoading());
     try {
-      final analytics = await _repository.getAnalytics();
+      final analytics = await _repository.getAnalytics(teamId: event.teamId);
       emit(AdminConfigLoaded(analytics));
     } catch (e) {
       emit(AdminConfigError(e.toString()));

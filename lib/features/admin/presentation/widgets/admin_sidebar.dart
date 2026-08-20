@@ -14,15 +14,61 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/authenticat
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_password_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/data_retention_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/compliance_export_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/compliance_monitoring_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/audit_logging_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/custom_terms_of_service_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/experimental/experimental_features_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/experimental/feature_flags_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/integrations/integration_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/integrations/bot_accounts_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/integrations/gif_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/integrations/cors_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/integrations/embedding_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/plugins_management_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/agents_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/calls_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/playbooks_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/notifications_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/server_logs_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/workspace_optimization_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/system_statistics_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/team_statistics_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/users_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/groups_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/teams_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/channels_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/roles_schemes_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/permissions_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/delegated_admin_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/system_attributes/user_attributes_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/system_attributes/attribute_based_access_control_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/customization_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/localization_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/users_and_teams_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/classification_markings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/system_wide_notifications_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/emoji_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/posts_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/recap_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/data_spillage_handling_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/file_sharing_and_downloads_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/public_links_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/site_configuration/notices_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/web_server_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/database_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/elasticsearch_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/file_storage_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/image_proxy_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/smtp_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/push_notification_server_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/high_availability_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/cache_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/rate_limiting_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/logging_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/session_lengths_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/performance_monitoring_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/developer_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/environment/mobile_security_page.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/auth/presentation/pages/signup_page.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -197,13 +243,13 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Features',
         section: .features,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => ExperimentalFeaturesPage(),
       ),
       groupChild(
         title: 'Feature Flags',
         section: .featureFlags,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => FeatureFlagsPage(),
       ),
     ];
   }
@@ -220,25 +266,25 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Compliance Export',
         section: .complianceExport,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleComplianceExportPage(),
       ),
       groupChild(
         title: 'Compliance Monitoring',
         section: .complicanceMonitoring,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleComplianceMonitoringPage(),
       ),
       groupChild(
         title: 'Audit Logging',
         section: .auditLogging,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuditLoggingPage(),
       ),
       groupChild(
         title: 'Custom Terms of Service',
         section: .customTermsOfService,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleCustomTermsOfServicePage(),
       ),
     ];
   }
@@ -249,31 +295,31 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Integration Management',
         section: .integrationManagement,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => IntegrationManagementPage(),
       ),
       groupChild(
         title: 'Bot Accounts',
         section: .botAccounts,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => BotAccountsPage(),
       ),
       groupChild(
         title: 'GIF',
         section: .gif,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => GifSettingsPage(),
       ),
       groupChild(
         title: 'CORS',
         section: .cors,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => CorsSettingsPage(),
       ),
       groupChild(
         title: 'Embedding',
         section: .embedding,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => EmbeddingSettingsPage(),
       ),
     ];
   }
@@ -290,19 +336,19 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Agents',
         section: .agents,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AgentsSettingsPage(),
       ),
       groupChild(
         title: 'Calls',
         section: .calls,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => CallsSettingsPage(),
       ),
       groupChild(
         title: 'Playbooks',
         section: .playbooks,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => PlaybooksSettingsPage(),
       ),
     ];
   }
@@ -363,22 +409,22 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
   List<Widget> siteConfigurationGroupList(MattermostColors colors) {
     return [
       groupChild(
-        title: 'Custimization',
+        title: 'Customization',
         section: .customization,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => CustomizationPage(),
       ),
       groupChild(
-        title: 'Localizaion',
+        title: 'Localization',
         section: .localization,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => LocalizationPage(),
       ),
       groupChild(
         title: 'Users and Teams',
         section: .usersAndTeams,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => UsersAndTeamsPage(),
       ),
       groupChild(
         title: 'Notifications',
@@ -390,55 +436,55 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Classification Markings',
         section: .classificationMarkings,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => ClassificationMarkingsPage(),
       ),
       groupChild(
         title: 'System-wide Notifications',
         section: .systemWideNotifications,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => SystemWideNotificationsPage(),
       ),
       groupChild(
         title: 'Emoji',
         section: .emoji,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => EmojiPage(),
       ),
       groupChild(
         title: 'Posts',
         section: .posts,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => PostsPage(),
       ),
       groupChild(
         title: 'Recap',
         section: .recap,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => RecapPage(),
       ),
       groupChild(
         title: 'Data Spillage Handling',
         section: .dataSpillageHandling,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => DataSpillageHandlingPage(),
       ),
       groupChild(
-        title: 'File Sharing and Downlods',
+        title: 'File Sharing and Downloads',
         section: .fileSharingAndDownloads,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => FileSharingAndDownloadsPage(),
       ),
       groupChild(
         title: 'Public Links',
         section: .publicLinks,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => PublicLinksPage(),
       ),
       groupChild(
         title: 'Notices',
         section: .notices,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => NoticesPage(),
       ),
     ];
   }
@@ -449,91 +495,91 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Web Server',
         section: .webServer,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => WebServerPage(),
       ),
       groupChild(
         title: 'Database',
         section: .database,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => DatabasePage(),
       ),
       groupChild(
         title: 'Elasticsearch',
         section: .elasticsearch,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => ElasticsearchPage(),
       ),
       groupChild(
         title: 'File Storage',
         section: .fileStorage,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => FileStoragePage(),
       ),
       groupChild(
         title: 'Image Proxy',
         section: .imageProxy,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => ImageProxyPage(),
       ),
       groupChild(
         title: 'SMTP',
         section: .smtp,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => SmtpPage(),
       ),
       groupChild(
         title: 'Push Notification Server',
         section: .pushNotificationsServer,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => PushNotificationServerPage(),
       ),
       groupChild(
-        title: 'High Avaibility',
+        title: 'High Availability',
         section: .highAvailability,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => HighAvailabilityPage(),
       ),
       groupChild(
         title: 'Cache Settings',
         section: .cacheSettings,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => CacheSettingsPage(),
       ),
       groupChild(
         title: 'Rate Limiting',
         section: .rateLimiting,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => RateLimitingPage(),
       ),
       groupChild(
         title: 'Logging',
         section: .logging,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => LoggingPage(),
       ),
       groupChild(
-        title: 'Sessino Lengths',
+        title: 'Session Lengths',
         section: .sessionLengths,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => SessionLengthsPage(),
       ),
       groupChild(
         title: 'Performance Monitoring',
         section: .performanceMonitoring,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => PerformanceMonitoringPage(),
       ),
       groupChild(
         title: 'Developer',
         section: .developer,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => DeveloperPage(),
       ),
       groupChild(
         title: 'Mobile Security',
-        section: .developer,
+        section: .mobileSecurity,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => MobileSecurityPage(),
       ),
     ];
   }
@@ -544,11 +590,23 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'User Attributes',
         section: .userAttributes,
         colors: colors,
+        onTap: () => UserAttributesPage(),
+      ),
+      groupChild(
+        title: 'Attribute-Based Access',
+        section: .attributeBasedAccessControl,
+        colors: colors,
+        onTap: () => AttributeBasedAccessControlPage(),
+      ),
+      groupChild(
+        title: 'Membership Policies',
+        section: .membershipPolicies,
+        colors: colors,
         onTap: () => Container(),
       ),
       groupChild(
-        title: 'Attribute-Base Access',
-        section: .systemStatistics,
+        title: 'Permission Policies',
+        section: .permissionPolicies,
         colors: colors,
         onTap: () => Container(),
       ),
@@ -572,19 +630,19 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'WorkSpace Optimization',
         section: .workSpaceOptimization,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => WorkspaceOptimizationPage(),
       ),
       groupChild(
         title: 'System Statistics',
         section: .systemStatistics,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => SystemStatisticsPage(),
       ),
       groupChild(
         title: 'Team Statistics',
         section: .teamStatistics,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => TeamStatisticsPage(),
       ),
       groupChild(
         title: 'Server Logs',
@@ -625,7 +683,7 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Permissions',
         section: .permissions,
         colors: colors,
-        onTap: () => AdminConsoleRolesSchemesPage(),
+        onTap: () => AdminConsolePermissionsPage(),
       ),
       groupChild(
         title: 'Delegated Granular Administration',

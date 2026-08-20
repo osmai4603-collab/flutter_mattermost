@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/access_control_policy_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_access_control_repository.dart';
 
@@ -8,10 +9,12 @@ class AdminConsoleAccessControlPage extends StatefulWidget {
   const AdminConsoleAccessControlPage({super.key});
 
   @override
-  State<AdminConsoleAccessControlPage> createState() => _AdminConsoleAccessControlPageState();
+  State<AdminConsoleAccessControlPage> createState() =>
+      _AdminConsoleAccessControlPageState();
 }
 
-class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessControlPage> {
+class _AdminConsoleAccessControlPageState
+    extends State<AdminConsoleAccessControlPage> {
   final AdminAccessControlRepository _repository =
       getIt<AdminAccessControlRepository>();
 
@@ -42,42 +45,51 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
   }
 
   Future<void> _createPolicy() async {
+    final colors = AppTheme.of(context);
     final nameController = TextEditingController();
     final exprController = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text(
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text(
           'New Access Control Policy',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Policy name',
-                labelStyle: TextStyle(color: Colors.white54),
+                labelStyle: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(
+                    color: colors.centerChannelColor.withValues(alpha: 0.24),
+                  ),
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colors.centerChannelColor),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: exprController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'CEL expression',
-                labelStyle: TextStyle(color: Colors.white54),
+                labelStyle: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(
+                    color: colors.centerChannelColor.withValues(alpha: 0.24),
+                  ),
                 ),
               ),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.centerChannelColor,
                 fontFamily: 'monospace',
               ),
             ),
@@ -86,14 +98,16 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Create'),
           ),
         ],
@@ -115,13 +129,14 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _activatePolicy(AccessControlPolicyEntity policy) async {
+    final colors = AppTheme.of(context);
     try {
       final result = await _repository.activatePolicy({'name': policy.name});
       if (!mounted) return;
@@ -134,13 +149,14 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _deletePolicy(AccessControlPolicyEntity policy) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.deletePolicy(policy.id!);
       if (!mounted) return;
@@ -150,41 +166,54 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _runCelCheck() async {
+    final colors = AppTheme.of(context);
     final exprController = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text('CEL Check', style: TextStyle(color: Colors.white)),
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text(
+          'CEL Check',
+          style: TextStyle(color: colors.centerChannelColor),
+        ),
         content: TextField(
           controller: exprController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'CEL expression',
-            labelStyle: TextStyle(color: Colors.white54),
+            labelStyle: TextStyle(
+              color: colors.centerChannelColor.withValues(alpha: 0.54),
+            ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+              borderSide: BorderSide(
+                color: colors.centerChannelColor.withValues(alpha: 0.24),
+              ),
             ),
           ),
-          style: const TextStyle(color: Colors.white, fontFamily: 'monospace'),
+          style: TextStyle(
+            color: colors.centerChannelColor,
+            fontFamily: 'monospace',
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Run'),
           ),
         ],
@@ -204,7 +233,7 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -212,57 +241,51 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        Expanded(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-              : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      'Could not load access control policies: $_error',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 13,
+    final colors = AppTheme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Access Control',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        spacing: 24,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.buttonBg),
+                  )
+                : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'Could not load access control policies: $_error',
+                        style: TextStyle(
+                          color: colors.errorTextColor,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : _buildContent(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: const Row(
-        children: [
-          Icon(
-            Icons.admin_panel_settings_outlined,
-            color: Colors.blueAccent,
-            size: 20,
-          ),
-          SizedBox(width: 10),
-          Text(
-            'Access Control',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+                  )
+                : _buildContent(context),
           ),
         ],
       ),
@@ -270,6 +293,8 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -279,9 +304,7 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
             children: [
               FilledButton.icon(
                 onPressed: _createPolicy,
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                ),
+                style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
                 icon: const Icon(Icons.add_outlined, size: 16),
                 label: const Text('New Policy'),
               ),
@@ -289,8 +312,8 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
               OutlinedButton.icon(
                 onPressed: _runCelCheck,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueAccent,
-                  side: const BorderSide(color: Colors.blueAccent),
+                  foregroundColor: colors.buttonBg,
+                  side: BorderSide(color: colors.buttonBg),
                 ),
                 icon: const Icon(Icons.code_outlined, size: 16),
                 label: const Text('CEL Check'),
@@ -299,26 +322,31 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh, color: Colors.white54),
+                icon: Icon(
+                  Icons.refresh,
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             'Policies',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           if (_policies.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
               child: Text(
                 'No access control policies yet',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.38),
+                ),
               ),
             )
           else
@@ -330,9 +358,11 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181825),
+                  color: colors.mentionHighlightBg,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(
+                    color: colors.centerChannelColor.withValues(alpha: 0.12),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -341,8 +371,8 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
                           ? Icons.shield_outlined
                           : Icons.shield_outlined,
                       color: policy.is_active == true
-                          ? Colors.lightGreenAccent
-                          : Colors.orangeAccent,
+                          ? colors.onlineIndicator
+                          : colors.awayIndicator,
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -352,8 +382,8 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
                         children: [
                           Text(
                             policy.display_name ?? '-',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                             ),
                           ),
@@ -361,8 +391,10 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
                             policy.expression != null
                                 ? policy.expression!
                                 : 'Active: ${policy.is_active == true ? 'Active' : 'Inactive'}',
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.38,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -373,18 +405,20 @@ class _AdminConsoleAccessControlPageState extends State<AdminConsoleAccessContro
                       IconButton(
                         tooltip: 'Activate',
                         onPressed: () => _activatePolicy(policy),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.power_settings_new,
-                          color: Colors.lightGreenAccent,
+                          color: colors.onlineIndicator,
                           size: 18,
                         ),
                       ),
                     IconButton(
                       tooltip: 'Delete',
                       onPressed: () => _deletePolicy(policy),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.white38,
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.38,
+                        ),
                         size: 18,
                       ),
                     ),

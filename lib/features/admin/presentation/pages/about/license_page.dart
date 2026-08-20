@@ -2,6 +2,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/license_info_entity.dart';
 import 'package:flutter_mattermost/features/admin/presentation/bloc/admin_license_bloc.dart';
 
@@ -26,6 +28,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return BlocProvider(
       create: (_) => getIt<AdminLicenseBloc>()..add(LoadLicenseEvent()),
       child: BlocConsumer<AdminLicenseBloc, AdminLicenseState>(
@@ -34,21 +38,21 @@ class AdminConsoleLicensePage extends StatelessWidget {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.redAccent,
+                backgroundColor: colors.errorTextColor,
               ),
             );
           } else if (state is AdminLicenseActionSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
-                backgroundColor: Colors.green.shade700,
+                backgroundColor: colors.onlineIndicator,
               ),
             );
           } else if (state is AdminLicenseLoaded) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('License loaded'),
-                backgroundColor: Colors.green,
+              SnackBar(
+                content: const Text('License loaded'),
+                backgroundColor: colors.onlineIndicator,
               ),
             );
           }
@@ -60,8 +64,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
               _buildHeader(context),
               Expanded(
                 child: switch (state) {
-                  AdminLicenseLoading() => const Center(
-                    child: CircularProgressIndicator(color: Colors.blueAccent),
+                  AdminLicenseLoading() => Center(
+                    child: CircularProgressIndicator(color: colors.buttonBg),
                   ),
                   AdminLicenseLoaded() => _buildLicense(context, state.license),
                   AdminLicenseError() && final error => _buildEmpty(
@@ -79,25 +83,27 @@ class AdminConsoleLicensePage extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12))),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Icon(
             Icons.workspace_premium_outlined,
-            color: Colors.blueAccent,
+            color: colors.buttonBg,
             size: 20,
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Text(
             'License',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -108,6 +114,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
   }
 
   Widget _buildLicense(BuildContext context, LicenseInfoEntity license) {
+    final colors = AppTheme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -118,10 +126,10 @@ class AdminConsoleLicensePage extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
               gradient: license.licensed
-                  ? const LinearGradient(
-                      colors: [Color(0xFF1E3A5F), Color(0xFF181825)],
+                  ? LinearGradient(
+                      colors: [colors.buttonBg.withValues(alpha: 0.3), colors.mentionHighlightBg],
                     )
                   : null,
             ),
@@ -135,8 +143,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
                           ? Icons.verified_outlined
                           : Icons.lock_open_outlined,
                       color: license.licensed
-                          ? Colors.lightGreenAccent
-                          : Colors.white38,
+                          ? colors.onlineIndicator
+                          : colors.centerChannelColor.withValues(alpha: 0.38),
                       size: 28,
                     ),
                     const SizedBox(width: 8),
@@ -144,8 +152,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
                       license.licensed
                           ? 'Enterprise License (E10/E20)'
                           : 'No License',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.centerChannelColor,
                         fontSize: 17,
                         fontWeight: FontWeight.bold,
                       ),
@@ -153,21 +161,22 @@ class AdminConsoleLicensePage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                _infoRow('License ID', license.id),
-                _infoRow('Name', license.name),
-                _infoRow('Company', license.company),
+                _infoRow('License ID', license.id, colors),
+                _infoRow('Name', license.name, colors),
+                _infoRow('Company', license.company, colors),
                 _infoRow(
                   'Sku',
                   [
                     license.skuShortName,
                     license.skuEdition,
                   ].where((e) => e.isNotEmpty).join(' - '),
+                  colors,
                 ),
-                _infoRow('Users', license.users.toString()),
-                _infoRow('Issued At', _dateString(license.issuedAt)),
-                _infoRow('Starts At', _dateString(license.startsAt)),
-                _infoRow('Expires At', _dateString(license.expiresAt)),
-                _infoRow('Trial', license.trial ? 'Yes' : 'No'),
+                _infoRow('Users', license.users.toString(), colors),
+                _infoRow('Issued At', _dateString(license.issuedAt), colors),
+                _infoRow('Starts At', _dateString(license.startsAt), colors),
+                _infoRow('Expires At', _dateString(license.expiresAt), colors),
+                _infoRow('Trial', license.trial ? 'Yes' : 'No', colors),
               ],
             ),
           ),
@@ -177,7 +186,7 @@ class AdminConsoleLicensePage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () => _pickAndUpload(context),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: colors.buttonBg,
                 ),
                 icon: const Icon(Icons.upload_file_outlined, size: 16),
                 label: const Text('Upload License File'),
@@ -189,8 +198,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
                     RemoveLicenseEvent(),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
+                    foregroundColor: colors.errorTextColor,
+                    side: BorderSide(color: colors.errorTextColor),
                   ),
                   icon: const Icon(Icons.delete_outline, size: 16),
                   label: const Text('Remove License'),
@@ -201,8 +210,8 @@ class AdminConsoleLicensePage extends StatelessWidget {
                   UpgradeToEnterpriseEvent(),
                 ),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.amberAccent,
-                  side: const BorderSide(color: Colors.amberAccent),
+                  foregroundColor: colors.awayIndicator,
+                  side: BorderSide(color: colors.awayIndicator),
                 ),
                 icon: const Icon(Icons.upgrade_outlined, size: 16),
                 label: const Text('Upgrade to Enterprise'),
@@ -215,15 +224,17 @@ class AdminConsoleLicensePage extends StatelessWidget {
   }
 
   Widget _buildEmpty(BuildContext context, [String? error]) {
+    final colors = AppTheme.of(context);
+
     return Center(
       child: Text(
         error ?? 'No license information available.',
-        style: const TextStyle(color: Colors.white54),
+        style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
       ),
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(String label, String value, MattermostColors colors) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -232,14 +243,14 @@ class AdminConsoleLicensePage extends StatelessWidget {
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.white54, fontSize: 13),
+              style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54), fontSize: 13),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.centerChannelColor,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),

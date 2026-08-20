@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/admin_setting_schema.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 
@@ -20,6 +22,7 @@ class AdminWidgetFactory extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     Widget child;
 
     switch (schema.type) {
@@ -28,7 +31,7 @@ class AdminWidgetFactory extends StatelessWidget {
         child = Switch(
           value: boolVal,
           onChanged: isDisabled ? null : (v) => onChanged(schema.key, v),
-          activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+          activeTrackColor: colors.buttonBg.withValues(alpha: 0.5),
         );
         break;
 
@@ -37,9 +40,9 @@ class AdminWidgetFactory extends StatelessWidget {
         child = TextFormField(
           initialValue: textVal,
           enabled: !isDisabled,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
           onChanged: (v) => onChanged(schema.key, v),
-          decoration: _inputDecoration(schema.placeholder),
+          decoration: _inputDecoration(schema.placeholder, colors),
         );
         break;
 
@@ -52,9 +55,9 @@ class AdminWidgetFactory extends StatelessWidget {
             initialValue: numVal,
             enabled: !isDisabled,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
             onChanged: (v) => onChanged(schema.key, int.tryParse(v) ?? v),
-            decoration: _inputDecoration(schema.placeholder ?? 'E.g.: 10'),
+            decoration: _inputDecoration(schema.placeholder ?? 'E.g.: 10', colors),
           ),
         );
         break;
@@ -65,16 +68,16 @@ class AdminWidgetFactory extends StatelessWidget {
         child = Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF181825),
+            color: colors.mentionHighlightBg,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
           ),
           child: DropdownButton<String>(
             value: options.any((o) => o.value == selectedVal) ? selectedVal : (options.isNotEmpty ? options.first.value : null),
-            dropdownColor: const Color(0xFF181825),
+            dropdownColor: colors.mentionHighlightBg,
             underline: const SizedBox(),
             isExpanded: true,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
             onChanged: isDisabled ? null : (v) {
               if (v != null) onChanged(schema.key, v);
             },
@@ -98,7 +101,7 @@ class AdminWidgetFactory extends StatelessWidget {
               decoration: BoxDecoration(
                 color: _parseHexColor(colorHex),
                 borderRadius: BorderRadius.circular(4),
-                border: Border.all(color: Colors.white24),
+                border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.24)),
               ),
             ),
             const SizedBox(width: 10),
@@ -106,9 +109,9 @@ class AdminWidgetFactory extends StatelessWidget {
               child: TextFormField(
                 initialValue: colorHex,
                 enabled: !isDisabled,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
+                style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
                 onChanged: (v) => onChanged(schema.key, v),
-                decoration: _inputDecoration('#FFFFFF'),
+                decoration: _inputDecoration('#FFFFFF', colors),
               ),
             ),
           ],
@@ -121,18 +124,18 @@ class AdminWidgetFactory extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blueAccent.withValues(alpha: 0.1),
+            color: colors.linkColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+            border: Border.all(color: colors.linkColor.withValues(alpha: 0.3)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.info_outline, color: Colors.blueAccent, size: 18),
+              Icon(Icons.info_outline, color: colors.linkColor, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   schema.label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.70), fontSize: 12),
                 ),
               ),
             ],
@@ -144,9 +147,9 @@ class AdminWidgetFactory extends StatelessWidget {
         child = TextFormField(
           initialValue: val,
           enabled: !isDisabled,
-          style: const TextStyle(color: Colors.white, fontSize: 13),
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
           onChanged: (v) => onChanged(schema.key, v),
-          decoration: _inputDecoration(schema.placeholder),
+          decoration: _inputDecoration(schema.placeholder, colors),
         );
     }
 
@@ -157,19 +160,19 @@ class AdminWidgetFactory extends StatelessWidget {
     );
   }
 
-  InputDecoration _inputDecoration(String? placeholder) {
+  InputDecoration _inputDecoration(String? placeholder, MattermostColors colors) {
     return InputDecoration(
       hintText: placeholder,
-      hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+      hintStyle: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.38), fontSize: 12),
       filled: true,
-      fillColor: const Color(0xFF181825),
+      fillColor: colors.mentionHighlightBg,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white12),
+        borderSide: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Colors.white12),
+        borderSide: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12)),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
     );

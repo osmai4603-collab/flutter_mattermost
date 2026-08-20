@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/data/models/data_retention_policy_with_team_and_channel_counts_model.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_data_retention_repository.dart';
 
@@ -8,10 +9,12 @@ class AdminConsoleDataRetentionPage extends StatefulWidget {
   const AdminConsoleDataRetentionPage({super.key});
 
   @override
-  State<AdminConsoleDataRetentionPage> createState() => _AdminConsoleDataRetentionPageState();
+  State<AdminConsoleDataRetentionPage> createState() =>
+      _AdminConsoleDataRetentionPageState();
 }
 
-class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentionPage> {
+class _AdminConsoleDataRetentionPageState
+    extends State<AdminConsoleDataRetentionPage> {
   final AdminDataRetentionRepository _repository =
       getIt<AdminDataRetentionRepository>();
 
@@ -39,7 +42,8 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
       if (!mounted) return;
       setState(() {
         _policies =
-            results[0] as List<DataRetentionPolicyWithTeamAndChannelCountsModel>;
+            results[0]
+                as List<DataRetentionPolicyWithTeamAndChannelCountsModel>;
         _global = results[1] as Map<String, dynamic>?;
       });
     } catch (e) {
@@ -50,58 +54,71 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
   }
 
   Future<void> _createPolicy() async {
+    final colors = AppTheme.of(context);
     final nameController = TextEditingController();
     final daysController = TextEditingController(text: '90');
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text(
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text(
           'New Retention Policy',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Policy name',
                 hintText: 'e.g. Legal hold 90 days',
-                labelStyle: TextStyle(color: Colors.white54),
-                hintStyle: TextStyle(color: Colors.white24),
+                labelStyle: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
+                hintStyle: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.24),
+                ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(
+                    color: colors.centerChannelColor.withValues(alpha: 0.24),
+                  ),
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colors.centerChannelColor),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: daysController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Message retention days',
-                labelStyle: TextStyle(color: Colors.white54),
+                labelStyle: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(
+                    color: colors.centerChannelColor.withValues(alpha: 0.24),
+                  ),
                 ),
               ),
-              style: const TextStyle(color: Colors.white),
+              style: TextStyle(color: colors.centerChannelColor),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Create'),
           ),
         ],
@@ -124,7 +141,7 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -133,6 +150,7 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
   Future<void> _deletePolicy(
     DataRetentionPolicyWithTeamAndChannelCountsModel policy,
   ) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.deletePolicy(policy.id ?? '');
       if (!mounted) return;
@@ -142,47 +160,54 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _updateGlobalPolicy() async {
+    final colors = AppTheme.of(context);
     final daysController = TextEditingController(
       text: (_global?['message_retention_days'] ?? 365).toString(),
     );
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text(
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text(
           'Global Retention Policy',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         content: TextField(
           controller: daysController,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Message retention days',
-            labelStyle: TextStyle(color: Colors.white54),
+            labelStyle: TextStyle(
+              color: colors.centerChannelColor.withValues(alpha: 0.54),
+            ),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+              borderSide: BorderSide(
+                color: colors.centerChannelColor.withValues(alpha: 0.24),
+              ),
             ),
           ),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Save'),
           ),
         ],
@@ -205,7 +230,7 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -213,53 +238,51 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        Expanded(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-              : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Text(
-                      'Could not load retention data: $_error',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 13,
+    final colors = AppTheme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Data Retention',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: Column(
+        spacing: 24,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.buttonBg),
+                  )
+                : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text(
+                        'Could not load retention data: $_error',
+                        style: TextStyle(
+                          color: colors.errorTextColor,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : _buildContent(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.history_outlined, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
-          Text(
-            'Data Retention',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
+                  )
+                : _buildContent(context),
           ),
         ],
       ),
@@ -267,6 +290,7 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
     final globalDays = _global?['message_retention_days'];
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -277,9 +301,7 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
             children: [
               FilledButton.icon(
                 onPressed: _createPolicy,
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                ),
+                style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
                 icon: const Icon(Icons.add_outlined, size: 16),
                 label: const Text('New Policy'),
               ),
@@ -287,15 +309,18 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh, color: Colors.white54),
+                icon: Icon(
+                  Icons.refresh,
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
           Text(
             'Global Retention Policy',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -304,28 +329,30 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFF181825),
+              color: colors.mentionHighlightBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(
+                color: colors.centerChannelColor.withValues(alpha: 0.12),
+              ),
             ),
             child: Row(
               children: [
-                const Icon(Icons.public, color: Colors.blueAccent, size: 18),
+                Icon(Icons.public, color: colors.buttonBg, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     globalDays == null
                         ? 'Applies to all teams and channels by default'
                         : 'Messages retained for $globalDays days, then permanently deleted',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(
+                      color: colors.centerChannelColor.withValues(alpha: 0.70),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 TextButton(
                   onPressed: _updateGlobalPolicy,
-                  child: const Text(
-                    'Edit',
-                    style: TextStyle(color: Colors.blueAccent),
-                  ),
+                  child: Text('Edit', style: TextStyle(color: colors.buttonBg)),
                 ),
               ],
             ),
@@ -333,19 +360,21 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
           const SizedBox(height: 20),
           Text(
             'Policies',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           if (_policies.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
               child: Text(
                 'No retention policies yet',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.38),
+                ),
               ),
             )
           else
@@ -357,15 +386,17 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181825),
+                  color: colors.mentionHighlightBg,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(
+                    color: colors.centerChannelColor.withValues(alpha: 0.12),
+                  ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.schedule_outlined,
-                      color: Colors.orangeAccent,
+                      color: colors.awayIndicator,
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -375,15 +406,17 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
                         children: [
                           Text(
                             policy.display_name ?? policy.id ?? '—',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                             ),
                           ),
                           Text(
                             'Message retention: ${policy.post_duration ?? '—'} days',
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.38,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -393,9 +426,11 @@ class _AdminConsoleDataRetentionPageState extends State<AdminConsoleDataRetentio
                     IconButton(
                       tooltip: 'Delete',
                       onPressed: () => _deletePolicy(policy),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.white38,
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.38,
+                        ),
                         size: 18,
                       ),
                     ),

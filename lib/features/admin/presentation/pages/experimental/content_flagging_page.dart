@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/data/models/custom_attribute_field_model.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_content_flagging_repository.dart';
 
@@ -49,34 +50,35 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
   }
 
   Future<void> _checkPost() async {
+    final colors = AppTheme.of(context);
     final postController = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text('Review Post', style: TextStyle(color: Colors.white)),
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text('Review Post', style: TextStyle(color: colors.centerChannelColor)),
         content: TextField(
           controller: postController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Post ID',
-            labelStyle: TextStyle(color: Colors.white54),
+            labelStyle: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+              borderSide: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.24)),
             ),
           ),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Review'),
           ),
         ],
@@ -90,21 +92,21 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF181825),
-          title: const Text('Post', style: TextStyle(color: Colors.white)),
+          backgroundColor: colors.mentionHighlightBg,
+          title: Text('Post', style: TextStyle(color: colors.centerChannelColor)),
           content: Text(
             'Message: ${post['message'] ?? '—'}\n'
             'User: ${post['user_id'] ?? '—'}\n'
             'Channel: ${post['channel_id'] ?? '—'}\n'
             'Created: ${post['create_at'] ?? '—'}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.70), fontSize: 13),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'Close',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
               ),
             ),
           ],
@@ -115,7 +117,7 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -123,14 +125,16 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
+              ? Center(
+                  child: CircularProgressIndicator(color: colors.buttonBg),
                 )
               : _error != null
               ? Center(
@@ -138,8 +142,8 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
                     padding: const EdgeInsets.all(20),
                     child: Text(
                       'Could not load flagging data: $_error',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
+                      style: TextStyle(
+                        color: colors.errorTextColor,
                         fontSize: 13,
                       ),
                     ),
@@ -152,21 +156,23 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12))),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.flag_outlined, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
+          Icon(Icons.flag_outlined, color: colors.buttonBg, size: 20),
+          const SizedBox(width: 10),
           Text(
             'Content Flagging',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -177,6 +183,7 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
     final enabled = _config?['enabled'];
     final teamReviewersEnabled = _config?['team_reviewers_enabled'];
     return SingleChildScrollView(
@@ -189,7 +196,7 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
               FilledButton.icon(
                 onPressed: _checkPost,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: colors.buttonBg,
                 ),
                 icon: const Icon(Icons.search_outlined, size: 16),
                 label: const Text('Review Post'),
@@ -198,7 +205,7 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh, color: Colors.white54),
+                icon: Icon(Icons.refresh, color: colors.centerChannelColor.withValues(alpha: 0.54)),
               ),
             ],
           ),
@@ -214,19 +221,19 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
           const SizedBox(height: 20),
           Text(
             'Custom Fields',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           if (_fields.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
               child: Text(
                 'No custom fields configured',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.38)),
               ),
             )
           else
@@ -238,31 +245,31 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181825),
+                  color: colors.mentionHighlightBg,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.label_outline,
-                      color: Colors.lightGreenAccent,
+                      color: colors.onlineIndicator,
                       size: 18,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         field.name ?? field.id ?? '—',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.centerChannelColor,
                           fontSize: 13,
                         ),
                       ),
                     ),
                     Text(
                       field.type ?? '',
-                      style: const TextStyle(
-                        color: Colors.white38,
+                      style: TextStyle(
+                        color: colors.centerChannelColor.withValues(alpha: 0.38),
                         fontSize: 11,
                       ),
                     ),
@@ -275,20 +282,22 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
   }
 
   Widget _buildInfoCard(String title, List<(String, String)> rows) {
+    final colors = AppTheme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF181825),
+        color: colors.mentionHighlightBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -303,15 +312,15 @@ class _AdminConsoleContentFlaggingPageState extends State<AdminConsoleContentFla
                     width: 160,
                     child: Text(
                       label,
-                      style: const TextStyle(
-                        color: Colors.white38,
+                      style: TextStyle(
+                        color: colors.centerChannelColor.withValues(alpha: 0.38),
                         fontSize: 12,
                       ),
                     ),
                   ),
                   Text(
                     value,
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.70), fontSize: 12),
                   ),
                 ],
               ),

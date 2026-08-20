@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 
 /// بطاقة قسم إعدادات: عنوان + وصف + محتوى اختياري.
 class AdminSettingSection extends StatelessWidget {
@@ -15,21 +16,22 @@ class AdminSettingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2E),
+        color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -38,7 +40,7 @@ class AdminSettingSection extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle!,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54), fontSize: 12),
             ),
           ],
           const SizedBox(height: 12),
@@ -64,6 +66,7 @@ class AdminSettingField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -75,13 +78,13 @@ class AdminSettingField extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
                 ),
                 if (description != null) ...[
                   const SizedBox(height: 2),
                   Text(
                     description!,
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54), fontSize: 11),
                   ),
                 ],
               ],

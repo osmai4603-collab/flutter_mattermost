@@ -284,7 +284,6 @@ class _EmojiPickerOverlayState extends State<EmojiPickerOverlay>
           padding: const WidgetStatePropertyAll(EdgeInsets.zero),
         ),
         children: [
-          const Spacer(),
           ..._categories.map((cat) {
             final index = _categories.indexOf(cat);
             final isSelected = _tabController.index == index;

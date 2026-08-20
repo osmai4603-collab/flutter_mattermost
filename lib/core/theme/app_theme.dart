@@ -162,6 +162,36 @@ sealed class AppTheme {
       ),
       dividerColor: changeOpacity(theme.centerChannelColor, 0.2),
       extensions: [MattermostColors.fromTheme(theme)],
+      inputDecorationTheme: _decorationThemeData(
+        textTheme: textTheme,
+        colors: colorScheme,
+      ),
+    );
+  }
+
+  static InputDecorationThemeData _decorationThemeData({
+    required TextTheme textTheme,
+    required ColorScheme colors,
+  }) {
+    return InputDecorationThemeData(
+      border: OutlineInputBorder(
+        borderRadius: .circular(4),
+        borderSide: BorderSide(color: colors.outline, width: 0.40),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: .circular(4),
+        borderSide: BorderSide(color: colors.outline, width: 0.40),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: .circular(4),
+        borderSide: BorderSide(color: colors.primary, width: 1.40),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: .circular(4),
+        borderSide: BorderSide(color: colors.primary, width: 1.40),
+      ),
+      isDense: true,
+      contentPadding: .symmetric(horizontal: 8, vertical: 8),
     );
   }
 }

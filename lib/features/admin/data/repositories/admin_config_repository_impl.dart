@@ -22,8 +22,8 @@ class AdminConfigRepositoryImpl implements AdminConfigRepository {
       _dataSource.patchConfig(patch);
 
   @override
-  Future<AnalyticsEntity> getAnalytics() async {
-    final analytics = await _dataSource.getAnalytics();
+  Future<AnalyticsEntity> getAnalytics({String? teamId}) async {
+    final analytics = await _dataSource.getAnalytics(teamId: teamId);
     return analytics;
   }
 
@@ -63,4 +63,17 @@ class AdminConfigRepositoryImpl implements AdminConfigRepository {
   @override
   Future<void> downloadLogs(String savePath) =>
       _dataSource.downloadLogs(savePath);
+
+  @override
+  Future<String> getLatestVersion() => _dataSource.getLatestVersion();
+
+  @override
+  Future<Map<String, dynamic>> ping() => _dataSource.ping();
+
+  @override
+  Future<void> testElasticsearch() => _dataSource.testElasticsearch();
+
+  @override
+  Future<List<Map<String, dynamic>>> getDataRetentionPoliciesCount() =>
+      _dataSource.getDataRetentionPoliciesCount();
 }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة النظرة العامة للوحة التحكم (Site Overview Page)
@@ -45,7 +47,8 @@ class _AdminConsoleSiteOverviewPageState
           _totalChannelsCount = analytics.totalChannels;
           _totalPostsCount = analytics.totalPosts;
 
-          final buildInfo = (config['BuildInfo'] as Map<String, dynamic>?) ?? {};
+          final buildInfo =
+              (config['BuildInfo'] as Map<String, dynamic>?) ?? {};
           _serverVersion = buildInfo['Version'] as String? ?? 'Unknown';
 
           final sqlSettings =
@@ -68,12 +71,11 @@ class _AdminConsoleSiteOverviewPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: colors.centerChannelBg,
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -85,20 +87,22 @@ class _AdminConsoleSiteOverviewPageState
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
+                        children: [
                           Text(
                             'Site Overview',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'System metrics, server health status, and quick administrative shortcuts.',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
                               fontSize: 13,
                             ),
                           ),
@@ -109,15 +113,21 @@ class _AdminConsoleSiteOverviewPageState
                         icon: const Icon(Icons.refresh_rounded, size: 16),
                         label: const Text('Refresh Stats'),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2B2D3C),
-                          foregroundColor: Colors.white,
+                          backgroundColor: colors.centerChannelBg.withValues(
+                            alpha: 0.50,
+                          ),
+                          foregroundColor: colors.buttonColor,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(color: Colors.white12),
+                            side: BorderSide(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -126,14 +136,14 @@ class _AdminConsoleSiteOverviewPageState
                   const SizedBox(height: 24),
 
                   // 2. Server Status Health Banner
-                  _buildHealthBanner(),
+                  _buildHealthBanner(colors),
                   const SizedBox(height: 24),
 
                   // 3. Metric Cards Grid
-                  const Text(
+                  Text(
                     'Key Performance Indicators',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.centerChannelColor,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -146,9 +156,12 @@ class _AdminConsoleSiteOverviewPageState
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 3, child: _buildQuickActionsCard()),
+                      Expanded(flex: 3, child: _buildQuickActionsCard(colors)),
                       const SizedBox(width: 20),
-                      Expanded(flex: 2, child: _buildSystemChecklistCard()),
+                      Expanded(
+                        flex: 2,
+                        child: _buildSystemChecklistCard(colors),
+                      ),
                     ],
                   ),
                 ],
@@ -158,33 +171,30 @@ class _AdminConsoleSiteOverviewPageState
   }
 
   /// بنر حالة صحة الخادم
-  Widget _buildHealthBanner() {
+  Widget _buildHealthBanner(MattermostColors colors) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.blueAccent.withValues(alpha: 0.15),
-            const Color(0xFF161922),
-          ],
+          colors: [colors.buttonBg.withValues(alpha: 0.15), colors.sidebarBg],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3)),
+        border: Border.all(color: colors.buttonBg.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.greenAccent.withValues(alpha: 0.15),
+              color: colors.onlineIndicator.withValues(alpha: 0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle_rounded,
-              color: Colors.greenAccent,
+              color: colors.onlineIndicator,
               size: 28,
             ),
           ),
@@ -193,10 +203,10 @@ class _AdminConsoleSiteOverviewPageState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'System Status: All Services Operational',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.centerChannelColor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -204,7 +214,10 @@ class _AdminConsoleSiteOverviewPageState
                 const SizedBox(height: 4),
                 Text(
                   'Mattermost Server v$_serverVersion • Database $_databaseType • License: $_licenseEdition',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.70),
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -212,16 +225,16 @@ class _AdminConsoleSiteOverviewPageState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.purpleAccent.withValues(alpha: 0.2),
+              color: colors.mentionBg.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: Colors.purpleAccent.withValues(alpha: 0.4),
+                color: colors.mentionBg.withValues(alpha: 0.4),
               ),
             ),
             child: Text(
               _licenseEdition,
-              style: const TextStyle(
-                color: Colors.purpleAccent,
+              style: TextStyle(
+                color: colors.mentionBg,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
               ),
@@ -239,8 +252,10 @@ class _AdminConsoleSiteOverviewPageState
         final crossAxisCount = constraints.maxWidth > 900
             ? 4
             : constraints.maxWidth > 600
-                ? 2
-                : 1;
+            ? 2
+            : 1;
+
+        final colors = AppTheme.of(context);
 
         return GridView.count(
           shrinkWrap: true,
@@ -255,28 +270,28 @@ class _AdminConsoleSiteOverviewPageState
               value: '$_totalUsersCount',
               subtitle: 'Live repository data',
               icon: Icons.people_alt_rounded,
-              accentColor: Colors.blueAccent,
+              accentColor: colors.buttonBg,
             ),
             _MetricCard(
               title: 'Total Teams',
               value: '$_totalTeamsCount',
               subtitle: 'Active server teams',
               icon: Icons.groups_rounded,
-              accentColor: Colors.purpleAccent,
+              accentColor: colors.mentionBg,
             ),
             _MetricCard(
               title: 'Total Channels',
               value: '$_totalChannelsCount',
               subtitle: 'Public & Private channels',
               icon: Icons.forum_rounded,
-              accentColor: Colors.orangeAccent,
+              accentColor: colors.awayIndicator,
             ),
             _MetricCard(
               title: 'Posts & Messages',
               value: _formatLargeNumber(_totalPostsCount),
               subtitle: 'Total system message count',
               icon: Icons.chat_bubble_rounded,
-              accentColor: Colors.greenAccent,
+              accentColor: colors.onlineIndicator,
             ),
           ],
         );
@@ -294,21 +309,23 @@ class _AdminConsoleSiteOverviewPageState
   }
 
   /// كرت الإجراءات السريعة
-  Widget _buildQuickActionsCard() {
+  Widget _buildQuickActionsCard(MattermostColors colors) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF161922),
+        color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Quick Administrative Actions',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -350,26 +367,28 @@ class _AdminConsoleSiteOverviewPageState
   }
 
   /// كرت قائمة التحقق من سلامة الخادم
-  Widget _buildSystemChecklistCard() {
+  Widget _buildSystemChecklistCard(MattermostColors colors) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF161922),
+        color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
             'System Health Checklist',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _ChecklistItem(
             title: 'Database Connections',
             status: 'Optimal (12 active pool slots)',
@@ -413,12 +432,15 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF161922),
+        color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,15 +451,18 @@ class _MetricCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.70),
+                  fontSize: 12,
+                ),
               ),
               Icon(icon, color: accentColor, size: 20),
             ],
           ),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 22,
               fontWeight: FontWeight.bold,
             ),
@@ -471,6 +496,7 @@ class _ActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return SizedBox(
       width: 220,
       child: InkWell(
@@ -479,13 +505,15 @@ class _ActionTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF212433),
+            color: colors.centerChannelBg.withValues(alpha: 0.60),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.white10),
+            border: Border.all(
+              color: colors.centerChannelColor.withValues(alpha: 0.10),
+            ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: Colors.blueAccent, size: 22),
+              Icon(icon, color: colors.buttonBg, size: 22),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -493,8 +521,8 @@ class _ActionTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.centerChannelColor,
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
                       ),
@@ -502,8 +530,10 @@ class _ActionTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       description,
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.54,
+                        ),
                         fontSize: 10,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -532,13 +562,16 @@ class _ChecklistItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
           Icon(
-            isOk ? Icons.check_circle_outline_rounded : Icons.warning_amber_rounded,
-            color: isOk ? Colors.greenAccent : Colors.orangeAccent,
+            isOk
+                ? Icons.check_circle_outline_rounded
+                : Icons.warning_amber_rounded,
+            color: isOk ? colors.onlineIndicator : colors.awayIndicator,
             size: 18,
           ),
           const SizedBox(width: 10),
@@ -548,15 +581,18 @@ class _ChecklistItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: colors.centerChannelColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   status,
-                  style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+                  style: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.54),
+                    fontSize: 10.5,
+                  ),
                 ),
               ],
             ),

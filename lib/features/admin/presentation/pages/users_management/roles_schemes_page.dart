@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/role_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/scheme_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_roles_schemes_repository.dart';
@@ -52,13 +53,14 @@ class _AdminConsoleRolesSchemesPageState
   }
 
   Future<void> _deleteScheme(SchemeEntity scheme) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.deleteScheme(scheme.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Scheme "${scheme.name}" deleted.'),
-          backgroundColor: Colors.green.shade700,
+          backgroundColor: colors.onlineIndicator,
         ),
       );
       _load();
@@ -67,7 +69,7 @@ class _AdminConsoleRolesSchemesPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed: $e'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -78,6 +80,7 @@ class _AdminConsoleRolesSchemesPageState
     String displayName,
     String description,
   ) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.createScheme(
         name: name,
@@ -87,9 +90,9 @@ class _AdminConsoleRolesSchemesPageState
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Scheme created successfully.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Scheme created successfully.'),
+          backgroundColor: colors.onlineIndicator,
         ),
       );
       _load();
@@ -98,7 +101,7 @@ class _AdminConsoleRolesSchemesPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed: $e'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -127,27 +130,44 @@ class _AdminConsoleRolesSchemesPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Roles Schemes',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : _error != null
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.error_outline,
-                    color: Colors.redAccent,
+                    color: colors.errorTextColor,
                     size: 48,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     'Error: $_error',
-                    style: const TextStyle(
-                      color: Colors.redAccent,
+                    style: TextStyle(
+                      color: colors.errorTextColor,
                       fontSize: 13,
                     ),
                   ),
@@ -157,7 +177,7 @@ class _AdminConsoleRolesSchemesPageState
                     icon: const Icon(Icons.refresh, size: 16),
                     label: const Text('Retry'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: colors.buttonBg,
                     ),
                   ),
                 ],
@@ -167,9 +187,8 @@ class _AdminConsoleRolesSchemesPageState
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
                 children: [
-                  _buildHeader(),
-                  const SizedBox(height: 24),
                   _buildSystemSchemePanel(),
                   const SizedBox(height: 20),
                   _buildTeamOverrideSchemesPanel(),
@@ -179,58 +198,30 @@ class _AdminConsoleRolesSchemesPageState
     );
   }
 
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'Permissions',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Manage system scheme and team override schemes for granular permissions.',
-              style: TextStyle(color: Colors.white54, fontSize: 13),
-            ),
-          ],
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh_rounded, color: Colors.white70),
-          onPressed: _load,
-          tooltip: 'Refresh',
-        ),
-      ],
-    );
-  }
-
   Widget _buildSystemSchemePanel() {
+    final colors = AppTheme.of(context);
     return InkWell(
       onTap: _navigateToSystemScheme,
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF161922),
+          color: colors.centerChannelBg,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white10),
+          border: Border.all(
+            color: colors.centerChannelColor.withValues(alpha: 0.10),
+          ),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blueAccent.withValues(alpha: 0.15),
+                color: colors.buttonBg.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.shield_rounded,
-                color: Colors.blueAccent,
+                color: colors.buttonBg,
                 size: 28,
               ),
             ),
@@ -239,10 +230,10 @@ class _AdminConsoleRolesSchemesPageState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'System Scheme',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.centerChannelColor,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -250,14 +241,17 @@ class _AdminConsoleRolesSchemesPageState
                   const SizedBox(height: 4),
                   Text(
                     'The system scheme applies to all teams unless overridden. Configure permissions for Guests, Members, Channel Admins, Team Admins, and System Admins.',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(
+                      color: colors.centerChannelColor.withValues(alpha: 0.54),
+                      fontSize: 12,
+                    ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: Colors.white38,
+              color: colors.centerChannelColor.withValues(alpha: 0.38),
               size: 24,
             ),
           ],
@@ -267,30 +261,37 @@ class _AdminConsoleRolesSchemesPageState
   }
 
   Widget _buildTeamOverrideSchemesPanel() {
+    final colors = AppTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Team Override Schemes',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.centerChannelColor,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               '${_schemes.length} schemes',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+                fontSize: 12,
+              ),
             ),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
+        Text(
           'Team override schemes allow you to customize permissions for specific teams.',
-          style: TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.54),
+            fontSize: 12,
+          ),
         ),
         const SizedBox(height: 12),
         if (_schemes.isEmpty)
@@ -298,14 +299,19 @@ class _AdminConsoleRolesSchemesPageState
             width: double.infinity,
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: const Color(0xFF161922),
+              color: colors.centerChannelBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(
+                color: colors.centerChannelColor.withValues(alpha: 0.10),
+              ),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
                 'No team override schemes defined.',
-                style: TextStyle(color: Colors.white38, fontSize: 13),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.38),
+                  fontSize: 13,
+                ),
               ),
             ),
           )
@@ -315,9 +321,11 @@ class _AdminConsoleRolesSchemesPageState
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF161922),
+                color: colors.centerChannelBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
+                border: Border.all(
+                  color: colors.centerChannelColor.withValues(alpha: 0.10),
+                ),
               ),
               child: InkWell(
                 onTap: () => _navigateToSchemeDetail(scheme),
@@ -326,12 +334,12 @@ class _AdminConsoleRolesSchemesPageState
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.purpleAccent.withValues(alpha: 0.15),
+                        color: colors.mentionBg.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.account_tree_outlined,
-                        color: Colors.purpleAccent,
+                        color: colors.mentionBg,
                         size: 20,
                       ),
                     ),
@@ -342,16 +350,18 @@ class _AdminConsoleRolesSchemesPageState
                         children: [
                           Text(
                             scheme.name.isNotEmpty ? scheme.name : '—',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
                             'Scope: ${scheme.scope}',
-                            style: const TextStyle(
-                              color: Colors.white54,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -361,15 +371,17 @@ class _AdminConsoleRolesSchemesPageState
                     IconButton(
                       tooltip: 'Delete Scheme',
                       onPressed: () => _showDeleteConfirm(scheme),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.delete_outline,
-                        color: Colors.white38,
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.38,
+                        ),
                         size: 18,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right_rounded,
-                      color: Colors.white38,
+                      color: colors.centerChannelColor.withValues(alpha: 0.38),
                       size: 20,
                     ),
                   ],
@@ -382,13 +394,13 @@ class _AdminConsoleRolesSchemesPageState
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _showCreateSchemeDialog,
-            icon: const Icon(Icons.add, size: 16, color: Colors.blueAccent),
-            label: const Text(
+            icon: Icon(Icons.add, size: 16, color: colors.buttonBg),
+            label: Text(
               'New Team Override Scheme',
-              style: TextStyle(color: Colors.blueAccent, fontSize: 12),
+              style: TextStyle(color: colors.buttonBg, fontSize: 12),
             ),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Colors.blueAccent),
+              side: BorderSide(color: colors.buttonBg),
             ),
           ),
         ),
@@ -397,24 +409,30 @@ class _AdminConsoleRolesSchemesPageState
   }
 
   void _showDeleteConfirm(SchemeEntity scheme) {
+    final colors = AppTheme.of(context);
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF212433),
+        backgroundColor: colors.centerChannelBg.withValues(alpha: 0.60),
         title: Text(
           'Delete "${scheme.name}"?',
-          style: const TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 16),
         ),
-        content: const Text(
+        content: Text(
           'This action cannot be undone. Teams using this scheme will revert to the system scheme.',
-          style: TextStyle(color: Colors.white70, fontSize: 13),
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.70),
+            fontSize: 13,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           ElevatedButton(
@@ -422,7 +440,9 @@ class _AdminConsoleRolesSchemesPageState
               Navigator.of(ctx).pop();
               _deleteScheme(scheme);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colors.errorTextColor,
+            ),
             child: const Text('Delete'),
           ),
         ],
@@ -431,6 +451,7 @@ class _AdminConsoleRolesSchemesPageState
   }
 
   void _showCreateSchemeDialog() {
+    final colors = AppTheme.of(context);
     final nameCtrl = TextEditingController();
     final displayNameCtrl = TextEditingController();
     final descCtrl = TextEditingController();
@@ -438,10 +459,10 @@ class _AdminConsoleRolesSchemesPageState
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF212433),
-        title: const Text(
+        backgroundColor: colors.centerChannelBg.withValues(alpha: 0.60),
+        title: Text(
           'Create Team Override Scheme',
-          style: TextStyle(color: Colors.white, fontSize: 16),
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 16),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -449,36 +470,48 @@ class _AdminConsoleRolesSchemesPageState
             children: [
               TextField(
                 controller: displayNameCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                style: TextStyle(color: colors.centerChannelColor),
+                decoration: InputDecoration(
                   labelText: 'Display Name',
-                  labelStyle: TextStyle(color: Colors.white70),
+                  labelStyle: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.70),
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white38),
+                    borderSide: BorderSide(
+                      color: colors.centerChannelColor.withValues(alpha: 0.38),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: nameCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                style: TextStyle(color: colors.centerChannelColor),
+                decoration: InputDecoration(
                   labelText: 'Name (URL-safe)',
-                  labelStyle: TextStyle(color: Colors.white70),
+                  labelStyle: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.70),
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white38),
+                    borderSide: BorderSide(
+                      color: colors.centerChannelColor.withValues(alpha: 0.38),
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: descCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
+                style: TextStyle(color: colors.centerChannelColor),
+                decoration: InputDecoration(
                   labelText: 'Description',
-                  labelStyle: TextStyle(color: Colors.white70),
+                  labelStyle: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.70),
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white38),
+                    borderSide: BorderSide(
+                      color: colors.centerChannelColor.withValues(alpha: 0.38),
+                    ),
                   ),
                 ),
               ),
@@ -488,9 +521,11 @@ class _AdminConsoleRolesSchemesPageState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+              ),
             ),
           ),
           ElevatedButton(
@@ -499,9 +534,9 @@ class _AdminConsoleRolesSchemesPageState
               final displayName = displayNameCtrl.text.trim();
               if (name.isEmpty || displayName.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Name and Display Name are required.'),
-                    backgroundColor: Colors.redAccent,
+                  SnackBar(
+                    content: const Text('Name and Display Name are required.'),
+                    backgroundColor: colors.errorTextColor,
                   ),
                 );
                 return;
@@ -509,7 +544,7 @@ class _AdminConsoleRolesSchemesPageState
               Navigator.of(ctx).pop();
               _createScheme(name, displayName, descCtrl.text.trim());
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: ElevatedButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Create'),
           ),
         ],
@@ -545,10 +580,11 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
       if (mounted) setState(() => _roles = roles);
     } catch (e) {
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to load roles: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: colors.errorTextColor,
           ),
         );
       }
@@ -559,6 +595,7 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final guests = _roles.where((r) => r.name == 'system_guest').toList();
     final allUsers = _roles
         .where(
@@ -575,11 +612,9 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
     final sysAdmins = _roles.where((r) => r.name == 'system_admin').toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: colors.centerChannelBg,
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -587,16 +622,16 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.shield_rounded,
-                        color: Colors.blueAccent,
+                        color: colors.buttonBg,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'System Scheme',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: colors.centerChannelColor,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -604,9 +639,12 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'The system scheme applies to all teams unless a team override scheme is used.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(
+                      color: colors.centerChannelColor.withValues(alpha: 0.54),
+                      fontSize: 13,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   if (guests.isNotEmpty)
@@ -649,6 +687,7 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
     String subtitle,
     RoleEntity role,
   ) {
+    final colors = AppTheme.of(context);
     final permissions = role.permissions;
     final groupedPermissions = _groupPermissions(permissions);
 
@@ -658,7 +697,10 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
       children: [
         Text(
           '${role.name} — ${permissions.length} permissions',
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.54),
+            fontSize: 11,
+          ),
         ),
         const SizedBox(height: 12),
         ...groupedPermissions.entries.map(
@@ -666,7 +708,7 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF181825),
+              color: colors.mentionHighlightBg,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -674,8 +716,8 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
               children: [
                 Text(
                   entry.key,
-                  style: const TextStyle(
-                    color: Colors.blueAccent,
+                  style: TextStyle(
+                    color: colors.buttonBg,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -692,13 +734,17 @@ class _SystemSchemePageState extends State<_SystemSchemePage> {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
+                            color: colors.centerChannelColor.withValues(
+                              alpha: 0.08,
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
                             perm,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.70,
+                              ),
                               fontSize: 10,
                             ),
                           ),
@@ -774,6 +820,7 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
   }
 
   Future<void> _save() async {
+    final colors = AppTheme.of(context);
     try {
       await widget.repository.patchScheme(
         widget.scheme.id,
@@ -783,9 +830,9 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
       if (!mounted) return;
       setState(() => _hasChanges = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Scheme saved.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Scheme saved.'),
+          backgroundColor: colors.onlineIndicator,
         ),
       );
     } catch (e) {
@@ -793,7 +840,7 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Failed: $e'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -801,8 +848,9 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: colors.centerChannelBg,
       body: Stack(
         children: [
           SingleChildScrollView(
@@ -812,16 +860,16 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
               children: [
                 Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Icons.account_tree_outlined,
-                      color: Colors.purpleAccent,
+                      color: colors.mentionBg,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       widget.scheme.name,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: colors.centerChannelColor,
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -831,7 +879,10 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
                 const SizedBox(height: 8),
                 Text(
                   'Scope: ${widget.scheme.scope}',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(
+                    color: colors.centerChannelColor.withValues(alpha: 0.54),
+                    fontSize: 12,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 AdminSettingSection(
@@ -842,21 +893,29 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
                       label: 'Name',
                       child: TextField(
                         controller: _nameCtrl,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.centerChannelColor,
                           fontSize: 13,
                         ),
                         onChanged: (_) => setState(() => _hasChanges = true),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: const Color(0xFF181825),
+                          fillColor: colors.mentionHighlightBg,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -869,22 +928,30 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
                       label: 'Description',
                       child: TextField(
                         controller: _descCtrl,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: colors.centerChannelColor,
                           fontSize: 13,
                         ),
                         maxLines: 2,
                         onChanged: (_) => setState(() => _hasChanges = true),
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: const Color(0xFF181825),
+                          fillColor: colors.mentionHighlightBg,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Colors.white12),
+                            borderSide: BorderSide(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
                           ),
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12,
@@ -899,12 +966,17 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
                 AdminSettingSection(
                   title: 'Assigned Teams',
                   subtitle: 'Teams using this override scheme',
-                  children: const [
+                  children: [
                     Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text(
                         'No teams currently assigned to this scheme.',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
+                        style: TextStyle(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.38,
+                          ),
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ],
@@ -918,9 +990,13 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
               alignment: Alignment.bottomCenter,
               child: Container(
                 padding: const EdgeInsets.all(16),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF161922),
-                  border: Border(top: BorderSide(color: Colors.white10)),
+                decoration: BoxDecoration(
+                  color: colors.centerChannelBg,
+                  border: Border(
+                    top: BorderSide(
+                      color: colors.centerChannelColor.withValues(alpha: 0.10),
+                    ),
+                  ),
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -933,16 +1009,20 @@ class _SchemeDetailPageState extends State<_SchemeDetailPage> {
                           _hasChanges = false;
                         });
                       },
-                      child: const Text(
+                      child: Text(
                         'Cancel',
-                        style: TextStyle(color: Colors.white54),
+                        style: TextStyle(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.54,
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: _save,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: colors.buttonBg,
                       ),
                       child: const Text('Save'),
                     ),

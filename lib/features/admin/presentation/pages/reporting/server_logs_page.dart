@@ -70,6 +70,7 @@ class _AdminConsoleServerLogsPageState
   }
 
   Future<void> _downloadLogs() async {
+    final colors = AppTheme.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Downloading server logs...'),
@@ -80,9 +81,9 @@ class _AdminConsoleServerLogsPageState
       await _repository.downloadLogs('server_logs.log');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Logs download completed!'),
-          backgroundColor: Colors.green,
+          backgroundColor: colors.onlineIndicator,
         ),
       );
     } catch (e) {
@@ -90,7 +91,7 @@ class _AdminConsoleServerLogsPageState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Download failed: $e'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -128,22 +129,24 @@ class _AdminConsoleServerLogsPageState
   }
 
   Color _levelColor(String? level) {
+    final colors = AppTheme.of(context);
     switch ((level ?? '').toLowerCase()) {
       case 'error':
-        return Colors.redAccent;
+        return colors.errorTextColor;
       case 'warn':
       case 'warning':
-        return Colors.amber;
+        return colors.awayIndicator;
       case 'info':
         return Colors.lightBlueAccent;
       case 'debug':
-        return Colors.grey;
+        return colors.centerChannelColor.withValues(alpha: 0.40);
       default:
-        return Colors.white70;
+        return colors.centerChannelColor.withValues(alpha: 0.70);
     }
   }
 
   void _showFullLogEventModal(LogEntryModel log) {
+    final colors = AppTheme.of(context);
     final mapData = log.toMap();
     final jsonStr = const JsonEncoder.withIndent('  ').convert(mapData);
 
@@ -151,10 +154,12 @@ class _AdminConsoleServerLogsPageState
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1E1E2E),
+          backgroundColor: colors.centerChannelBg,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Colors.white12),
+            side: BorderSide(
+              color: colors.centerChannelColor.withValues(alpha: 0.12),
+            ),
           ),
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -162,16 +167,23 @@ class _AdminConsoleServerLogsPageState
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.code, color: Colors.blueAccent),
-                  const SizedBox(width: 8),
-                  const Text(
+                  Icon(Icons.code, color: colors.buttonBg),
+                  SizedBox(width: 8),
+                  Text(
                     'Full Log Event',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                      color: colors.centerChannelColor,
+                      fontSize: 16,
+                    ),
                   ),
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.close, color: Colors.white54, size: 20),
+                icon: Icon(
+                  Icons.close,
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                  size: 20,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -180,17 +192,19 @@ class _AdminConsoleServerLogsPageState
             width: 600,
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF11111B),
+                  color: colors.centerChannelBg.withValues(alpha: 0.80),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(
+                    color: colors.centerChannelColor.withValues(alpha: 0.10),
+                  ),
                 ),
                 child: SelectableText(
                   jsonStr,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'monospace',
-                    color: Colors.lightGreenAccent,
+                    color: colors.onlineIndicator,
                     fontSize: 13,
                   ),
                 ),
@@ -208,12 +222,12 @@ class _AdminConsoleServerLogsPageState
                   ),
                 );
               },
-              icon: const Icon(Icons.copy, size: 16),
-              label: const Text('Copy JSON'),
+              icon: Icon(Icons.copy, size: 16),
+              label: Text('Copy JSON'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              child: Text('Close'),
             ),
           ],
         );
@@ -223,12 +237,31 @@ class _AdminConsoleServerLogsPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Server Logs',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: Column(
+        spacing: 24,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildPageHeader(),
-          Divider(thickness: 0.60, height: 0),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -236,32 +269,32 @@ class _AdminConsoleServerLogsPageState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildBannerAndActions(),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   if (!_isPlainLogs) _buildSearchAndFilterToolbar(),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   if (_error != null) ...[
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent.withOpacity(0.1),
+                        color: colors.errorTextColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.redAccent.withOpacity(0.3),
+                          color: colors.errorTextColor.withValues(alpha: 0.3),
                         ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.error_outline,
-                            color: Colors.redAccent,
+                            color: colors.errorTextColor,
                             size: 18,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Error loading logs: $_error',
-                              style: const TextStyle(
-                                color: Colors.redAccent,
+                              style: TextStyle(
+                                color: colors.errorTextColor,
                                 fontSize: 13,
                               ),
                             ),
@@ -269,13 +302,13 @@ class _AdminConsoleServerLogsPageState
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                   ],
                   Expanded(
                     child: _loading
-                        ? const Center(
+                        ? Center(
                             child: CircularProgressIndicator(
-                              color: Colors.blueAccent,
+                              color: colors.buttonBg,
                             ),
                           )
                         : _isPlainLogs
@@ -291,47 +324,35 @@ class _AdminConsoleServerLogsPageState
     );
   }
 
-  Widget _buildPageHeader() {
+  Widget _buildBannerAndActions() {
     final colors = AppTheme.of(context);
     return Container(
-      height: 65,
-      alignment: .centerStart,
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colors.centerChannelBg,
-        border: Border(bottom: BorderSide(color: Colors.white10)),
-      ),
-      child: Text(
-        'Server Logs',
-        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildBannerAndActions() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2E),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'To look up users by User ID or Token ID, go to User Management > Users and paste the ID into the search filter.',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+              color: colors.centerChannelColor.withValues(alpha: 0.70),
+              fontSize: 13,
+            ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
             children: [
               // Log Format selection
-              const Text(
+              Text(
                 'Log Format: ',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: colors.centerChannelColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
                 ),
@@ -339,59 +360,65 @@ class _AdminConsoleServerLogsPageState
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Radio<bool>(
-                    value: false,
-                    groupValue: _isPlainLogs,
-                    activeColor: Colors.blueAccent,
-                    onChanged: (val) {
-                      if (val != null && val != _isPlainLogs) {
-                        setState(() => _isPlainLogs = val);
-                        _reload();
-                      }
-                    },
+                  SizedBox(
+                    width: 150,
+                    child: RadioListTile(
+                      controlAffinity: .leading,
+                      dense: true,
+                      minTileHeight: 35,
+                      value: false,
+                      activeColor: colors.buttonBg,
+                      groupValue: _isPlainLogs,
+                      title: Text(
+                        'Json',
+                        style: TextStyle(
+                          color: colors.centerChannelColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                      onChanged: (val) {
+                        if (val != null && val != _isPlainLogs) {
+                          _isPlainLogs = val;
+                          _reload();
+                        }
+                      },
+                    ),
                   ),
-                  const Text(
-                    'JSON',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
+                  SizedBox(
+                    width: 150,
+                    child: RadioListTile(
+                      controlAffinity: .leading,
+                      dense: true,
+                      minTileHeight: 35,
+                      value: true,
+                      activeColor: colors.buttonBg,
+                      groupValue: _isPlainLogs,
+                      title: Text(
+                        'Plain text',
+                        style: TextStyle(
+                          color: colors.centerChannelColor,
+                          fontSize: 13,
+                        ),
+                      ),
+                      onChanged: (val) {
+                        if (val != null && val != _isPlainLogs) {
+                          setState(() => _isPlainLogs = val);
+                          _reload();
+                        }
+                      },
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Radio<bool>(
-                    value: true,
-                    groupValue: _isPlainLogs,
-                    activeColor: Colors.blueAccent,
-                    onChanged: (val) {
-                      if (val != null && val != _isPlainLogs) {
-                        setState(() => _isPlainLogs = val);
-                        _reload();
-                      }
-                    },
-                  ),
-                  const Text(
-                    'Plain text',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
+                  SizedBox(width: 12),
                 ],
               ),
-              const Spacer(),
+              Spacer(),
               // Reload Logs button
-              OutlinedButton.icon(
-                onPressed: _reload,
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Reload Logs'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white24),
-                ),
-              ),
-              const SizedBox(width: 10),
+              FilledButton(onPressed: _reload, child: Text('Reload Logs')),
+              SizedBox(width: 10),
               // Download Logs button
-              FilledButton.icon(
+              FilledButton(
                 onPressed: _downloadLogs,
-                icon: const Icon(Icons.download, size: 16),
-                label: const Text('Download Logs'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                ),
+                child: Text('Download Logs'),
               ),
             ],
           ),
@@ -401,6 +428,7 @@ class _AdminConsoleServerLogsPageState
   }
 
   Widget _buildSearchAndFilterToolbar() {
+    final colors = AppTheme.of(context);
     return Row(
       children: [
         // Search Input
@@ -408,21 +436,26 @@ class _AdminConsoleServerLogsPageState
           width: 320,
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white, fontSize: 13),
+            style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
               hintText: 'Search logs...',
-              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-              prefixIcon: const Icon(
+              hintStyle: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.38),
+                fontSize: 13,
+              ),
+              prefixIcon: Icon(
                 Icons.search,
-                color: Colors.white54,
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
                 size: 18,
               ),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.clear,
-                        color: Colors.white54,
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.54,
+                        ),
                         size: 16,
                       ),
                       onPressed: () {
@@ -432,25 +465,29 @@ class _AdminConsoleServerLogsPageState
                     )
                   : null,
               filled: true,
-              fillColor: const Color(0xFF1E1E2E),
+              fillColor: colors.centerChannelBg,
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              contentPadding: EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.white12),
+                borderSide: BorderSide(
+                  color: colors.centerChannelColor.withValues(alpha: 0.12),
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.white12),
+                borderSide: BorderSide(
+                  color: colors.centerChannelColor.withValues(alpha: 0.12),
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blueAccent),
+                borderSide: BorderSide(color: colors.buttonBg),
               ),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: 12),
         // Show last X errors button
         OutlinedButton.icon(
           onPressed: () {
@@ -459,31 +496,41 @@ class _AdminConsoleServerLogsPageState
           icon: Icon(
             _onlyShowErrors ? Icons.filter_alt : Icons.filter_alt_outlined,
             size: 16,
-            color: _onlyShowErrors ? Colors.redAccent : Colors.white70,
+            color: _onlyShowErrors
+                ? colors.errorTextColor
+                : colors.centerChannelColor.withValues(alpha: 0.70),
           ),
           label: Text(
             'Show last $_errorCount errors',
             style: TextStyle(
-              color: _onlyShowErrors ? Colors.redAccent : Colors.white70,
+              color: _onlyShowErrors
+                  ? colors.errorTextColor
+                  : colors.centerChannelColor.withValues(alpha: 0.70),
               fontWeight: _onlyShowErrors ? FontWeight.bold : FontWeight.normal,
             ),
           ),
           style: OutlinedButton.styleFrom(
             side: BorderSide(
-              color: _onlyShowErrors ? Colors.redAccent : Colors.white24,
+              color: _onlyShowErrors
+                  ? colors.errorTextColor
+                  : colors.centerChannelColor.withValues(alpha: 0.24),
             ),
           ),
         ),
-        const Spacer(),
+        Spacer(),
         Text(
           'Showing ${_processedLogs.length} of ${_logs.length} entries',
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.54),
+            fontSize: 12,
+          ),
         ),
       ],
     );
   }
 
   Widget _buildLogsTable() {
+    final colors = AppTheme.of(context);
     final logs = _processedLogs;
 
     if (logs.isEmpty) {
@@ -491,17 +538,20 @@ class _AdminConsoleServerLogsPageState
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Icons.find_in_page_outlined,
-              color: Colors.white24,
+              color: colors.centerChannelColor.withValues(alpha: 0.24),
               size: 48,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               _searchQuery.isNotEmpty || _onlyShowErrors
                   ? 'No logs match your filter criteria'
                   : 'No logs found',
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+                fontSize: 14,
+              ),
             ),
           ],
         ),
@@ -510,9 +560,11 @@ class _AdminConsoleServerLogsPageState
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E2E),
+        color: colors.centerChannelBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -528,7 +580,10 @@ class _AdminConsoleServerLogsPageState
                 children: [
                   // Fixed Header
                   _buildTableHeader(),
-                  const Divider(height: 1, color: Colors.white10),
+                  Divider(
+                    height: 1,
+                    color: colors.centerChannelColor.withValues(alpha: 0.10),
+                  ),
                   // Scrollable Body Rows
                   Expanded(
                     child: Scrollbar(
@@ -537,8 +592,12 @@ class _AdminConsoleServerLogsPageState
                       child: ListView.separated(
                         controller: _verticalScrollController,
                         itemCount: logs.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: Colors.white10),
+                        separatorBuilder: (_, __) => Divider(
+                          height: 1,
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                        ),
                         itemBuilder: (context, index) {
                           return _buildTableRow(logs[index]);
                         },
@@ -555,10 +614,11 @@ class _AdminConsoleServerLogsPageState
   }
 
   Widget _buildTableHeader() {
+    final colors = AppTheme.of(context);
     return Container(
       height: 44,
-      color: const Color(0xFF252538),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      color: colors.centerChannelColor.withValues(alpha: 0.12),
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
           // Timestamp Column (1.5 / 7) -> 240px
@@ -568,66 +628,65 @@ class _AdminConsoleServerLogsPageState
               onTap: () => setState(() => _dateAsc = !_dateAsc),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Timestamp',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: colors.centerChannelColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(width: 4),
+                  SizedBox(width: 4),
                   Icon(
                     _dateAsc ? Icons.arrow_upward : Icons.arrow_downward,
                     size: 16,
-                    color: Colors.blueAccent,
+                    color: colors.buttonBg,
                   ),
                 ],
               ),
             ),
           ),
           // Level Column -> 100px
-          const SizedBox(
+          SizedBox(
             width: 100,
             child: Text(
               'Level',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.centerChannelColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
             ),
           ),
           // Message Column -> 420px
-          const Expanded(
+          Expanded(
             child: Text(
               'Message',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.centerChannelColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
             ),
           ),
           // Caller Column -> 200px
-          const SizedBox(
+          SizedBox(
             width: 200,
             child: Text(
               'Caller',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.centerChannelColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
             ),
           ),
-          // Options Column -> 140px
-          const SizedBox(
+          SizedBox(
             width: 140,
             child: Text(
               'Options',
               style: TextStyle(
-                color: Colors.white,
+                color: colors.centerChannelColor,
                 fontWeight: FontWeight.bold,
                 fontSize: 13,
               ),
@@ -639,6 +698,7 @@ class _AdminConsoleServerLogsPageState
   }
 
   Widget _buildTableRow(LogEntryModel log) {
+    final colors = AppTheme.of(context);
     final level = log.level ?? 'info';
     final message = log.message ?? '';
     final caller = log.caller ?? '';
@@ -646,9 +706,9 @@ class _AdminConsoleServerLogsPageState
 
     return InkWell(
       onTap: () => _showFullLogEventModal(log),
-      hoverColor: Colors.white.withOpacity(0.04),
+      hoverColor: colors.centerChannelColor.withValues(alpha: 0.04),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
             // Timestamp
@@ -656,8 +716,8 @@ class _AdminConsoleServerLogsPageState
               width: 240,
               child: Text(
                 timeStr,
-                style: const TextStyle(
-                  color: Colors.white70,
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.70),
                   fontSize: 12,
                   fontFamily: 'monospace',
                 ),
@@ -671,15 +731,12 @@ class _AdminConsoleServerLogsPageState
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 2,
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: _levelColor(level).withOpacity(0.15),
+                    color: _levelColor(level).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                     border: Border.all(
-                      color: _levelColor(level).withOpacity(0.4),
+                      color: _levelColor(level).withValues(alpha: 0.4),
                     ),
                   ),
                   child: Text(
@@ -697,7 +754,10 @@ class _AdminConsoleServerLogsPageState
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.70),
+                  fontSize: 13,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -707,10 +767,10 @@ class _AdminConsoleServerLogsPageState
               width: 200,
               child: Text(
                 caller,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                  fontSize: 13,
+                  fontWeight: .bold,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -723,12 +783,15 @@ class _AdminConsoleServerLogsPageState
               child: OutlinedButton(
                 onPressed: () => _showFullLogEventModal(log),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white70,
+                  foregroundColor: colors.buttonBg,
+                  side: BorderSide(color: colors.buttonBg, width: 1),
+                  backgroundColor: colors.buttonColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: .circular(4.0),
+                    side: BorderSide(color: colors.buttonBg, width: 1),
+                  ),
                 ),
-                child: const Text(
-                  'Full Log event',
-                  style: TextStyle(fontSize: 11),
-                ),
+                child: Text('Full Log event'),
               ),
             ),
           ],
@@ -738,33 +801,38 @@ class _AdminConsoleServerLogsPageState
   }
 
   Widget _buildPlainLogsView() {
+    final colors = AppTheme.of(context);
     if (_plainLogs.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No plain logs found',
-          style: TextStyle(color: Colors.white38),
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.38),
+          ),
         ),
       );
     }
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF11111B),
+        color: colors.centerChannelBg.withValues(alpha: 0.80),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
       ),
       child: ListView.builder(
         itemCount: _plainLogs.length,
         itemBuilder: (context, index) {
           return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 2),
+            padding: EdgeInsets.symmetric(vertical: 2),
             child: SelectableText(
               _plainLogs[index],
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'monospace',
-                color: Colors.greenAccent,
+                color: colors.onlineIndicator,
                 fontSize: 12,
               ),
             ),

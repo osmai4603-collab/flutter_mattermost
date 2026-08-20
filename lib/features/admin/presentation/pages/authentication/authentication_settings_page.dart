@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 
@@ -63,6 +64,7 @@ class _AdminConsoleAuthenticationSettingsPageState
   }
 
   Future<void> _save() async {
+    final colors = AppTheme.of(context);
     setState(() {
       _saving = true;
       _error = null;
@@ -86,7 +88,7 @@ class _AdminConsoleAuthenticationSettingsPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Authentication settings saved'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
@@ -105,20 +107,21 @@ class _AdminConsoleAuthenticationSettingsPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
+              ? Center(
+                  child: CircularProgressIndicator(color: colors.buttonBg),
                 )
               : _error != null
               ? Center(
                   child: Text(
                     'Could not load settings: $_error',
-                    style: const TextStyle(color: Colors.redAccent),
+                    style: TextStyle(color: colors.errorTextColor),
                   ),
                 )
               : _buildForm(context),
@@ -128,21 +131,26 @@ class _AdminConsoleAuthenticationSettingsPageState
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: colors.centerChannelColor.withValues(alpha: 0.12),
+          ),
+        ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.lock_outline, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
+          Icon(Icons.lock_outline, color: colors.buttonBg, size: 20),
+          const SizedBox(width: 10),
           Text(
             'Authentication Settings',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -153,6 +161,7 @@ class _AdminConsoleAuthenticationSettingsPageState
   }
 
   Widget _buildForm(BuildContext context) {
+    final colors = AppTheme.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -166,7 +175,7 @@ class _AdminConsoleAuthenticationSettingsPageState
                 child: Switch(
                   value: _enableSignUpWithEmail,
                   onChanged: (v) => setState(() => _enableSignUpWithEmail = v),
-                  activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+                  activeTrackColor: colors.buttonBg.withValues(alpha: 0.5),
                 ),
               ),
               AdminSettingField(
@@ -174,7 +183,7 @@ class _AdminConsoleAuthenticationSettingsPageState
                 child: Switch(
                   value: _enableSignInWithEmail,
                   onChanged: (v) => setState(() => _enableSignInWithEmail = v),
-                  activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+                  activeTrackColor: colors.buttonBg.withValues(alpha: 0.5),
                 ),
               ),
               AdminSettingField(
@@ -183,7 +192,7 @@ class _AdminConsoleAuthenticationSettingsPageState
                   value: _enableSignInWithUsername,
                   onChanged: (v) =>
                       setState(() => _enableSignInWithUsername = v),
-                  activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+                  activeTrackColor: colors.buttonBg.withValues(alpha: 0.5),
                 ),
               ),
               AdminSettingField(
@@ -192,7 +201,7 @@ class _AdminConsoleAuthenticationSettingsPageState
                 child: Switch(
                   value: _enableGuestAccounts,
                   onChanged: (v) => setState(() => _enableGuestAccounts = v),
-                  activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+                  activeTrackColor: colors.buttonBg.withValues(alpha: 0.5),
                 ),
               ),
             ],
@@ -209,17 +218,21 @@ class _AdminConsoleAuthenticationSettingsPageState
                   child: TextField(
                     controller: _minPasswordLength,
                     keyboardType: TextInputType.number,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: const Color(0xFF181825),
+                      fillColor: colors.mentionHighlightBg,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.white12),
+                        borderSide: BorderSide(
+                          color: colors.centerChannelColor.withValues(alpha: 0.12),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.white12),
+                        borderSide: BorderSide(
+                          color: colors.centerChannelColor.withValues(alpha: 0.12),
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -236,12 +249,12 @@ class _AdminConsoleAuthenticationSettingsPageState
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
                 'Save failed: $_error',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                style: TextStyle(color: colors.errorTextColor, fontSize: 13),
               ),
             ),
           FilledButton.icon(
             onPressed: _saving ? null : _save,
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             icon: Icon(
               _saving ? Icons.hourglass_top : Icons.save_outlined,
               size: 16,

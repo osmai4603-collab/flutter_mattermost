@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/admin_setting_schema.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/resource_keys.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
@@ -59,6 +60,7 @@ class _AdminConsoleEnvironmentSettingsPageState
 
   Future<void> _save() async {
     if (_pendingChanges.isEmpty) return;
+    final colors = AppTheme.of(context);
 
     setState(() {
       _saving = true;
@@ -82,7 +84,7 @@ class _AdminConsoleEnvironmentSettingsPageState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Environment settings saved'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: colors.onlineIndicator,
           ),
         );
         _load();
@@ -96,14 +98,16 @@ class _AdminConsoleEnvironmentSettingsPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Column(
       children: [
         _buildHeader(context),
         Expanded(
           child: _loading
-              ? const Center(child: CircularProgressIndicator(color: Colors.blueAccent))
+              ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
               : _error != null
-                  ? Center(child: Text('Error loading environment settings: $_error', style: const TextStyle(color: Colors.redAccent)))
+                  ? Center(child: Text('Error loading environment settings: $_error', style: TextStyle(color: colors.errorTextColor)))
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -141,21 +145,23 @@ class _AdminConsoleEnvironmentSettingsPageState
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12))),
       ),
       child: Row(
         children: [
-          const Icon(Icons.dns_outlined, color: Colors.blueAccent, size: 20),
+          Icon(Icons.dns_outlined, color: colors.buttonBg, size: 20),
           const SizedBox(width: 10),
           Text(
             _getHeaderTitle(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

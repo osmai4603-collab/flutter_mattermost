@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/analytics_entity.dart';
 import 'package:flutter_mattermost/features/admin/presentation/bloc/admin_config_bloc.dart';
 
@@ -11,74 +12,79 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<AdminConfigBloc>()..add(LoadAdminOverviewEvent()),
-      child: BlocConsumer<AdminConfigBloc, AdminConfigState>(
-        listener: (context, state) {
-          if (state is AdminConfigError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: Colors.redAccent,
+    final colors = AppTheme.of(context);
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'System Analytics',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          }
-        },
-        builder: (context, state) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              Expanded(
-                child: switch (state) {
-                  AdminConfigLoading() => const Center(
-                    child: CircularProgressIndicator(color: Colors.blueAccent),
-                  ),
-                  AdminConfigLoaded() => _buildDashboard(
-                    context,
-                    state.analytics,
-                  ),
-                  AdminConfigError() => _buildError(state.message),
-                  _ => const SizedBox.shrink(),
-                },
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.insights_outlined, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
-          Text(
-            'Site Overview',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
             ),
           ),
-        ],
+        ),
+      ),
+      body: BlocProvider(
+        create: (_) => getIt<AdminConfigBloc>()..add(LoadAdminOverviewEvent()),
+        child: BlocConsumer<AdminConfigBloc, AdminConfigState>(
+          listener: (context, state) {
+            if (state is AdminConfigError) {
+              final colors = AppTheme.of(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                  backgroundColor: colors.errorTextColor,
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            return Column(
+              spacing: 24,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: switch (state) {
+                    AdminConfigLoading() => const Center(
+                      child: CircularProgressIndicator(),
+                    ),
+                    AdminConfigLoaded() => _buildDashboard(
+                      context,
+                      state.analytics,
+                    ),
+                    AdminConfigError() => _buildError(state.message),
+                    _ => const SizedBox.shrink(),
+                  },
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
   Widget _buildError(String message) {
     return Center(
-      child: Text(
-        'Could not load analytics: $message',
-        style: const TextStyle(color: Colors.white54),
+      child: Builder(
+        builder: (context) {
+          final colors = AppTheme.of(context);
+          return Text(
+            'Could not load analytics: $message',
+            style: TextStyle(
+              color: colors.centerChannelColor.withValues(alpha: 0.54),
+            ),
+          );
+        },
       ),
     );
   }
@@ -132,31 +138,37 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
     int value,
     IconData icon,
   ) {
+    final colors = AppTheme.of(context);
     return Expanded(
       child: Container(
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF181825),
+          color: colors.mentionHighlightBg,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(
+            color: colors.centerChannelColor.withValues(alpha: 0.12),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: Colors.blueAccent, size: 20),
+            Icon(icon, color: colors.buttonBg, size: 20),
             const SizedBox(height: 10),
             Text(
               '$value',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.centerChannelColor,
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
               ),
             ),
             Text(
               label,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style: TextStyle(
+                color: colors.centerChannelColor.withValues(alpha: 0.54),
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -165,26 +177,27 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
   }
 
   Widget _buildChartsCard(BuildContext context, AnalyticsEntity analytics) {
+    final colors = AppTheme.of(context);
     final bars = [
       (
         label: 'Users',
         value: analytics.totalUsers.toDouble(),
-        color: Colors.blueAccent,
+        color: colors.buttonBg,
       ),
       (
         label: 'Teams',
         value: analytics.totalTeams.toDouble(),
-        color: Colors.lightBlueAccent,
+        color: colors.linkColor,
       ),
       (
         label: 'Channels',
         value: analytics.totalChannels.toDouble(),
-        color: Colors.purpleAccent,
+        color: colors.mentionBg,
       ),
       (
         label: 'Posts',
         value: analytics.totalPosts.toDouble(),
-        color: Colors.orangeAccent,
+        color: colors.awayIndicator,
       ),
     ];
     final maxY =
@@ -196,17 +209,19 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF181825),
+        color: colors.mentionHighlightBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.12),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Server Usage',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -219,11 +234,12 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                 maxY: maxY.toDouble(),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => const Color(0xFF313244),
+                    getTooltipColor: (_) =>
+                        colors.centerChannelColor.withValues(alpha: 0.20),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) =>
                         BarTooltipItem(
                           '${bars[group.x.toInt()].label}: ${rod.toY.round()}',
-                          const TextStyle(color: Colors.white),
+                          TextStyle(color: colors.centerChannelColor),
                         ),
                   ),
                 ),
@@ -242,8 +258,10 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             bars[value.toInt()].label,
-                            style: const TextStyle(
-                              color: Colors.white54,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -256,8 +274,9 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                 ),
                 gridData: FlGridData(
                   drawVerticalLine: false,
-                  getDrawingHorizontalLine: (_) =>
-                      const FlLine(color: Colors.white12),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: colors.centerChannelColor.withValues(alpha: 0.12),
+                  ),
                 ),
                 borderData: FlBorderData(show: false),
                 barGroups: [
@@ -283,6 +302,7 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
   }
 
   Widget _buildMetricsTable(BuildContext context, AnalyticsEntity analytics) {
+    final colors = AppTheme.of(context);
     final rows = analytics.items
         .where((k) => k.name != 'total_users')
         .take(12)
@@ -290,17 +310,19 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF181825),
+        color: colors.mentionHighlightBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.12),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Detailed Metrics',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
@@ -314,16 +336,18 @@ class AdminConsoleSystemAnalyticsPage extends StatelessWidget {
                   Expanded(
                     child: Text(
                       key.name.replaceAll('_', ' '),
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.70,
+                        ),
                         fontSize: 13,
                       ),
                     ),
                   ),
                   Text(
                     key.value.toString(),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: colors.centerChannelColor,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

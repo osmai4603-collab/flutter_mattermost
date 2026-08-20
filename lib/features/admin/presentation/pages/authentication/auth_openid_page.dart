@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة إعدادات OpenID Connect / OAuth 2.0 (OAuth Settings Page)
@@ -31,9 +32,12 @@ class _AdminConsoleAuthOpenIdPageState
     setState(() => _isLoading = true);
     try {
       final config = await _repository.getConfig();
-      final gitlab = (config['GitLabSettings'] as Map<String, dynamic>?) ?? const {};
-      final google = (config['GoogleSettings'] as Map<String, dynamic>?) ?? const {};
-      final o365 = (config['Office365Settings'] as Map<String, dynamic>?) ?? const {};
+      final gitlab =
+          (config['GitLabSettings'] as Map<String, dynamic>?) ?? const {};
+      final google =
+          (config['GoogleSettings'] as Map<String, dynamic>?) ?? const {};
+      final o365 =
+          (config['Office365Settings'] as Map<String, dynamic>?) ?? const {};
 
       if (gitlab['Enable'] == true) {
         _oauthType = 'gitlab';
@@ -78,19 +82,21 @@ class _AdminConsoleAuthOpenIdPageState
       };
       await _repository.patchConfig(patch);
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('OAuth / OpenID settings saved successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('OAuth / OpenID settings saved successfully'),
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save OAuth settings: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: colors.errorTextColor,
           ),
         );
       }
@@ -110,83 +116,54 @@ class _AdminConsoleAuthOpenIdPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'OpenID Connect',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
                 children: [
-                  // Header Title & Save Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'OpenID Connect & OAuth 2.0',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Configure Single Sign-On using OAuth 2.0 / OpenID providers (GitLab, Google, Entra ID).',
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveConfig,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_rounded, size: 18),
-                        label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Settings Card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161922),
+                      color: colors.centerChannelBg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.10,
+                        ),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Select OAuth 2.0 Service Provider:',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.centerChannelColor,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -195,23 +172,63 @@ class _AdminConsoleAuthOpenIdPageState
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF212433),
+                            color: colors.centerChannelBg.withValues(
+                              alpha: 0.60,
+                            ),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _oauthType,
-                              dropdownColor: const Color(0xFF212433),
+                              dropdownColor: colors.centerChannelBg.withValues(
+                                alpha: 0.60,
+                              ),
                               isExpanded: true,
-                              style: const TextStyle(color: Colors.white, fontSize: 13),
-                              items: const [
-                                DropdownMenuItem(value: 'off', child: Text('Do not allow sign-in via OAuth 2.0')),
-                                DropdownMenuItem(value: 'gitlab', child: Text('GitLab SSO')),
-                                DropdownMenuItem(value: 'google', child: Text('Google Apps SSO')),
-                                DropdownMenuItem(value: 'office365', child: Text('Entra ID / Office 365 SSO')),
+                              style: TextStyle(
+                                color: colors.centerChannelColor,
+                                fontSize: 13,
+                              ),
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'off',
+                                  child: Text(
+                                    'Do not allow sign-in via OAuth 2.0',
+                                    style: TextStyle(
+                                      color: colors.centerChannelColor,
+                                    ),
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'gitlab',
+                                  child: Text(
+                                    'GitLab SSO',
+                                    style: TextStyle(
+                                      color: colors.centerChannelColor,
+                                    ),
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'google',
+                                  child: Text(
+                                    'Google Apps SSO',
+                                    style: TextStyle(
+                                      color: colors.centerChannelColor,
+                                    ),
+                                  ),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'office365',
+                                  child: Text(
+                                    'Entra ID / Office 365 SSO',
+                                    style: TextStyle(
+                                      color: colors.centerChannelColor,
+                                    ),
+                                  ),
+                                ),
                               ],
                               onChanged: (val) {
-                                if (val != null) setState(() => _oauthType = val);
+                                if (val != null)
+                                  setState(() => _oauthType = val);
                               },
                             ),
                           ),
@@ -219,33 +236,74 @@ class _AdminConsoleAuthOpenIdPageState
                         const SizedBox(height: 20),
 
                         if (_oauthType != 'off') ...[
-                          const Text('Client ID (Application ID):', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Client ID (Application ID):',
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _clientIdController,
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
+                              fontSize: 13,
+                            ),
                             decoration: InputDecoration(
-                              hintText: 'Enter OAuth Client ID from provider console',
-                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                              hintText:
+                                  'Enter OAuth Client ID from provider console',
+                              hintStyle: TextStyle(
+                                color: colors.centerChannelColor.withValues(
+                                  alpha: 0.38,
+                                ),
+                                fontSize: 13,
+                              ),
                               filled: true,
-                              fillColor: const Color(0xFF212433),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                              fillColor: colors.centerChannelBg.withValues(
+                                alpha: 0.60,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
 
-                          const Text('Client Secret (Application Secret):', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          Text(
+                            'Client Secret (Application Secret):',
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                           const SizedBox(height: 6),
                           TextField(
                             controller: _clientSecretController,
                             obscureText: true,
-                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
+                              fontSize: 13,
+                            ),
                             decoration: InputDecoration(
                               hintText: '••••••••••••••••',
-                              hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                              hintStyle: TextStyle(
+                                color: colors.centerChannelColor.withValues(
+                                  alpha: 0.38,
+                                ),
+                                fontSize: 13,
+                              ),
                               filled: true,
-                              fillColor: const Color(0xFF212433),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                              fillColor: colors.centerChannelBg.withValues(
+                                alpha: 0.60,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
                             ),
                           ),
                         ],

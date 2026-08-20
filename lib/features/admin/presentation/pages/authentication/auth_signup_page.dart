@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة إعدادات التسجيل (Signup Settings Page)
@@ -39,8 +40,7 @@ class _AdminConsoleAuthSignupPageState
       final serviceSettings =
           (config['ServiceSettings'] as Map<String, dynamic>?) ?? const {};
 
-      _enableUserCreation =
-          teamSettings['EnableUserCreation'] as bool? ?? true;
+      _enableUserCreation = teamSettings['EnableUserCreation'] as bool? ?? true;
       _enableOpenServer = teamSettings['EnableOpenServer'] as bool? ?? true;
       _enableEmailInvitations =
           serviceSettings['EnableEmailInvitations'] as bool? ?? true;
@@ -64,25 +64,25 @@ class _AdminConsoleAuthSignupPageState
           'EnableOpenServer': _enableOpenServer,
           'RestrictCreationToDomains': _restrictDomainsController.text.trim(),
         },
-        'ServiceSettings': {
-          'EnableEmailInvitations': _enableEmailInvitations,
-        },
+        'ServiceSettings': {'EnableEmailInvitations': _enableEmailInvitations},
       };
       await _repository.patchConfig(patch);
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Signup settings saved successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Signup settings saved successfully'),
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save settings: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: colors.errorTextColor,
           ),
         );
       }
@@ -101,75 +101,46 @@ class _AdminConsoleAuthSignupPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Sign Up',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
                 children: [
-                  // Header Title & Save Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Signup Settings',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Configure how users create accounts and sign up to your server.',
-                            style: TextStyle(color: Colors.white54, fontSize: 13),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveConfig,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_rounded, size: 18),
-                        label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Settings Card Container
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161922),
+                      color: colors.centerChannelBg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.10,
+                        ),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,69 +150,99 @@ class _AdminConsoleAuthSignupPageState
                           value: _enableUserCreation,
                           onChanged: (val) =>
                               setState(() => _enableUserCreation = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Enable Account Creation',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'When false, account creation is disabled across email and OAuth signups.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        const Divider(color: Colors.white10, height: 24),
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 24,
+                        ),
 
                         // Enable Open Server Toggle
                         SwitchListTile(
                           value: _enableOpenServer,
                           onChanged: (val) =>
                               setState(() => _enableOpenServer = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Enable Open Server',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'When true, anyone can sign up for a user account without needing an invitation.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        const Divider(color: Colors.white10, height: 24),
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 24,
+                        ),
 
                         // Enable Email Invitations Toggle
                         SwitchListTile(
                           value: _enableEmailInvitations,
                           onChanged: (val) =>
                               setState(() => _enableEmailInvitations = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Enable Email Invitations',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'When true, users can send email invitations to join teams and channels.',
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        const Divider(color: Colors.white10, height: 24),
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 24,
+                        ),
 
                         // Restrict Domains Input
-                        const Text(
+                        Text(
                           'Restrict Account Creation to Specified Email Domains:',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.centerChannelColor,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -249,12 +250,23 @@ class _AdminConsoleAuthSignupPageState
                         const SizedBox(height: 6),
                         TextField(
                           controller: _restrictDomainsController,
-                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          style: TextStyle(
+                            color: colors.centerChannelColor,
+                            fontSize: 13,
+                          ),
                           decoration: InputDecoration(
-                            hintText: 'e.g. corp.mattermost.com, mattermost.com',
-                            hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
+                            hintText:
+                                'e.g. corp.mattermost.com, mattermost.com',
+                            hintStyle: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.38,
+                              ),
+                              fontSize: 13,
+                            ),
                             filled: true,
-                            fillColor: const Color(0xFF212433),
+                            fillColor: colors.centerChannelBg.withValues(
+                              alpha: 0.60,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide.none,
@@ -262,9 +274,14 @@ class _AdminConsoleAuthSignupPageState
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Comma-separated list of domain names required for new signups.',
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                          style: TextStyle(
+                            color: colors.centerChannelColor.withValues(
+                              alpha: 0.54,
+                            ),
+                            fontSize: 11,
+                          ),
                         ),
                       ],
                     ),

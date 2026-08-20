@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_shared_channels_repository.dart';
 
 /// صفحة القنوات المشتركة: حالة الـ remotes + فحص DM بين مستخدمين.
@@ -42,34 +43,35 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
   }
 
   Future<void> _lookupRemote() async {
+    final colors = AppTheme.of(context);
     final remoteController = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF181825),
-        title: const Text('Remote Info', style: TextStyle(color: Colors.white)),
+        backgroundColor: colors.mentionHighlightBg,
+        title: Text('Remote Info', style: TextStyle(color: colors.centerChannelColor)),
         content: TextField(
           controller: remoteController,
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             labelText: 'Remote ID',
-            labelStyle: TextStyle(color: Colors.white54),
+            labelStyle: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.white24),
+              borderSide: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.24)),
             ),
           ),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: colors.centerChannelColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            child: Text(
               'Cancel',
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
             ),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
+            style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
             child: const Text('Lookup'),
           ),
         ],
@@ -83,19 +85,19 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
       showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          backgroundColor: const Color(0xFF181825),
-          title: const Text('Remote', style: TextStyle(color: Colors.white)),
+          backgroundColor: colors.mentionHighlightBg,
+          title: Text('Remote', style: TextStyle(color: colors.centerChannelColor)),
           content: Text(
             'Display name: ${info.display_name ?? '—'}\n'
             'Last ping: ${info.last_ping_at ?? '—'}',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.70), fontSize: 13),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'Close',
-                style: TextStyle(color: Colors.white54),
+                style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.54)),
               ),
             ),
           ],
@@ -106,7 +108,7 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -114,14 +116,16 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
+              ? Center(
+                  child: CircularProgressIndicator(color: colors.buttonBg),
                 )
               : _error != null
               ? Center(
@@ -129,8 +133,8 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
                     padding: const EdgeInsets.all(20),
                     child: Text(
                       'Shared channels require an Enterprise license: $_error',
-                      style: const TextStyle(
-                        color: Colors.redAccent,
+                      style: TextStyle(
+                        color: colors.errorTextColor,
                         fontSize: 13,
                       ),
                     ),
@@ -143,21 +147,23 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12))),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.swap_horiz, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
+          Icon(Icons.swap_horiz, color: colors.buttonBg, size: 20),
+          const SizedBox(width: 10),
           Text(
             'Shared Channels',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -168,6 +174,8 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -178,7 +186,7 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
               FilledButton.icon(
                 onPressed: _lookupRemote,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
+                  backgroundColor: colors.buttonBg,
                 ),
                 icon: const Icon(Icons.search_outlined, size: 16),
                 label: const Text('Remote Info'),
@@ -187,8 +195,8 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
               OutlinedButton.icon(
                 onPressed: _check,
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueAccent,
-                  side: const BorderSide(color: Colors.blueAccent),
+                  foregroundColor: colors.buttonBg,
+                  side: BorderSide(color: colors.buttonBg),
                 ),
                 icon: const Icon(Icons.sync_outlined, size: 16),
                 label: const Text('DM Connectivity Check'),
@@ -197,7 +205,7 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: _loading ? null : _check,
-                icon: const Icon(Icons.refresh, color: Colors.white54),
+                icon: Icon(Icons.refresh, color: colors.centerChannelColor.withValues(alpha: 0.54)),
               ),
             ],
           ),
@@ -205,29 +213,29 @@ class _AdminConsoleSharedChannelsPageState extends State<AdminConsoleSharedChann
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF181825),
+              color: colors.mentionHighlightBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: colors.centerChannelColor.withValues(alpha: 0.12)),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'About',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: colors.centerChannelColor,
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 Text(
                   'Shared channels let teams on different Mattermost servers collaborate '
                   'in the same channel. Use Remote Info to inspect a connected remote server, '
                   'and the connectivity check to verify whether direct messages can pass '
                   'between two servers.',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: colors.centerChannelColor.withValues(alpha: 0.70),
                     fontSize: 13,
                     height: 1.5,
                   ),

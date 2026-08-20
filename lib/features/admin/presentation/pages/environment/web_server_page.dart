@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
-import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 
-/// صفحة الإعدادات العامة: Site Settings + Localization.
 class WebServerPage extends StatefulWidget {
   const WebServerPage({super.key});
 
@@ -14,67 +14,112 @@ class WebServerPage extends StatefulWidget {
 class _WebServerPageState extends State<WebServerPage> {
   final AdminConfigRepository _repository = getIt<AdminConfigRepository>();
 
-  Map<String, dynamic> _config = {};
-  TextEditingController _siteName = TextEditingController();
-  TextEditingController _siteUrl = TextEditingController();
-  TextEditingController _description = TextEditingController();
-  bool _enableUserCreation = true;
-  bool _enableCustomEmoji = true;
-  bool _loading = true;
-  bool _saving = false;
-  String? _error;
+  bool _isLoading = true;
+  bool _isSaving = false;
+
+  final TextEditingController _siteUrlController = TextEditingController();
+  final TextEditingController _listenAddressController =
+      TextEditingController();
+  bool _forward80To443 = false;
+  String _connectionSecurity = '';
+  final TextEditingController _tlsCertFileController = TextEditingController();
+  final TextEditingController _tlsKeyFileController = TextEditingController();
+  bool _useLetsEncrypt = false;
+  final TextEditingController _letsEncryptCacheFileController =
+      TextEditingController();
+  final TextEditingController _readTimeoutController = TextEditingController();
+  final TextEditingController _writeTimeoutController = TextEditingController();
+  final TextEditingController _maximumPayloadSizeBytesController =
+      TextEditingController();
+  String _webserverMode = 'gzip';
+  bool _enableInsecureOutgoingConnections = false;
+  final TextEditingController _managedResourcePathsController =
+      TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _loadConfig();
   }
 
-  Future<void> _load() async {
+  @override
+  void dispose() {
+    _siteUrlController.dispose();
+    _listenAddressController.dispose();
+    _tlsCertFileController.dispose();
+    _tlsKeyFileController.dispose();
+    _letsEncryptCacheFileController.dispose();
+    _readTimeoutController.dispose();
+    _writeTimeoutController.dispose();
+    _maximumPayloadSizeBytesController.dispose();
+    _managedResourcePathsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadConfig() async {
+    setState(() => _isLoading = true);
     try {
       final config = await _repository.getConfig();
-      if (!mounted) return;
-      setState(() {
-        _config = config;
-        final site = (config['TeamSettings'] as Map<String, dynamic>?) ?? {};
-        final service =
-            (config['ServiceSettings'] as Map<String, dynamic>?) ?? {};
-        final emoji =
-            (config['ServiceSettings'] as Map<String, dynamic>?) ?? {};
-        _siteName = TextEditingController(
-          text: site['SiteName'] as String? ?? '',
-        );
-        _siteUrl = TextEditingController(
-          text: service['SiteURL'] as String? ?? '',
-        );
-        _description = TextEditingController(
-          text: site['CustomDescriptionText'] as String? ?? '',
-        );
-        _enableUserCreation = service['EnableUserCreation'] as bool? ?? true;
-        _enableCustomEmoji = emoji['EnableCustomEmoji'] as bool? ?? true;
-      });
-    } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      final serviceSettings =
+          (config['ServiceSettings'] as Map<String, dynamic>?) ?? const {};
+
+      _siteUrlController.text = (serviceSettings['SiteURL'] as String?) ?? '';
+      _listenAddressController.text =
+          (serviceSettings['ListenAddress'] as String?) ?? '';
+      _forward80To443 = serviceSettings['Forward80To443'] == true;
+      _connectionSecurity =
+          (serviceSettings['ConnectionSecurity'] as String?) ?? '';
+      _tlsCertFileController.text =
+          (serviceSettings['TLSCertFile'] as String?) ?? '';
+      _tlsKeyFileController.text =
+          (serviceSettings['TLSKeyFile'] as String?) ?? '';
+      _useLetsEncrypt = serviceSettings['UseLetsEncrypt'] == true;
+      _letsEncryptCacheFileController.text =
+          (serviceSettings['LetsEncryptCertificateCacheFile'] as String?) ?? '';
+      _readTimeoutController.text =
+          (serviceSettings['ReadTimeout'] as int?)?.toString() ?? '';
+      _writeTimeoutController.text =
+          (serviceSettings['WriteTimeout'] as int?)?.toString() ?? '';
+      _maximumPayloadSizeBytesController.text =
+          (serviceSettings['MaximumPayloadSizeBytes'] as int?)?.toString() ??
+          '';
+      _webserverMode = (serviceSettings['WebserverMode'] as String?) ?? 'gzip';
+      _enableInsecureOutgoingConnections =
+          serviceSettings['EnableInsecureOutgoingConnections'] == true;
+      _managedResourcePathsController.text =
+          (serviceSettings['ManagedResourcePaths'] as String?) ?? '';
+    } catch (_) {
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  Future<void> _save() async {
-    setState(() {
-      _saving = true;
-      _error = null;
-    });
+  Future<void> _saveConfig() async {
+    final colors = AppTheme.of(context);
+    setState(() => _isSaving = true);
     try {
       final patch = {
-        'TeamSettings': {
-          'SiteName': _siteName.text,
-          'CustomDescriptionText': _description.text,
-        },
         'ServiceSettings': {
-          'SiteURL': _siteUrl.text,
-          'EnableUserCreation': _enableUserCreation,
-          'EnableCustomEmoji': _enableCustomEmoji,
+          'SiteURL': _siteUrlController.text.trim(),
+          'ListenAddress': _listenAddressController.text.trim(),
+          'Forward80To443': _forward80To443,
+          'ConnectionSecurity': _connectionSecurity,
+          'TLSCertFile': _tlsCertFileController.text.trim(),
+          'TLSKeyFile': _tlsKeyFileController.text.trim(),
+          'UseLetsEncrypt': _useLetsEncrypt,
+          'LetsEncryptCertificateCacheFile': _letsEncryptCacheFileController
+              .text
+              .trim(),
+          'ReadTimeout': int.tryParse(_readTimeoutController.text.trim()) ?? 0,
+          'WriteTimeout':
+              int.tryParse(_writeTimeoutController.text.trim()) ?? 0,
+          'MaximumPayloadSizeBytes':
+              int.tryParse(_maximumPayloadSizeBytesController.text.trim()) ??
+              104857600,
+          'WebserverMode': _webserverMode,
+          'EnableInsecureOutgoingConnections':
+              _enableInsecureOutgoingConnections,
+          'ManagedResourcePaths': _managedResourcePathsController.text.trim(),
         },
       };
       await _repository.patchConfig(patch);
@@ -82,173 +127,398 @@ class _WebServerPageState extends State<WebServerPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Settings saved'),
-            backgroundColor: Colors.green.shade700,
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save settings: $e'),
+            backgroundColor: colors.errorTextColor,
+          ),
+        );
+      }
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
   @override
-  void dispose() {
-    _siteName.dispose();
-    _siteUrl.dispose();
-    _description.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Web Server',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.amber.shade700,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Changing properties in this section will require a server restart before taking effect.',
+                            style: TextStyle(
+                              color: Colors.amber.shade900,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _sectionCard(
+                    colors,
+                    children: [
+                      _textTile(
+                        colors,
+                        controller: _siteUrlController,
+                        title: 'Site URL',
+                        subtitle:
+                            'The URL that users will use to access Mattermost.',
+                        placeholder: 'http://example.com:8065',
+                      ),
+                      _divider(colors),
+                      _textTile(
+                        colors,
+                        controller: _listenAddressController,
+                        title: 'Listen Address',
+                        subtitle: 'The address and port to bind and listen on.',
+                        placeholder: ':8065',
+                      ),
+                      _divider(colors),
+                      _boolTile(
+                        colors,
+                        value: _forward80To443,
+                        onChanged: (v) {
+                          if (v != null) setState(() => _forward80To443 = v);
+                        },
+                        title: 'Forward port 80 to 443',
+                        subtitle:
+                            'Forwards all insecure traffic from port 80 to secure port 443. Not recommended when using a proxy server.',
+                      ),
+                      _divider(colors),
+                      _dropdownTile(
+                        colors,
+                        value: _connectionSecurity,
+                        onChanged: (v) {
+                          if (v != null)
+                            setState(() => _connectionSecurity = v);
+                        },
+                        title: 'Connection Security',
+                        subtitle: 'The connection security method.',
+                        options: {'': 'None', 'TLS': 'TLS (Recommended)'},
+                      ),
+                      _divider(colors),
+                      _textTile(
+                        colors,
+                        controller: _tlsCertFileController,
+                        title: 'TLS Certificate File',
+                        subtitle: 'The certificate file to use.',
+                      ),
+                      _divider(colors),
+                      _textTile(
+                        colors,
+                        controller: _tlsKeyFileController,
+                        title: 'TLS Key File',
+                        subtitle: 'The private key file to use.',
+                      ),
+                      _divider(colors),
+                      _boolTile(
+                        colors,
+                        value: _useLetsEncrypt,
+                        onChanged: (v) {
+                          if (v != null) setState(() => _useLetsEncrypt = v);
+                        },
+                        title: "Use Let's Encrypt",
+                        subtitle:
+                            "Enable automatic retrieval of certificates from Let's Encrypt.",
+                      ),
+                      _divider(colors),
+                      _textTile(
+                        colors,
+                        controller: _letsEncryptCacheFileController,
+                        title: "Let's Encrypt Cache File",
+                        subtitle:
+                            'Certificates retrieved and other data about Let\'s Encrypt will be stored here.',
+                      ),
+                      _divider(colors),
+                      _numberTile(
+                        colors,
+                        controller: _readTimeoutController,
+                        title: 'Read Timeout',
+                        subtitle:
+                            'Maximum time from connection accepted to request body fully read.',
+                      ),
+                      _divider(colors),
+                      _numberTile(
+                        colors,
+                        controller: _writeTimeoutController,
+                        title: 'Write Timeout',
+                        subtitle:
+                            'Maximum time from reading request headers to response written.',
+                      ),
+                      _divider(colors),
+                      _numberTile(
+                        colors,
+                        controller: _maximumPayloadSizeBytesController,
+                        title: 'Maximum Payload Size (Bytes)',
+                        subtitle:
+                            'The maximum number of bytes allowed in the payload of incoming HTTP calls.',
+                      ),
+                      _divider(colors),
+                      _dropdownTile(
+                        colors,
+                        value: _webserverMode,
+                        onChanged: (v) {
+                          if (v != null) setState(() => _webserverMode = v);
+                        },
+                        title: 'Webserver Mode',
+                        subtitle: 'Gzip compression on static files.',
+                        options: {
+                          'gzip': 'Gzip',
+                          'uncompressed': 'Uncompressed',
+                          'disabled': 'Disabled',
+                        },
+                      ),
+                      _divider(colors),
+                      _boolTile(
+                        colors,
+                        value: _enableInsecureOutgoingConnections,
+                        onChanged: (v) {
+                          if (v != null)
+                            setState(
+                              () => _enableInsecureOutgoingConnections = v,
+                            );
+                        },
+                        title: 'Enable Insecure Outgoing Connections',
+                        subtitle:
+                            'When true, outgoing HTTPS requests accept unverified, self-signed certificates.',
+                      ),
+                      _divider(colors),
+                      _textTile(
+                        colors,
+                        controller: _managedResourcePathsController,
+                        title: 'Managed Resource Paths',
+                        subtitle: 'Comma-separated list of managed paths.',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+    );
   }
 
-  @override
-  Widget build(BuildContext context) {
+  // --- Helper Widgets ---
+
+  Widget _sectionCard(
+    MattermostColors colors, {
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: colors.centerChannelBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colors.centerChannelColor.withValues(alpha: 0.10),
+        ),
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _divider(MattermostColors colors) {
+    return Divider(
+      color: colors.centerChannelColor.withValues(alpha: 0.10),
+      height: 24,
+    );
+  }
+
+  Widget _boolTile(
+    MattermostColors colors, {
+    required bool value,
+    ValueChanged<bool?>? onChanged,
+    required String title,
+    required String subtitle,
+  }) {
+    return SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      activeThumbColor: colors.buttonBg,
+      contentPadding: EdgeInsets.zero,
+      title: Text(
+        title,
+        style: TextStyle(
+          color: colors.centerChannelColor,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(
+          color: colors.centerChannelColor.withValues(alpha: 0.54),
+          fontSize: 12,
+        ),
+      ),
+    );
+  }
+
+  Widget _textTile(
+    MattermostColors colors, {
+    required TextEditingController controller,
+    required String title,
+    required String subtitle,
+    String? placeholder,
+    TextInputType? keyboardType,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildHeader(context),
-        Expanded(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-              : _error != null
-              ? Center(
-                  child: Text(
-                    'Could not load settings: $_error',
-                    style: const TextStyle(color: Colors.redAccent),
-                  ),
-                )
-              : _buildForm(context),
+        Text(
+          title,
+          style: TextStyle(
+            color: colors.centerChannelColor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.54),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
+          decoration: InputDecoration(
+            hintText: placeholder,
+            hintStyle: TextStyle(
+              color: colors.centerChannelColor.withValues(alpha: 0.38),
+              fontSize: 13,
+            ),
+            filled: true,
+            fillColor: colors.centerChannelBg.withValues(alpha: 0.60),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.tune, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
-          Text(
-            'General Settings',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildForm(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AdminSettingSection(
-            title: 'Site Configuration',
-            subtitle: 'Basic information about your Mattermost server.',
-            children: [
-              AdminSettingField(
-                label: 'Site Name',
-                description:
-                    'Name shown in account creation and sign in pages.',
-                child: _textField(_siteName),
-              ),
-              AdminSettingField(
-                label: 'Site URL',
-                description: 'The URL of your Mattermost server.',
-                child: _textField(_siteUrl),
-              ),
-              AdminSettingField(
-                label: 'Custom Description Text',
-                description: 'A short description shown on login pages.',
-                child: _textField(_description),
-              ),
-            ],
-          ),
-          AdminSettingSection(
-            title: 'Behavioral Settings',
-            children: [
-              AdminSettingField(
-                label: 'Enable user account creation',
-                description: 'Allow new user accounts to be created.',
-                child: _toggle(
-                  _enableUserCreation,
-                  (v) => setState(() => _enableUserCreation = v),
-                ),
-              ),
-              AdminSettingField(
-                label: 'Enable custom emoji',
-                description: 'Allow custom emoji to be uploaded by users.',
-                child: _toggle(
-                  _enableCustomEmoji,
-                  (v) => setState(() => _enableCustomEmoji = v),
-                ),
-              ),
-            ],
-          ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(
-                'Save failed: $_error',
-                style: const TextStyle(color: Colors.redAccent, fontSize: 13),
-              ),
-            ),
-          FilledButton.icon(
-            onPressed: _saving ? null : _save,
-            style: FilledButton.styleFrom(backgroundColor: Colors.blueAccent),
-            icon: Icon(
-              _saving ? Icons.hourglass_top : Icons.save_outlined,
-              size: 16,
-            ),
-            label: Text(_saving ? 'Saving...' : 'Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  TextField _textField(TextEditingController controller) {
-    return TextField(
+  Widget _numberTile(
+    MattermostColors colors, {
+    required TextEditingController controller,
+    required String title,
+    required String subtitle,
+    String? placeholder,
+  }) {
+    return _textTile(
+      colors,
       controller: controller,
-      style: const TextStyle(color: Colors.white, fontSize: 13),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFF181825),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.white12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.white12),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
-      ),
+      title: title,
+      subtitle: subtitle,
+      placeholder: placeholder,
+      keyboardType: TextInputType.number,
     );
   }
 
-  Switch _toggle(bool value, ValueChanged<bool> onChanged) {
-    return Switch(
-      value: value,
-      onChanged: onChanged,
-      activeTrackColor: Colors.blueAccent.withValues(alpha: 0.5),
+  Widget _dropdownTile(
+    MattermostColors colors, {
+    required String value,
+    ValueChanged<String?>? onChanged,
+    required String title,
+    required String subtitle,
+    required Map<String, String> options,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: colors.centerChannelColor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: TextStyle(
+            color: colors.centerChannelColor.withValues(alpha: 0.54),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          onChanged: onChanged,
+          dropdownColor: colors.centerChannelBg,
+          style: TextStyle(color: colors.centerChannelColor, fontSize: 13),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: colors.centerChannelBg.withValues(alpha: 0.60),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          items: options.entries
+              .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value)))
+              .toList(),
+        ),
+      ],
     );
   }
 }

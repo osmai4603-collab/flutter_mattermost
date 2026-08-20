@@ -78,4 +78,12 @@ class ResourceKeys {
   static const systemStatistics = '$reporting.system-statistics';
   static const teamStatistics = '$reporting.team-statistics';
   static const serverLogs = '$reporting.server_logs';
+
+  // System Attributes
+  static const String systemAttributes = 'system_attributes';
+  static const String userAttributes = 'system_attributes.user_attributes';
+  static const String attributeBasedAccessControl =
+      'system_attributes.attribute_based_access_control';
+  static const String membershipPolicies = 'system_attributes.membership_policies';
+  static const String permissionPolicies = 'system_attributes.permission_policies';
 }

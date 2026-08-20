@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_security_repository.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 
@@ -72,6 +73,8 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,8 +92,8 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
                       _statusMessage!,
                       style: TextStyle(
                         color: _isError
-                            ? Colors.redAccent
-                            : Colors.lightGreenAccent,
+                            ? colors.errorTextColor
+                            : colors.onlineIndicator,
                         fontSize: 13,
                       ),
                     ),
@@ -107,21 +110,23 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
   }
 
   Widget _buildHeader(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return Container(
       width: double.infinity,
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: colors.centerChannelColor.withValues(alpha: 0.12))),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.security_outlined, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
+          Icon(Icons.security_outlined, color: colors.buttonBg, size: 20),
+          const SizedBox(width: 10),
           Text(
             'Security Settings',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
@@ -161,6 +166,8 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
   }
 
   Widget _buildSAMLSection() {
+    final colors = AppTheme.of(context);
+
     return AdminSettingSection(
       title: 'SAML',
       subtitle: 'Single Sign-On via SAML (Enterprise).',
@@ -170,8 +177,8 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
             Icon(
               _samlConfigured ? Icons.verified_outlined : Icons.error_outline,
               color: _samlConfigured
-                  ? Colors.lightGreenAccent
-                  : Colors.orangeAccent,
+                  ? colors.onlineIndicator
+                  : colors.awayIndicator,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -179,7 +186,7 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
               _samlConfigured
                   ? 'Certificate status: valid'
                   : 'SAML certificate not configured',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(color: colors.centerChannelColor.withValues(alpha: 0.70), fontSize: 13),
             ),
           ],
         ),
@@ -188,22 +195,24 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
   }
 
   Widget _buildMFASection() {
+    final colors = AppTheme.of(context);
+
     return AdminSettingSection(
       title: 'Multi-factor Authentication (MFA)',
       subtitle: 'Users currently enforcing MFA.',
       children: [
         Row(
           children: [
-            const Icon(
+            Icon(
               Icons.verified_user_outlined,
-              color: Colors.blueAccent,
+              color: colors.buttonBg,
               size: 20,
             ),
             const SizedBox(width: 8),
             Text(
               '$_mfaUsers users',
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colors.centerChannelColor,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
               ),
@@ -215,11 +224,13 @@ class _AdminConsoleSecuritySettingsPageState extends State<AdminConsoleSecurityS
   }
 
   Widget _actionButton(String label, VoidCallback onPressed) {
+    final colors = AppTheme.of(context);
+
     return OutlinedButton.icon(
       onPressed: _busy ? null : onPressed,
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.blueAccent,
-        side: const BorderSide(color: Colors.blueAccent),
+        foregroundColor: colors.buttonBg,
+        side: BorderSide(color: colors.buttonBg),
       ),
       icon: const Icon(Icons.play_arrow, size: 16),
       label: Text(label),

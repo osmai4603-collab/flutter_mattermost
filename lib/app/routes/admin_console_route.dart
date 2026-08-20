@@ -1,3 +1,6 @@
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/admin/domain/entities/role_entity.dart';
+import 'package:flutter_mattermost/features/admin/domain/repositories/admin_roles_schemes_repository.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/access_control_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_email_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_guest_access_page.dart';
@@ -19,7 +22,10 @@ import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/
 import 'package:flutter_mattermost/features/admin/presentation/pages/about/license_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/notifications_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/plugins_management_page.dart';
-import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/roles_schemes_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/agents_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/calls_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/playbooks_settings_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/permissions_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/security_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/server_logs_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/shared_channels_page.dart';
@@ -61,11 +67,15 @@ sealed class AdminConsoleRoutes {
   static const roles = '$home/roles';
   static const groups = '$home/groups';
   static const plugins = '$home/plugins';
+  static const pluginsAgents = '$home/plugins/agents';
+  static const pluginsCalls = '$home/plugins/calls';
+  static const pluginsPlaybooks = '$home/plugins/playbooks';
   static const license = '$home/license';
   static const dataRetention = '$home/data_retention';
   static const contentFlagging = '$home/content_flagging';
   static const accessControl = '$home/access_control';
   static const sharedChannels = '$home/shared_channels';
+  static const systemScheme = '$home/system_scheme';
 }
 
 final adminConsoleRoute = ShellRoute(
@@ -80,6 +90,18 @@ final _routes = [
     path: AdminConsoleRoutes.home,
     pageBuilder: (context, state) =>
         const NoTransitionPage(child: AdminConsoleSiteOverviewPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.systemScheme,
+    pageBuilder: (context, state) {
+      final roles = state.extra as List<RoleEntity>;
+      return NoTransitionPage(
+        child: SystemSchemePage(
+          repository: getIt<AdminRolesSchemesRepository>(),
+          roles: roles,
+        ),
+      );
+    },
   ),
   GoRoute(
     path: AdminConsoleRoutes.overview,
@@ -210,7 +232,7 @@ final _routes = [
   GoRoute(
     path: AdminConsoleRoutes.roles,
     pageBuilder: (context, state) =>
-        const NoTransitionPage(child: AdminConsoleRolesSchemesPage()),
+        const NoTransitionPage(child: AdminConsolePermissionsPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.groups,
@@ -221,6 +243,21 @@ final _routes = [
     path: AdminConsoleRoutes.plugins,
     pageBuilder: (context, state) =>
         const NoTransitionPage(child: AdminConsolePluginsManagementPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.pluginsAgents,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: AgentsSettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.pluginsCalls,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: CallsSettingsPage()),
+  ),
+  GoRoute(
+    path: AdminConsoleRoutes.pluginsPlaybooks,
+    pageBuilder: (context, state) =>
+        const NoTransitionPage(child: PlaybooksSettingsPage()),
   ),
   GoRoute(
     path: AdminConsoleRoutes.license,

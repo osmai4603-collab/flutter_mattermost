@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/enums/compliance_report_status.dart';
 import 'package:flutter_mattermost/core/enums/compliance_report_type.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/data/models/audit_model.dart';
 import 'package:flutter_mattermost/features/admin/data/models/compliance_report_model.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/audit_entity.dart';
@@ -13,10 +14,12 @@ class AdminConsoleCompliancePage extends StatefulWidget {
   const AdminConsoleCompliancePage({super.key});
 
   @override
-  State<AdminConsoleCompliancePage> createState() => _AdminConsoleCompliancePageState();
+  State<AdminConsoleCompliancePage> createState() =>
+      _AdminConsoleCompliancePageState();
 }
 
-class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage> {
+class _AdminConsoleCompliancePageState
+    extends State<AdminConsoleCompliancePage> {
   final AdminComplianceRepository _repository =
       getIt<AdminComplianceRepository>();
 
@@ -54,6 +57,7 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
   }
 
   Future<void> _createReport(ComplianceReportType type) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.createComplianceReport(
         jobName: type == .daily
@@ -71,13 +75,14 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
   }
 
   Future<void> _deleteReport(ComplianceReportEntity report) async {
+    final colors = AppTheme.of(context);
     try {
       await _repository.removeComplianceReport(report.id);
       if (!mounted) return;
@@ -87,7 +92,7 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(e.toString()),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: colors.errorTextColor,
         ),
       );
     }
@@ -95,50 +100,48 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader(context),
-        Expanded(
-          child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(color: Colors.blueAccent),
-                )
-              : _error != null
-              ? Center(
-                  child: Text(
-                    'Could not load compliance data: $_error',
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 13,
-                    ),
-                  ),
-                )
-              : _buildContent(context),
-        ),
-      ],
-    );
-  }
+    final colors = AppTheme.of(context);
 
-  Widget _buildHeader(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 56,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.white12)),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.policy_outlined, color: Colors.blueAccent, size: 20),
-          SizedBox(width: 10),
-          Text(
-            'Compliance',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Compliance',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
             ),
+          ),
+        ),
+      ),
+      body: Column(
+        spacing: 24,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _loading
+                ? Center(
+                    child: CircularProgressIndicator(color: colors.buttonBg),
+                  )
+                : _error != null
+                ? Center(
+                    child: Text(
+                      'Could not load compliance data: $_error',
+                      style: TextStyle(
+                        color: colors.errorTextColor,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                : _buildContent(context),
           ),
         ],
       ),
@@ -146,6 +149,8 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
   }
 
   Widget _buildContent(BuildContext context) {
+    final colors = AppTheme.of(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -155,9 +160,7 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
             children: [
               FilledButton.icon(
                 onPressed: () => _createReport(.daily),
-                style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                ),
+                style: FilledButton.styleFrom(backgroundColor: colors.buttonBg),
                 icon: const Icon(Icons.add_task_outlined, size: 16),
                 label: const Text('Run Daily Report'),
               ),
@@ -165,8 +168,8 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
               OutlinedButton.icon(
                 onPressed: () => _createReport(.adhoc),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blueAccent,
-                  side: const BorderSide(color: Colors.blueAccent),
+                  foregroundColor: colors.buttonBg,
+                  side: BorderSide(color: colors.buttonBg),
                 ),
                 icon: const Icon(Icons.playlist_add_outlined, size: 16),
                 label: const Text('Run Ad-Hoc Report'),
@@ -175,26 +178,31 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
               IconButton(
                 tooltip: 'Refresh',
                 onPressed: _loading ? null : _load,
-                icon: const Icon(Icons.refresh, color: Colors.white54),
+                icon: Icon(
+                  Icons.refresh,
+                  color: colors.centerChannelColor.withValues(alpha: 0.54),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Compliance Reports',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           if (_reports.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
               child: Text(
                 'No compliance reports yet',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.38),
+                ),
               ),
             )
           else
@@ -206,9 +214,11 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181825),
+                  color: colors.mentionHighlightBg,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white12),
+                  border: Border.all(
+                    color: colors.centerChannelColor.withValues(alpha: 0.12),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -217,8 +227,8 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                           ? Icons.check_circle_outline
                           : Icons.pending_outlined,
                       color: report.status == ComplianceReportStatus.finished
-                          ? Colors.lightGreenAccent
-                          : Colors.orangeAccent,
+                          ? colors.onlineIndicator
+                          : colors.awayIndicator,
                       size: 18,
                     ),
                     const SizedBox(width: 10),
@@ -228,16 +238,18 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                         children: [
                           Text(
                             '${report.type.value} report (${report.count} events)',
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                             ),
                           ),
                           Text(
                             'Created at ${report.createAtDate?.toString().split('.').first ?? '—'}'
                             ' · Status: ${report.status.value}',
-                            style: const TextStyle(
-                              color: Colors.white38,
+                            style: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.38,
+                              ),
                               fontSize: 11,
                             ),
                           ),
@@ -248,9 +260,11 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                       IconButton(
                         tooltip: 'Delete',
                         onPressed: () => _deleteReport(report),
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
-                          color: Colors.white38,
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.38,
+                          ),
                           size: 18,
                         ),
                       ),
@@ -258,21 +272,23 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                 ),
               ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             'Audit Log (recent)',
             style: TextStyle(
-              color: Colors.white,
+              color: colors.centerChannelColor,
               fontSize: 15,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 8),
           if (_audits.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(8),
+            Padding(
+              padding: const EdgeInsets.all(8),
               child: Text(
                 'No audit entries',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(
+                  color: colors.centerChannelColor.withValues(alpha: 0.38),
+                ),
               ),
             )
           else
@@ -286,8 +302,10 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                       width: 150,
                       child: Text(
                         audit.createAtDate?.toString().split('.').first ?? '—',
-                        style: const TextStyle(
-                          color: Colors.white38,
+                        style: TextStyle(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.38,
+                          ),
                           fontSize: 11,
                         ),
                       ),
@@ -296,17 +314,16 @@ class _AdminConsoleCompliancePageState extends State<AdminConsoleCompliancePage>
                       width: 200,
                       child: Text(
                         audit.action,
-                        style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 12,
-                        ),
+                        style: TextStyle(color: colors.buttonBg, fontSize: 12),
                       ),
                     ),
                     Expanded(
                       child: Text(
                         audit.extraInfo,
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.70,
+                          ),
                           fontSize: 12,
                         ),
                       ),

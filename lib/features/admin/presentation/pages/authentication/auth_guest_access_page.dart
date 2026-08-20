@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة إعدادات حسابات الضيوف (Guest Access Settings Page)
@@ -62,19 +63,21 @@ class _AdminConsoleAuthGuestAccessPageState
       };
       await _repository.patchConfig(patch);
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Guest Access settings saved successfully'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Guest Access settings saved successfully'),
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save Guest Access settings: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: colors.errorTextColor,
           ),
         );
       }
@@ -93,108 +96,46 @@ class _AdminConsoleAuthGuestAccessPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Guest Access',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
                 children: [
-                  // Header Title & Save Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Guest Access Settings',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Configure external guest accounts and access permissions.',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.purpleAccent.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.purpleAccent.withValues(
-                                  alpha: 0.4,
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              'ENT',
-                              style: TextStyle(
-                                color: Colors.purpleAccent,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: _isSaving ? null : _saveConfig,
-                            icon: _isSaving
-                                ? const SizedBox(
-                                    width: 14,
-                                    height: 14,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Icon(Icons.save_rounded, size: 18),
-                            label: Text(
-                              _isSaving ? 'Saving...' : 'Save Changes',
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blueAccent,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Settings Card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161922),
+                      color: colors.centerChannelBg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.10,
+                        ),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -203,52 +144,66 @@ class _AdminConsoleAuthGuestAccessPageState
                           value: _enableGuests,
                           onChanged: (val) =>
                               setState(() => _enableGuests = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Enable Guest Access',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'When true, external contractors and guests can be invited to specific channels only.',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
                               fontSize: 12,
                             ),
                           ),
                         ),
-                        const Divider(color: Colors.white10, height: 24),
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 24,
+                        ),
                         SwitchListTile(
                           value: _allowGuestsToInvite,
                           onChanged: _enableGuests
                               ? (val) =>
                                     setState(() => _allowGuestsToInvite = val)
                               : null,
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Allow Guests to Invite Users',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          subtitle: const Text(
+                          subtitle: Text(
                             'When true, guests can send channel invitations to other users.',
                             style: TextStyle(
-                              color: Colors.white54,
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.54,
+                              ),
                               fontSize: 12,
                             ),
                           ),
                         ),
-                        const Divider(color: Colors.white10, height: 24),
-                        const Text(
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 24,
+                        ),
+                        Text(
                           'Restrict Guest Email Domains:',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.centerChannelColor,
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
                           ),
@@ -256,18 +211,22 @@ class _AdminConsoleAuthGuestAccessPageState
                         const SizedBox(height: 6),
                         TextField(
                           controller: _restrictDomainsController,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: colors.centerChannelColor,
                             fontSize: 13,
                           ),
                           decoration: InputDecoration(
                             hintText: 'e.g. partner.com, vendor.org',
-                            hintStyle: const TextStyle(
-                              color: Colors.white38,
+                            hintStyle: TextStyle(
+                              color: colors.centerChannelColor.withValues(
+                                alpha: 0.38,
+                              ),
                               fontSize: 13,
                             ),
                             filled: true,
-                            fillColor: const Color(0xFF212433),
+                            fillColor: colors.centerChannelBg.withValues(
+                              alpha: 0.60,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: BorderSide.none,

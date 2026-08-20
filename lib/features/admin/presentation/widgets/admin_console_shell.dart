@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/app/routes/admin_console_route.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_sidebar.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -47,6 +48,7 @@ class _AdminConsoleShellState extends State<AdminConsoleShell> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     final selectedSection = _determineSelectedSection(
       widget.state.matchedLocation,
     );
@@ -54,23 +56,23 @@ class _AdminConsoleShellState extends State<AdminConsoleShell> {
 
     if (isMobile) {
       return Scaffold(
-        backgroundColor: const Color(0xFF1E1E2E),
+        backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
         appBar: AppBar(
-          backgroundColor: const Color(0xFF181825),
+          backgroundColor: colors.mentionHighlightBg,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: colors.centerChannelColor),
             tooltip: 'Back',
             onPressed: () => _onBack(context),
           ),
           title: Text(
             selectedSection.name,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
+            style: TextStyle(color: colors.centerChannelColor, fontSize: 16),
           ),
         ),
         drawer: Drawer(
           width: 260,
-          backgroundColor: const Color(0xFF161922),
+          backgroundColor: colors.centerChannelBg,
           child: AdminConsoleSideBar(
             selected: selectedSection,
             onBodyChange: (value) => bodyNotifier.value = value,
@@ -93,11 +95,14 @@ class _AdminConsoleShellState extends State<AdminConsoleShell> {
             onBodyChange: (widget) => bodyNotifier.value = widget,
           ),
           Expanded(
-            child: ValueListenableBuilder<Widget>(
-              builder: (_, value, widget) {
-                return value;
-              },
-              valueListenable: bodyNotifier,
+            child: Container(
+              color: const Color.fromRGBO(245, 245, 245, 1),
+              child: ValueListenableBuilder<Widget>(
+                builder: (_, value, widget) {
+                  return value;
+                },
+                valueListenable: bodyNotifier,
+              ),
             ),
           ),
         ],

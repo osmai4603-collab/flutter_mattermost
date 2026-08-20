@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
 /// صفحة إعدادات كلمة المرور (Password Settings Page)
@@ -67,19 +68,21 @@ class _AdminConsoleAuthPasswordPageState
       };
       await _repository.patchConfig(patch);
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password policy settings saved'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Password policy settings saved'),
+            backgroundColor: colors.onlineIndicator,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
+        final colors = AppTheme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to save settings: $e'),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: colors.errorTextColor,
           ),
         );
       }
@@ -98,86 +101,54 @@ class _AdminConsoleAuthPasswordPageState
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: const Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(65),
+        child: Container(
+          color: colors.centerChannelBg,
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+          child: Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              'Password',
+              style: TextStyle(
+                color: colors.centerChannelColor,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      ),
       body: _isLoading
-          ? const Center(
-              child: CircularProgressIndicator(color: Colors.blueAccent),
-            )
+          ? Center(child: CircularProgressIndicator(color: colors.buttonBg))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 24,
                 children: [
-                  // Header Title & Save Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Password Policy Settings',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Set minimum password requirements for system users.',
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton.icon(
-                        onPressed: _isSaving ? null : _saveConfig,
-                        icon: _isSaving
-                            ? const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.save_rounded, size: 18),
-                        label: Text(_isSaving ? 'Saving...' : 'Save Changes'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
                   // Settings Card
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF161922),
+                      color: colors.centerChannelBg,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white10),
+                      border: Border.all(
+                        color: colors.centerChannelColor.withValues(
+                          alpha: 0.10,
+                        ),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Minimum Password Length:',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: colors.centerChannelColor,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -188,13 +159,15 @@ class _AdminConsoleAuthPasswordPageState
                           child: TextField(
                             controller: _minLengthController,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                             ),
                             decoration: InputDecoration(
                               filled: true,
-                              fillColor: const Color(0xFF212433),
+                              fillColor: colors.centerChannelBg.withValues(
+                                alpha: 0.60,
+                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
                                 borderSide: BorderSide.none,
@@ -203,22 +176,32 @@ class _AdminConsoleAuthPasswordPageState
                           ),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
+                        Text(
                           'Minimum characters required (default: 8, max: 64).',
-                          style: TextStyle(color: Colors.white54, fontSize: 11),
+                          style: TextStyle(
+                            color: colors.centerChannelColor.withValues(
+                              alpha: 0.54,
+                            ),
+                            fontSize: 11,
+                          ),
                         ),
-                        const Divider(color: Colors.white10, height: 28),
+                        Divider(
+                          color: colors.centerChannelColor.withValues(
+                            alpha: 0.10,
+                          ),
+                          height: 28,
+                        ),
 
                         // Requirement Switches
                         SwitchListTile(
                           value: _requireLowercase,
                           onChanged: (val) =>
                               setState(() => _requireLowercase = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Require Lowercase Letters (a-z)',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -228,11 +211,11 @@ class _AdminConsoleAuthPasswordPageState
                           value: _requireUppercase,
                           onChanged: (val) =>
                               setState(() => _requireUppercase = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Require Uppercase Letters (A-Z)',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -242,11 +225,11 @@ class _AdminConsoleAuthPasswordPageState
                           value: _requireNumber,
                           onChanged: (val) =>
                               setState(() => _requireNumber = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Require Numbers (0-9)',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -256,11 +239,11 @@ class _AdminConsoleAuthPasswordPageState
                           value: _requireSymbol,
                           onChanged: (val) =>
                               setState(() => _requireSymbol = val),
-                          activeThumbColor: Colors.blueAccent,
-                          title: const Text(
+                          activeThumbColor: colors.buttonBg,
+                          title: Text(
                             'Require Symbols (e.g. !@#\$%)',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colors.centerChannelColor,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
