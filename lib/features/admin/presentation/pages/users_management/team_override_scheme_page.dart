@@ -4,6 +4,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/role_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/scheme_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_roles_schemes_repository.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/scheme_permissions_widget.dart';
 import 'package:flutter_mattermost/features/teams/domain/entities/team_entity.dart';
 
 class TeamOverrideSchemePage extends StatefulWidget {
@@ -29,7 +30,6 @@ class _TeamOverrideSchemePageState extends State<TeamOverrideSchemePage> {
   }
 
   Future<void> _loadRoles() async {
-    await Future.delayed(const Duration(seconds: 2));
     final repository = getIt<AdminRolesSchemesRepository>();
     setState(() {
       _loading = true;
@@ -126,6 +126,23 @@ class _TeamOverrideSchemePageState extends State<TeamOverrideSchemePage> {
   }
 
   SingleChildScrollView _buildBody() {
+    final guests = _roles.where((r) => r.name == 'system_guest').toList();
+    final allUsers = _roles
+        .where(
+          (r) =>
+              r.name == 'system_user' ||
+              r.name == 'team_user' ||
+              r.name == 'channel_user',
+        )
+        .toList();
+    final channelAdmins = _roles
+        .where((r) => r.name == 'channel_admin')
+        .toList();
+    const teamAdmins = <RoleEntity>[];
+    final sysAdmins = _roles.where((r) => r.name == 'system_admin').toList();
+    final playbookAdmins = _roles
+        .where((r) => r.name == 'playbook_admin')
+        .toList();
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: SizedBox(
@@ -137,13 +154,53 @@ class _TeamOverrideSchemePageState extends State<TeamOverrideSchemePage> {
             noticeWidget(),
             schemeDetailsWidget(),
             _buildTeamOverrideSchemesPanel([]),
-            ..._roles.map((role) {
-              return buildSchemeGroup(
-                role: role,
-                subtitle: role.displayName,
+            if (guests.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'Gest',
+                roles: guests,
+                subtitle: 'Permissions granted to guest users.',
                 isVisible: true,
-              );
-            }),
+              ),
+            if (allUsers.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'All Members',
+                roles: allUsers,
+                subtitle:
+                    'Permissions granted to all members, including administrators and newly created users.',
+                isVisible: true,
+              ),
+            if (channelAdmins.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'Channel Administrators',
+                roles: channelAdmins,
+                subtitle:
+                    'Permissions granted to channel creators and any users promoted to Channel Administrator.',
+                isVisible: true,
+              ),
+            if (playbookAdmins.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'Playbook Administrators',
+                roles: allUsers,
+                subtitle:
+                    'Permissions granted to administrators of a playbook.',
+                isVisible: true,
+              ),
+            if (teamAdmins.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'Team Administrators',
+                roles: teamAdmins,
+                subtitle:
+                    'Permissions granted to team creators and any users promoted to Team Administrator.',
+                isVisible: true,
+              ),
+            if (sysAdmins.isNotEmpty)
+              SchemePermissionsWidget(
+                title: 'System Administrators',
+                roles: allUsers,
+                subtitle:
+                    'Permissions granted to all members, including administrators and newly created users.',
+                isVisible: true,
+              ),
           ],
         ),
       ),
@@ -303,102 +360,6 @@ class _TeamOverrideSchemePageState extends State<TeamOverrideSchemePage> {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget buildSchemeGroup({
-    required RoleEntity role,
-    required String subtitle,
-    required bool isVisible,
-  }) {
-    final colors = AppTheme.of(context);
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.centerChannelBg,
-        border: Border.all(
-          color: colors.centerChannelColor.withValues(alpha: 0.20),
-          width: 0.30,
-        ),
-      ),
-      padding: .all(16),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {},
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    spacing: 3,
-                    crossAxisAlignment: .start,
-                    children: [
-                      Text(
-                        role.name,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: .bold,
-                          color: colors.centerChannelColor,
-                        ),
-                      ),
-                      Text(
-                        role.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: .w500,
-                          color: colors.centerChannelColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                AnimatedRotation(
-                  turns: isVisible ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 1000),
-                  child: Icon(Icons.arrow_circle_right_outlined),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: Text(
-                  'Permission',
-                  style: TextStyle(fontSize: 15, fontWeight: .w600),
-                ),
-              ),
-              Expanded(
-                flex: 3,
-                child: Text(
-                  'Description',
-                  style: TextStyle(fontSize: 15, fontWeight: .w700),
-                ),
-              ),
-            ],
-          ),
-          Divider(thickness: 0.80, height: 0),
-          ...role.permissions.map((permission) {
-            return CheckboxListTile(
-              dense: true,
-              minTileHeight: 35,
-              controlAffinity: .leading,
-              value: role.schemeManaged,
-              onChanged: (value) {},
-              title: Row(
-                children: [
-                  Expanded(
-                    flex: 2,
-                    child: Text(permission.replaceAll('_', ' ')),
-                  ),
-                  Expanded(flex: 3, child: Text('Description')),
-                ],
-              ),
-            );
-          }),
         ],
       ),
     );

@@ -35,10 +35,7 @@ abstract class TeamsRemoteDataSource {
   Future<TeamModel> unarchiveTeam(String teamId);
   Future<TeamModel> updateTeamScheme(String teamId, String schemeId);
   Future<void> setTeamIcon(String teamId, String filePath);
-  Future<void> sendEmailInvitesToTeam(
-    String teamId,
-    List<String> emails,
-  );
+  Future<void> sendEmailInvitesToTeam(String teamId, List<String> emails);
   Future<void> sendEmailGuestInvitesToChannels(
     String teamId,
     Map<String, dynamic> payload,
@@ -97,13 +94,8 @@ abstract class TeamsRemoteDataSource {
     bool includeTimezones = false,
   });
   Future<List<String>> getTeamTimezones(String teamId);
-  Future<List<TeamUnreadModel>> getTeamsUnreadForUser(
-    String userId,
-  );
-  Future<TeamUnreadModel> getTeamUnreadForUser(
-    String userId,
-    String teamId,
-  );
+  Future<List<TeamUnreadModel>> getTeamsUnreadForUser(String userId);
+  Future<TeamUnreadModel> getTeamUnreadForUser(String userId, String teamId);
   Future<List<TeamModel>> searchArchivedTeams({int page = 0, int perPage = 60});
   Future<List<ChannelModel>> getChannelIdsInTeam(
     String teamId,
@@ -122,9 +114,7 @@ abstract class TeamsRemoteDataSource {
     String? prefix,
     String? command,
   });
-  Future<Map<String, dynamic>> getChannelsManagedCategories(
-    String teamId,
-  );
+  Future<Map<String, dynamic>> getChannelsManagedCategories(String teamId);
   Future<GroupsAssociatedToChannelsModel> getGroupsByChannels(String teamId);
   Future<Map<String, dynamic>> importTeam(
     String teamId,
@@ -133,8 +123,14 @@ abstract class TeamsRemoteDataSource {
 
   // Missing operations from docs
   Future<TeamMemberModel> addTeamMember(String teamId, String userId);
-  Future<TeamMemberModel> addTeamMemberFromInvite({String? token, String? inviteId});
-  Future<List<TeamMemberModel>> addTeamMembers(String teamId, List<String> userIds);
+  Future<TeamMemberModel> addTeamMemberFromInvite({
+    String? token,
+    String? inviteId,
+  });
+  Future<List<TeamMemberModel>> addTeamMembers(
+    String teamId,
+    List<String> userIds,
+  );
   Future<void> inviteGuestsToTeam(String teamId, Map<String, dynamic> guests);
   Future<void> inviteUsersToTeam(String teamId, List<String> emails);
   Future<void> invalidateEmailInvites();
@@ -161,7 +157,7 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
       queryParameters: {
         'page': page,
         'per_page': perPage,
-        'include_deleted': includeDeleted,
+        // 'include_deleted': includeDeleted,
       },
       fromJson: (json) => (json as List<dynamic>)
           .map((e) => TeamModel.fromMap(e as Map<String, dynamic>))
@@ -204,7 +200,10 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<TeamModel> addToTeamFromInvite({String? token, String? inviteId}) async {
+  Future<TeamModel> addToTeamFromInvite({
+    String? token,
+    String? inviteId,
+  }) async {
     final result = await _apiClient.post<TeamModel>(
       TeamsEndPoint.membersInvite,
       data: {'token': token ?? '', 'invite_id': inviteId ?? ''},
@@ -501,10 +500,7 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<TeamMemberModel> getTeamMember(
-    String teamId,
-    String userId,
-  ) async {
+  Future<TeamMemberModel> getTeamMember(String teamId, String userId) async {
     final result = await _apiClient.get<TeamMemberModel>(
       TeamsEndPoint.members2(teamId, userId),
       fromJson: (json) => TeamMemberModel.fromMap(json as Map<String, dynamic>),
@@ -625,9 +621,7 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<List<TeamUnreadModel>> getTeamsUnreadForUser(
-    String userId,
-  ) async {
+  Future<List<TeamUnreadModel>> getTeamsUnreadForUser(String userId) async {
     final result = await _apiClient.get<List<TeamUnreadModel>>(
       UsersEndPoint.teamsUnread(userId),
       fromJson: (json) => (json as List<dynamic>)
@@ -647,8 +641,7 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   ) async {
     final result = await _apiClient.get<TeamUnreadModel>(
       UsersEndPoint.teamsUnread2(userId, teamId),
-      fromJson: (json) =>
-          TeamUnreadModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) => TeamUnreadModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<TeamUnreadModel>) {
       return result.data;
@@ -728,9 +721,7 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<List<CommandModel>> autocompleteCommandsInTeam(
-    String teamId,
-  ) async {
+  Future<List<CommandModel>> autocompleteCommandsInTeam(String teamId) async {
     final result = await _apiClient.get<List<CommandModel>>(
       TeamsEndPoint.commandsAutocomplete(teamId),
       fromJson: (json) => (json as List<dynamic>)
@@ -757,9 +748,8 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
       },
       fromJson: (json) => (json as List<dynamic>)
           .map(
-            (e) => AutocompleteSuggestionModel.fromMap(
-              e as Map<String, dynamic>,
-            ),
+            (e) =>
+                AutocompleteSuggestionModel.fromMap(e as Map<String, dynamic>),
           )
           .toList(),
     );
@@ -828,7 +818,10 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<TeamMemberModel> addTeamMemberFromInvite({String? token, String? inviteId}) async {
+  Future<TeamMemberModel> addTeamMemberFromInvite({
+    String? token,
+    String? inviteId,
+  }) async {
     final result = await _apiClient.post<TeamMemberModel>(
       TeamsEndPoint.membersInvite,
       queryParameters: {
@@ -844,7 +837,10 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<List<TeamMemberModel>> addTeamMembers(String teamId, List<String> userIds) async {
+  Future<List<TeamMemberModel>> addTeamMembers(
+    String teamId,
+    List<String> userIds,
+  ) async {
     final result = await _apiClient.post<List<TeamMemberModel>>(
       TeamsEndPoint.membersBatch(teamId),
       data: userIds.map((id) => {'team_id': teamId, 'user_id': id}).toList(),
@@ -859,7 +855,10 @@ class TeamsRemoteDataSourceImpl implements TeamsRemoteDataSource {
   }
 
   @override
-  Future<void> inviteGuestsToTeam(String teamId, Map<String, dynamic> guests) async {
+  Future<void> inviteGuestsToTeam(
+    String teamId,
+    Map<String, dynamic> guests,
+  ) async {
     await _apiClient.post<void>(
       TeamsEndPoint.inviteGuestsEmail(teamId),
       data: guests,

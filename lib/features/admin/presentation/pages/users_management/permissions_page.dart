@@ -8,6 +8,7 @@ import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/role_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/scheme_entity.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_roles_schemes_repository.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/scheme_permissions_widget.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/team_override_scheme_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/widgets/admin_setting_section.dart';
 import 'package:go_router/go_router.dart';
@@ -483,90 +484,6 @@ class _AdminConsolePermissionsPageState
       context,
       MaterialPageRoute(builder: (_) => TeamOverrideSchemePage()),
     );
-    // final nameCtrl = TextEditingController();
-    // final displayNameCtrl = TextEditingController();
-    // final descCtrl = TextEditingController();
-
-    // showDialog(
-    //   context: context,
-    //   builder: (ctx) => AlertDialog(
-    //     backgroundColor: const Color(0xFF212433),
-    //     title: const Text(
-    //       'Create Team Override Scheme',
-    //       style: TextStyle(color: Colors.white, fontSize: 16),
-    //     ),
-    //     content: SingleChildScrollView(
-    //       child: Column(
-    //         mainAxisSize: MainAxisSize.min,
-    //         children: [
-    //           TextField(
-    //             controller: displayNameCtrl,
-    //             style: const TextStyle(color: Colors.white),
-    //             decoration: const InputDecoration(
-    //               labelText: 'Display Name',
-    //               labelStyle: TextStyle(color: Colors.white70),
-    //               enabledBorder: UnderlineInputBorder(
-    //                 borderSide: BorderSide(color: Colors.white38),
-    //               ),
-    //             ),
-    //           ),
-    //           const SizedBox(height: 12),
-    //           TextField(
-    //             controller: nameCtrl,
-    //             style: const TextStyle(color: Colors.white),
-    //             decoration: const InputDecoration(
-    //               labelText: 'Name (URL-safe)',
-    //               labelStyle: TextStyle(color: Colors.white70),
-    //               enabledBorder: UnderlineInputBorder(
-    //                 borderSide: BorderSide(color: Colors.white38),
-    //               ),
-    //             ),
-    //           ),
-    //           const SizedBox(height: 12),
-    //           TextField(
-    //             controller: descCtrl,
-    //             style: const TextStyle(color: Colors.white),
-    //             decoration: const InputDecoration(
-    //               labelText: 'Description',
-    //               labelStyle: TextStyle(color: Colors.white70),
-    //               enabledBorder: UnderlineInputBorder(
-    //                 borderSide: BorderSide(color: Colors.white38),
-    //               ),
-    //             ),
-    //           ),
-    //         ],
-    //       ),
-    //     ),
-    //     actions: [
-    //       TextButton(
-    //         onPressed: () => Navigator.of(ctx).pop(),
-    //         child: const Text(
-    //           'Cancel',
-    //           style: TextStyle(color: Colors.white54),
-    //         ),
-    //       ),
-    //       ElevatedButton(
-    //         onPressed: () {
-    //           final name = nameCtrl.text.trim();
-    //           final displayName = displayNameCtrl.text.trim();
-    //           if (name.isEmpty || displayName.isEmpty) {
-    //             ScaffoldMessenger.of(context).showSnackBar(
-    //               const SnackBar(
-    //                 content: Text('Name and Display Name are required.'),
-    //                 backgroundColor: Colors.redAccent,
-    //               ),
-    //             );
-    //             return;
-    //           }
-    //           Navigator.of(ctx).pop();
-    //           _createScheme(name, displayName, descCtrl.text.trim());
-    //         },
-    //         style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
-    //         child: const Text('Create'),
-    //       ),
-    //     ],
-    //   ),
-    // );
   }
 }
 
@@ -651,169 +568,111 @@ class _SystemSchemePageState extends State<SystemSchemePage> {
         .toList();
     const teamAdmins = <RoleEntity>[];
     final sysAdmins = _roles.where((r) => r.name == 'system_admin').toList();
+    final playbookAdmins = _roles
+        .where((r) => r.name == 'playbook_admin')
+        .toList();
 
+    final colors = AppTheme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: Color.fromRGBO(245, 245, 245, 1),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(65),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 65,
+              height: 65,
+              child: InkWell(
+                child: Align(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Icon(Icons.arrow_back_ios),
+                  ),
+                ),
+                onTap: () => Navigator.pop(context),
+              ),
+            ),
+            VerticalDivider(thickness: 0.50, width: 0),
+            Expanded(
+              child: Container(
+                padding: .symmetric(horizontal: 16, vertical: 20),
+                alignment: .centerStart,
+                child: Text(
+                  'System Scheme',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: .bold,
+                    color: colors.centerChannelColor,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
       body: _loading
           ? const Center(
               child: CircularProgressIndicator(color: Colors.blueAccent),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.shield_rounded,
-                        color: Colors.blueAccent,
-                        size: 20,
+              child: SizedBox(
+                width: 870,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (guests.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'Gest',
+                        roles: guests,
+                        subtitle: 'Permissions granted to guest users.',
+                        isVisible: true,
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'System Scheme',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    if (allUsers.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'All Members',
+                        roles: allUsers,
+                        subtitle:
+                            'Permissions granted to all members, including administrators and newly created users.',
+                        isVisible: true,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'The system scheme applies to all teams unless a team override scheme is used.',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(height: 24),
-                  if (guests.isNotEmpty)
-                    _buildPermissionSection(
-                      'Guests',
-                      'Permissions granted to guest users.',
-                      guests.first,
-                    ),
-                  if (allUsers.isNotEmpty)
-                    _buildPermissionSection(
-                      'All Members',
-                      'Permissions granted to all registered users.',
-                      allUsers.first,
-                    ),
-                  if (channelAdmins.isNotEmpty)
-                    _buildPermissionSection(
-                      'Channel Administrators',
-                      'Additional permissions for channel admins.',
-                      channelAdmins.first,
-                    ),
-                  _buildPermissionSection(
-                    'Team Administrators',
-                    'Additional permissions for team admins.',
-                    teamAdmins.isNotEmpty ? teamAdmins.first : _roles.first,
-                  ),
-                  if (sysAdmins.isNotEmpty)
-                    _buildPermissionSection(
-                      'System Administrators',
-                      'Full administrative access.',
-                      sysAdmins.first,
-                    ),
-                ],
+                    if (channelAdmins.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'Channel Administrators',
+                        roles: channelAdmins,
+                        subtitle:
+                            'Permissions granted to channel creators and any users promoted to Channel Administrator.',
+                        isVisible: true,
+                      ),
+                    if (playbookAdmins.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'Playbook Administrators',
+                        roles: allUsers,
+                        subtitle:
+                            'Permissions granted to administrators of a playbook.',
+                        isVisible: true,
+                      ),
+                    if (teamAdmins.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'Team Administrators',
+                        roles: teamAdmins,
+                        subtitle:
+                            'Permissions granted to team creators and any users promoted to Team Administrator.',
+                        isVisible: true,
+                      ),
+                    if (sysAdmins.isNotEmpty)
+                      SchemePermissionsWidget(
+                        title: 'System Administrators',
+                        roles: allUsers,
+                        subtitle:
+                            'Permissions granted to all members, including administrators and newly created users.',
+                        isVisible: true,
+                      ),
+                  ],
+                ),
               ),
             ),
     );
-  }
-
-  Widget _buildPermissionSection(
-    String title,
-    String subtitle,
-    RoleEntity role,
-  ) {
-    final permissions = role.permissions;
-    final groupedPermissions = _groupPermissions(permissions);
-
-    return AdminSettingSection(
-      title: title,
-      subtitle: subtitle,
-      children: [
-        Text(
-          '${role.name} — ${permissions.length} permissions',
-          style: const TextStyle(color: Colors.white54, fontSize: 11),
-        ),
-        const SizedBox(height: 12),
-        ...groupedPermissions.entries.map(
-          (entry) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF181825),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  entry.key,
-                  style: const TextStyle(
-                    color: Colors.blueAccent,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: entry.value
-                      .map(
-                        (perm) => Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.08),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            perm,
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 10,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Map<String, List<String>> _groupPermissions(List<String> permissions) {
-    final Map<String, List<String>> grouped = {};
-    for (final perm in permissions) {
-      final parts = perm.split('.');
-      final category = parts.isNotEmpty ? parts[0] : 'other';
-      final displayName = _formatCategoryName(category);
-      grouped.putIfAbsent(displayName, () => []).add(perm);
-    }
-    return grouped;
-  }
-
-  String _formatCategoryName(String key) {
-    final map = {
-      'system': 'System',
-      'team': 'Team',
-      'channel': 'Channel',
-      'user': 'User',
-      'plugin': 'Plugin',
-      'playbook': 'Playbook',
-      'post': 'Posts',
-    };
-    return map[key] ?? key.toUpperCase();
   }
 }
 
