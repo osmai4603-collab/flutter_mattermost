@@ -2,7 +2,7 @@ name: flutter_mattermost
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -49,7 +49,6 @@ dependencies:
   connectivity_plus: ^6.0.3
   osm_network:
     path: packages/osm_network
-
 
   # Local Storage & Security
   drift: ^2.18.0
@@ -99,7 +98,6 @@ dependencies:
   media_kit_video: ^2.0.1
   media_kit_libs_video: ^1.0.7
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -130,7 +128,6 @@ flutter:
     - assets/images/emoji/
     - assets/sounds/
 
-
   fonts:
     - family: NotoNaskhArabic
       fonts:
@@ -142,6 +139,23 @@ flutter:
           weight: 600
         - asset: assets/fonts/Noto_Naskh_Arabic/NotoNaskhArabic-Bold.ttf
           weight: 700
+    - family: Metropolis
+      fonts:
+        - asset: assets/fonts/Metropolis-Light.ttf
+        - asset: assets/fonts/Metropolis-Regular.ttf
+        - asset: assets/fonts/Metropolis-SemiBold.ttf
+    - family: OpenSans
+      fonts:
+        - asset: assets/fonts/OpenSans-Italic.ttf
+        - asset: assets/fonts/OpenSans-Light.ttf
+        - asset: assets/fonts/OpenSans-LightItalic.ttf
+        - asset: assets/fonts/OpenSans-Regular.ttf
+        - asset: assets/fonts/OpenSans-SemiBold.ttf
+        - asset: assets/fonts/OpenSans-SemiBoldItalic.ttf
+        - asset: assets/fonts/OpenSans-Bold.ttf
+        - asset: assets/fonts/OpenSans-BoldItalic.ttf
+        - asset: assets/fonts/OpenSans-ExtraBold.ttf
+        - asset: assets/fonts/OpenSans-ExtraBoldItalic.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

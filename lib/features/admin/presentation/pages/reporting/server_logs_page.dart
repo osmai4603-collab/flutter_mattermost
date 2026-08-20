@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/features/admin/data/models/log_entry_model.dart';
 import 'package:flutter_mattermost/features/admin/domain/repositories/admin_config_repository.dart';
 
@@ -223,11 +224,11 @@ class _AdminConsoleServerLogsPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF181825),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildPageHeader(),
+          Divider(thickness: 0.60, height: 0),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -291,27 +292,19 @@ class _AdminConsoleServerLogsPageState
   }
 
   Widget _buildPageHeader() {
+    final colors = AppTheme.of(context);
     return Container(
-      height: 56,
+      height: 65,
+      alignment: .centerStart,
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF1E1E2E),
+      decoration: BoxDecoration(
+        color: colors.centerChannelBg,
         border: Border(bottom: BorderSide(color: Colors.white10)),
       ),
-      child: const Row(
-        children: [
-          Icon(Icons.article_outlined, color: Colors.blueAccent, size: 22),
-          SizedBox(width: 10),
-          Text(
-            'Server Logs',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+      child: Text(
+        'Server Logs',
+        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
       ),
     );
   }

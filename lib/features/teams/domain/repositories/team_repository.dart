@@ -26,6 +26,10 @@ abstract class TeamRepository {
   Future<bool> checkIfTeamExists(String teamName);
   Future<TeamStatsEntity> getTeamStats(String teamId);
   Future<TeamEntity> createTeam(Map<String, dynamic> team);
+  Future<TeamEntity> updateTeam(TeamEntity team);
+  Future<TeamEntity> patchTeam(String teamId, Map<String, dynamic> patch);
+  Future<void> deleteTeam(String teamId);
+  Future<void> unarchiveTeam(String teamId);
   Future<void> inviteMembersByEmail(String teamId, List<String> emails);
   Future<void> inviteGuestsToChannels(
     String teamId, {

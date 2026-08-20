@@ -123,6 +123,40 @@ class TeamRepositoryImpl implements TeamRepository {
   }
 
   @override
+  Future<TeamEntity> updateTeam(TeamEntity team) async {
+    final model = await _remoteDataSource.updateTeam({
+      'id': team.id,
+      'display_name': team.displayName,
+      'description': team.description,
+      'allow_open_invite': team.allowOpenInvite,
+      'allowed_domains': team.allowedDomains,
+    });
+    final entity = model.toEntity();
+    _teamCache[entity.id] = entity;
+    return entity;
+  }
+
+  @override
+  Future<TeamEntity> patchTeam(String teamId, Map<String, dynamic> patch) async {
+    final model = await _remoteDataSource.patchTeam(teamId, patch);
+    final entity = model.toEntity();
+    _teamCache[entity.id] = entity;
+    return entity;
+  }
+
+  @override
+  Future<void> deleteTeam(String teamId) async {
+    await _remoteDataSource.deleteTeam(teamId);
+    _teamCache.remove(teamId);
+  }
+
+  @override
+  Future<void> unarchiveTeam(String teamId) async {
+    await _remoteDataSource.unarchiveTeam(teamId);
+    _teamCache.remove(teamId);
+  }
+
+  @override
   Future<void> inviteMembersByEmail(
     String teamId,
     List<String> emails,

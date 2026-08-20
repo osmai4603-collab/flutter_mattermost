@@ -57,62 +57,62 @@ sealed class AppTheme {
     final textTheme =
         ThemeData(useMaterial3: true, brightness: theme.brightness).textTheme
             .apply(
-              fontFamily: AppFonts.notoNaskhArabic,
+              fontFamily: AppFonts.menlo,
               bodyColor: theme.centerChannelColor,
               displayColor: theme.centerChannelColor,
             )
             .copyWith(
               displayLarge: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s48,
               ),
               displayMedium: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s40,
               ),
               displaySmall: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s36,
               ),
               headlineLarge: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s32,
               ),
               headlineMedium: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s28,
               ),
               headlineSmall: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s24,
               ),
               titleLarge: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s22,
               ),
               titleMedium: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s16,
               ),
               titleSmall: textStyle(
                 theme,
-                AppFonts.notoNaskhArabic,
+                AppFonts.menlo,
                 FontWeight.w600,
                 AppFontSizes.s14,
               ),

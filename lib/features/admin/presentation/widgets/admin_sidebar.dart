@@ -1,17 +1,28 @@
-import 'dart:js_interop';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_mattermost/core/theme/app_fonts.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
-import 'package:flutter_mattermost/features/admin/domain/entities/console_access_entity.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/admin/domain/entities/resource_keys.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/admin_section.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_email_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_guest_access_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_ldap_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_mfa_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_openid_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_password_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/auth_saml_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/compliance/data_retention_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/plugins/plugins_management_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/notifications_settings_page.dart';
 import 'package:flutter_mattermost/features/admin/presentation/pages/reporting/server_logs_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/users_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/groups_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/teams_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/channels_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/users_management/roles_schemes_page.dart';
+import 'package:flutter_mattermost/features/admin/presentation/pages/authentication/delegated_admin_page.dart';
 import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/auth/presentation/pages/signup_page.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
@@ -37,10 +48,12 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   final Set<String> _collapsedCategories = {};
+  AdminConsoleSection sectionSelected = AdminConsoleSection.editionAndLicense;
 
   @override
   void initState() {
     super.initState();
+    sectionSelected = widget.selected;
     _ensureSelectedCategoryExpanded();
   }
 
@@ -48,6 +61,7 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
   void didUpdateWidget(covariant AdminConsoleSideBar oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.selected != widget.selected) {
+      sectionSelected = widget.selected;
       _ensureSelectedCategoryExpanded();
     }
   }
@@ -85,16 +99,6 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
     }
   }
 
-  void _toggleCategory(String title) {
-    setState(() {
-      if (_collapsedCategories.contains(title)) {
-        _collapsedCategories.remove(title);
-      } else {
-        _collapsedCategories.add(title);
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     // final groups = AdminConsoleSection.sectionsGroup;
@@ -108,9 +112,9 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
     final cardBg = colors.centerChannelColor.withValues(alpha: 70);
 
     return Container(
-      width: 260,
+      width: 221,
       decoration: BoxDecoration(
-        color: sidebarBg,
+        color: Colors.black87,
         border: Border(right: BorderSide(color: Colors.white10, width: 1)),
       ),
       child: Column(
@@ -132,6 +136,7 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
                   icon: Icons.info_outline_rounded,
                 ),
                 ...aboutGroupList(colors),
+
                 containerGroup(
                   title: ResourceKeys.reporting,
                   icon: Icons.info_outline_rounded,
@@ -142,7 +147,7 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
                   title: ResourceKeys.userManagement,
                   icon: Icons.group_outlined,
                 ),
-                ...aboutGroupList(colors),
+                ...userManagementGroupList(colors),
 
                 containerGroup(
                   title: 'SYSTEM ATTRIBUTES',
@@ -180,7 +185,6 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
             ),
           ),
 
-          // 4. Footer Exit Button
           _buildFooter(context),
         ],
       ),
@@ -321,37 +325,37 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Password',
         section: .password,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthPasswordPage(),
       ),
       groupChild(
         title: 'MFA',
         section: .mfa,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthMfaPage(),
       ),
       groupChild(
         title: 'AD/LDAP',
         section: .adALDAP,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthLdapPage(),
       ),
       groupChild(
         title: 'SAML 2.0',
         section: .saml,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthSamlPage(),
       ),
       groupChild(
         title: 'OpenID Connect',
         section: .openIDConnect,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthOpenIdPage(),
       ),
       groupChild(
         title: 'Gest Access',
         section: .guestAccess,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleAuthGuestAccessPage(),
       ),
     ];
   }
@@ -597,37 +601,37 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
         title: 'Users',
         section: .users,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => UsersPage(),
       ),
       groupChild(
         title: 'Groups',
         section: .groups,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => AdminConsoleGroupsPage(),
       ),
       groupChild(
         title: 'Teams',
         section: .teams,
         colors: colors,
-        onTap: () => Container(),
+        onTap: () => TeamsPage(),
       ),
       groupChild(
         title: 'Channels',
         section: .channels,
         colors: colors,
-        onTap: () => AdminConsoleServerLogsPage(),
+        onTap: () => AdminConsoleChannelsManagementPage(),
       ),
       groupChild(
         title: 'Permissions',
         section: .permissions,
         colors: colors,
-        onTap: () => AdminConsoleServerLogsPage(),
+        onTap: () => AdminConsoleRolesSchemesPage(),
       ),
       groupChild(
         title: 'Delegated Granular Administration',
         section: .delegatedGranularAdministration,
         colors: colors,
-        onTap: () => AdminConsoleServerLogsPage(),
+        onTap: () => AdminConsoleDelegatedAdminPage(),
       ),
     ];
   }
@@ -635,20 +639,23 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
   Widget containerGroup({required String title, required IconData icon}) {
     final colors = AppTheme.of(context);
     return Container(
-      height: 48,
-      padding: .all(16),
+      height: 40,
+      margin: .symmetric(vertical: 4),
+      padding: .symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: colors.centerChannelColor.withValues(alpha: 0.65),
+        color: Colors
+            .white12, // colors.centerChannelColor.withValues(alpha: 0.65),
       ),
       child: Row(
         spacing: 8,
         children: [
-          Icon(icon, size: 18),
+          Icon(icon, size: 18, color: colors.centerChannelBg),
           Text(
             title.toUpperCase(),
             style: TextStyle(
               fontSize: 15,
               fontWeight: .w500,
+              fontFamily: AppFonts.monaco,
               color: colors.centerChannelBg,
             ),
           ),
@@ -663,35 +670,43 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
     required MattermostColors colors,
     required Widget Function() onTap,
   }) {
-    final isSelected = widget.selected == section;
-    return Material(
-      color: isSelected
-          ? colors.centerChannelColor.withValues(alpha: 0.40)
-          : Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          widget.onBodyChange(onTap());
-          setState(() {});
-        },
-        child: SizedBox(
-          height: 30,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16.0,
-              vertical: 8.0,
-            ),
-            child: Align(
-              alignment: .centerStart,
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontWeight: .w400,
-                  fontSize: 12,
-                  color: colors.centerChannelBg,
+    final isSelected = sectionSelected == section;
+    return InkWell(
+      onTap: () {
+        widget.onBodyChange(onTap());
+        setState(() => sectionSelected = section);
+      },
+      child: Container(
+        color: isSelected
+            ? Colors
+                  .white12 // colors.centerChannelColor.withValues(alpha: 0.50)
+            : null,
+        height: 32,
+        child: HoverWidget(
+          builder: (context, isHovered) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Align(
+                alignment: .centerStart,
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: .w400,
+                    fontSize: 13,
+                    fontFamily: AppFonts.menlo,
+                    color: isHovered && !isSelected
+                        ? colors.linkColor.withValues(alpha: 0.70)
+                        : isSelected
+                        ? colors.centerChannelBg
+                        : colors.centerChannelBg.withValues(alpha: 0.70),
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -769,238 +784,58 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
   /// شريط البحث "Find settings..."
   Widget _buildSearchBar(Color cardBg) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 10, 10, 6),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (val) =>
-            setState(() => _searchQuery = val.trim().toLowerCase()),
-        style: const TextStyle(color: Colors.white, fontSize: 12),
-        decoration: InputDecoration(
-          hintText: 'Find settings...',
-          hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
-          prefixIcon: const Icon(
-            Icons.search_rounded,
-            color: Colors.white38,
-            size: 16,
-          ),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(
-                    Icons.clear,
-                    color: Colors.white38,
-                    size: 14,
-                  ),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: cardBg,
-          isDense: true,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 10,
-            vertical: 9,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Colors.blueAccent, width: 1),
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16),
+      child: SizedBox(
+        height: 32,
+        child: TextField(
+          controller: _searchController,
+          onChanged: (val) =>
+              setState(() => _searchQuery = val.trim().toLowerCase()),
+          style: const TextStyle(color: Colors.white, fontSize: 12),
+          decoration: InputDecoration(
+            hintText: 'Find settings...',
+            hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+            prefixIcon: const Icon(
+              Icons.search_rounded,
+              color: Colors.white38,
+              size: 16,
+            ),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? InkWell(
+                    child: Padding(
+                      padding: const EdgeInsets.all(2.0),
+                      child: const Icon(
+                        Icons.clear,
+                        color: Colors.white38,
+                        size: 14,
+                      ),
+                    ),
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                  )
+                : null,
+            filled: true,
+            fillColor: Colors.white24,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 10,
+              vertical: 4,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: Colors.blueAccent, width: 1),
+            ),
           ),
         ),
       ),
     );
   }
-
-  /// مجموعة التصنيفات القابلة للطي والفتح (Accordion Category)
-  // Widget _buildCategoryGroup({
-  //   required String title,
-  //   required IconData categoryIcon,
-  //   required List<AdminConsoleSection> sections,
-  //   required dynamic currentUser,
-  //   required ConsoleAccessEntity access,
-  //   required Color cardBg,
-  // }) {
-  //   final visibleSections = sections
-  //       .where((s) => _isSectionVisible(s, currentUser, access))
-  //       .toList();
-
-  //   if (visibleSections.isEmpty) return const SizedBox.shrink();
-
-  //   final isSearching = _searchQuery.isNotEmpty;
-  //   final isExpanded = isSearching || !_collapsedCategories.contains(title);
-  //   final hasSelectedSection = visibleSections.contains(widget.selected);
-
-  //   return MarginPaddingContainer(
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         InkWell(
-  //           onTap: isSearching ? null : () => _toggleCategory(title),
-  //           borderRadius: BorderRadius.circular(6),
-  //           child: Padding(
-  //             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-  //             child: Row(
-  //               children: [
-  //                 Icon(
-  //                   isExpanded
-  //                       ? Icons.keyboard_arrow_down_rounded
-  //                       : Icons.keyboard_arrow_right_rounded,
-  //                   color: hasSelectedSection
-  //                       ? Colors.blueAccent
-  //                       : Colors.white38,
-  //                   size: 18,
-  //                 ),
-  //                 const SizedBox(width: 4),
-  //                 Icon(
-  //                   categoryIcon,
-  //                   color: hasSelectedSection
-  //                       ? Colors.blueAccent
-  //                       : Colors.white54,
-  //                   size: 15,
-  //                 ),
-  //                 const SizedBox(width: 8),
-  //                 Expanded(
-  //                   child: Text(
-  //                     title,
-  //                     style: TextStyle(
-  //                       color: hasSelectedSection
-  //                           ? Colors.white
-  //                           : Colors.white60,
-  //                       fontSize: 11,
-  //                       fontWeight: FontWeight.w700,
-  //                       letterSpacing: 0.7,
-  //                     ),
-  //                   ),
-  //                 ),
-  //                 Container(
-  //                   padding: const EdgeInsets.symmetric(
-  //                     horizontal: 6,
-  //                     vertical: 2,
-  //                   ),
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.white.withValues(alpha: 0.05),
-  //                     borderRadius: BorderRadius.circular(10),
-  //                   ),
-  //                   child: Text(
-  //                     '${visibleSections.length}',
-  //                     style: const TextStyle(
-  //                       color: Colors.white38,
-  //                       fontSize: 10,
-  //                       fontWeight: FontWeight.w600,
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-
-  //         // العناصر الفرعية
-  //         if (isExpanded)
-  //           Padding(
-  //             padding: const EdgeInsets.only(top: 2, bottom: 4),
-  //             child: Column(
-  //               children: visibleSections
-  //                   .map((section) => _buildItem(section))
-  //                   .toList(),
-  //             ),
-  //           ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  /// عنصر قسم فردي داخل التصنيف
-  // Widget _buildItem(AdminConsoleSection section) {
-  //   final isSelected = widget.selected == section;
-
-  //   return Container(
-  //     margin: const EdgeInsets.only(bottom: 2),
-  //     // child: Material(
-  //     //   color: Colors.transparent,
-  //     //   borderRadius: BorderRadius.circular(6),
-  //     //   child: InkWell(
-  //     //     onTap: () => widget.onSelected(section),
-  //     //     borderRadius: BorderRadius.circular(6),
-  //     //     hoverColor: Colors.white.withValues(alpha: 0.04),
-  //     //     child: AnimatedContainer(
-  //     //       duration: const Duration(milliseconds: 150),
-  //     //       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-  //     //       decoration: BoxDecoration(
-  //     //         color: isSelected
-  //     //             ? Colors.blueAccent.withValues(alpha: 0.15)
-  //     //             : Colors.transparent,
-  //     //         borderRadius: BorderRadius.circular(6),
-  //     //       ),
-  //     //       child: Row(
-  //     //         children: [
-  //     //           // الشريط النشط الأزرق الجانبي
-  //     //           AnimatedContainer(
-  //     //             duration: const Duration(milliseconds: 150),
-  //     //             width: 3.5,
-  //     //             height: 16,
-  //     //             decoration: BoxDecoration(
-  //     //               color: isSelected ? Colors.blueAccent : Colors.transparent,
-  //     //               borderRadius: BorderRadius.circular(2),
-  //     //             ),
-  //     //           ),
-  //     //           const SizedBox(width: 8),
-  //     //           Icon(
-  //     //             section.icon,
-  //     //             color: isSelected ? Colors.blueAccent : Colors.white54,
-  //     //             size: 16,
-  //     //           ),
-  //     //           const SizedBox(width: 10),
-  //     //           Expanded(
-  //     //             child: Text(
-  //     //               section.title,
-  //     //               style: TextStyle(
-  //     //                 color: isSelected ? Colors.white : Colors.white70,
-  //     //                 fontSize: 12.5,
-  //     //                 fontWeight: isSelected
-  //     //                     ? FontWeight.w600
-  //     //                     : FontWeight.w400,
-  //     //               ),
-  //     //               overflow: TextOverflow.ellipsis,
-  //     //             ),
-  //     //           ),
-  //     //           if (section.isEnterprise)
-  //     //             Container(
-  //     //               margin: const EdgeInsets.only(left: 4),
-  //     //               padding: const EdgeInsets.symmetric(
-  //     //                 horizontal: 5,
-  //     //                 vertical: 1.5,
-  //     //               ),
-  //     //               decoration: BoxDecoration(
-  //     //                 color: Colors.purpleAccent.withValues(alpha: 0.18),
-  //     //                 border: Border.all(
-  //     //                   color: Colors.purpleAccent.withValues(alpha: 0.4),
-  //     //                   width: 0.8,
-  //     //                 ),
-  //     //                 borderRadius: BorderRadius.circular(4),
-  //     //               ),
-  //     //               child: const Text(
-  //     //                 'ENT',
-  //     //                 style: TextStyle(
-  //     //                   color: Colors.purpleAccent,
-  //     //                   fontSize: 8.5,
-  //     //                   fontWeight: FontWeight.bold,
-  //     //                   letterSpacing: 0.5,
-  //     //                 ),
-  //     //               ),
-  //     //             ),
-  //     //         ],
-  //     //       ),
-  //     //     ),
-  //     //   ),
-  //     // ),
-  //   );
-  // }
 
   /// زر الفوتر السفلي للعودة للورشة / الفريق
   Widget _buildFooter(BuildContext context) {
@@ -1036,31 +871,6 @@ class _AdminConsoleSideBarState extends State<AdminConsoleSideBar> {
       ),
     );
   }
-
-  // bool _isSectionVisible(
-  //   AdminConsoleSection section,
-  //   dynamic currentUser,
-  //   ConsoleAccessEntity access,
-  // ) {
-  //   if (AdminAccessGuard.isSectionHidden(
-  //     resourceKey: section.resourceKey,
-  //     currentUser: currentUser,
-  //     access: access,
-  //     requiresEnterprise: section.isEnterprise,
-  //   )) {
-  //     return false;
-  //   }
-  //   if (_searchQuery.isEmpty) return true;
-  //   return section.title.toLowerCase().contains(_searchQuery);
-  // }
-
-  // bool _hasMatchingSections(
-  //   List<AdminConsoleSection> sections,
-  //   dynamic currentUser,
-  //   ConsoleAccessEntity access,
-  // ) {
-  //   return sections.any((s) => _isSectionVisible(s, currentUser, access));
-  // }
 }
 
 /// ويدجت تغليف الهامش والحاوية
