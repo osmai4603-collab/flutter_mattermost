@@ -1084,6 +1084,13 @@ packages:
       relative: true
     source: path
     version: "1.0.0"
+  osm_ui_components:
+    dependency: "direct main"
+    description:
+      path: "packages/osm_ui_components"
+      relative: true
+    source: path
+    version: "1.0.0"
   package_config:
     dependency: transitive
     description:

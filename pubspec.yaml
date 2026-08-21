@@ -49,6 +49,9 @@ dependencies:
   connectivity_plus: ^6.0.3
   osm_network:
     path: packages/osm_network
+  osm_ui_components:
+    path: packages/osm_ui_components
+
 
   # Local Storage & Security
   drift: ^2.18.0
