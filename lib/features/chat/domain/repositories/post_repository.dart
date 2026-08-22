@@ -11,6 +11,12 @@ abstract class PostRepository {
     String? before,
     String? after,
   });
+  Future<List<PostEntity>> getPostsUnread(
+    String userId,
+    String channelId, {
+    int? limitBefore,
+    int? limitAfter,
+  });
   Future<PostEntity> sendPost(
     String channelId,
     String message, {

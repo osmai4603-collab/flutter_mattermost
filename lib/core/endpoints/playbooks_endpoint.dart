@@ -38,4 +38,5 @@ sealed class PlaybooksEndPoint {
       '$base/runs/$runId/checklists/$checklistId/item/$itemId/run';
   static String runPropertyValue(String runId, String fieldId) =>
       '$base/runs/$runId/property_fields/$fieldId/value';
+  static String channelActions(String channelId) => '$base/actions/channels/$channelId';
 }

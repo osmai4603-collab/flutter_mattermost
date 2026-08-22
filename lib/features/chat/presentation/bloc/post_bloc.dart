@@ -15,6 +15,7 @@ import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
+import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/users/data/datasources/users_remote_data_source.dart';
 
 // Events
@@ -336,6 +337,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   final SecureStorageService _secureStorage;
   final ChannelBloc _channelBloc;
   final RhsBloc _rhsBloc;
+  final ChannelRepository _channelRepository;
   StreamSubscription? _wsSubscription;
   StreamSubscription? _channelSubscription;
   Timer? _typingClearTimer;
@@ -355,8 +357,10 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     this._typingDataSource,
     this._secureStorage,
     this._channelBloc,
-    this._rhsBloc,
-  ) : super(PostInitialState()) {
+    this._rhsBloc, [
+    ChannelRepository? channelRepository,
+  ])  : _channelRepository = channelRepository ?? getIt<ChannelRepository>(),
+        super(PostInitialState()) {
     on<LoadPostsForChannelEvent>(_onLoadPosts);
     on<LoadMorePostsEvent>(_onLoadMorePosts);
     on<LoadPostsAroundEvent>(_onLoadPostsAround);
@@ -445,7 +449,22 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     }
     emit(PostLoadingState(event.channelId));
     try {
-      final posts = await _postRepository.getPostsForChannel(event.channelId);
+      List<PostEntity> posts = [];
+      final userId = await _secureStorage.getUserId() ?? '';
+      if (userId.isNotEmpty) {
+        try {
+          posts = await _postRepository.getPostsUnread(
+            userId,
+            event.channelId,
+            limitBefore: 30,
+            limitAfter: 30,
+          );
+        } catch (_) {}
+      }
+      if (posts.isEmpty) {
+        posts = await _postRepository.getPostsForChannel(event.channelId);
+      }
+
       emit(
         PostsLoadedState(
           channelId: event.channelId,
@@ -456,6 +475,14 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       await _loadFlagged(emit);
       await _loadChannelExtras(emit);
       await _loadThreadFollowing(emit);
+
+      // خطوة التأكيد النهائية: بعد تمام تحميل المحتوى وعرض الرسائل، يتم استدعاء view للتأكيد والربط الحقيقي
+      try {
+        await _channelRepository.viewMyChannel(
+          event.channelId,
+          collapsedThreads: true,
+        );
+      } catch (_) {}
     } catch (e) {
       emit(PostErrorState(e.toString()));
     }

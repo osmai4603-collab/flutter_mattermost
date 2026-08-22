@@ -395,7 +395,8 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
   @override
   Future<ChannelStatsModel> getChannelStats(String channelId) async {
     final result = await _apiClient.get<ChannelStatsModel>(
-      ChannelsEndPoint.stats(channelId),
+      '/channels/$channelId/stats',
+      queryParameters: {'exclude_files_count': 'true'},
       fromJson: (json) =>
           ChannelStatsModel.fromMap(json as Map<String, dynamic>),
     );

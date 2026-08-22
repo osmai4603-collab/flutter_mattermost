@@ -62,6 +62,22 @@ class PostRepositoryImpl implements PostRepository {
   }
 
   @override
+  Future<List<PostEntity>> getPostsUnread(
+    String userId,
+    String channelId, {
+    int? limitBefore,
+    int? limitAfter,
+  }) async {
+    final models = await _remoteDataSource.getPostsUnread(
+      userId,
+      channelId,
+      limitBefore: limitBefore,
+      limitAfter: limitAfter,
+    );
+    return models.map((m) => m.toEntity()).toList();
+  }
+
+  @override
   Future<PostEntity> sendPost(
     String channelId,
     String message, {

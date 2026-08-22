@@ -164,7 +164,11 @@ abstract class ChannelRepository {
   });
 
   /// تعليم قناة كمقروءة — يطابق view /users/{userId}/channels/{channelId}/view.
-  Future<void> viewMyChannel(String channelId);
+  Future<void> viewMyChannel(
+    String channelId, {
+    String? prevChannelId,
+    bool collapsedThreads = true,
+  });
 
   /// تعليم عدة قنوات كمقروءة دفعة واحدة (تستخدمها «تعليم الفئة كمقروءة»).
   Future<void> readMultipleChannels(List<String> channelIds);

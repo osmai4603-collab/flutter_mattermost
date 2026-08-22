@@ -106,6 +106,7 @@ abstract class PlaybooksRemoteDataSource {
   Future<void> restartPlaybookRun(String id);
   Future<void> updatePlaybookRun(String id, Map<String, dynamic> run);
   Future<void> updatePlaybookRunStatus(String id, Map<String, dynamic> status);
+  Future<List<dynamic>> getChannelActions(String channelId, {String triggerType = 'new_member_joins'});
 }
 
 @LazySingleton(as: PlaybooksRemoteDataSource)
@@ -549,5 +550,25 @@ class PlaybooksRemoteDataSourceImpl implements PlaybooksRemoteDataSource {
   @override
   Future<void> updatePlaybookRunStatus(String id, Map<String, dynamic> status) async {
     await _apiClient.post<void>(PlaybooksEndPoint.runStatus(id), data: status, fromJson: (_) {});
+  }
+
+  @override
+  Future<List<dynamic>> getChannelActions(
+    String channelId, {
+    String triggerType = 'new_member_joins',
+  }) async {
+    try {
+      final result = await _apiClient.get<List<dynamic>>(
+        PlaybooksEndPoint.channelActions(channelId),
+        queryParameters: {'trigger_type': triggerType},
+        fromJson: (json) => json is List ? json : [],
+      );
+      if (result is ApiSuccess<List<dynamic>>) {
+        return result.data;
+      }
+    } catch (_) {
+      // التعامل السلس مع غياب Playbooks plugin أو عودة خطأ 404
+    }
+    return [];
   }
 }

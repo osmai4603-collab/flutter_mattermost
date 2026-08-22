@@ -166,6 +166,9 @@ import '../../features/chat/presentation/bloc/lhs_bloc.dart' as _i894;
 import '../../features/chat/presentation/bloc/post_bloc.dart' as _i486;
 import '../../features/chat/presentation/bloc/rhs_bloc.dart' as _i478;
 import '../../features/chat/presentation/bloc/search_bloc.dart' as _i860;
+import '../../features/chat/presentation/cubit/drafts_cubit.dart' as _i986;
+import '../../features/chat/presentation/cubit/threads_summary_cubit.dart'
+    as _i1072;
 import '../../features/common/data/datasources/playbooks_remote_data_source.dart'
     as _i960;
 import '../../features/groups/data/datasources/groups_remote_data_source.dart'
@@ -174,6 +177,10 @@ import '../../features/groups/data/repositories/groups_repository_impl.dart'
     as _i485;
 import '../../features/groups/domain/repositories/groups_repository.dart'
     as _i137;
+import '../../features/groups/presentation/cubit/team_groups_cubit.dart'
+    as _i1045;
+import '../../features/integrations/data/datasources/agents_remote_data_source.dart'
+    as _i953;
 import '../../features/integrations/data/datasources/bots_remote_data_source.dart'
     as _i59;
 import '../../features/integrations/data/datasources/commands_remote_data_source.dart'
@@ -230,6 +237,7 @@ import '../../features/teams/data/repositories/team_repository_impl.dart'
     as _i437;
 import '../../features/teams/domain/repositories/team_repository.dart'
     as _i1065;
+import '../../features/teams/domain/team_dashboard_orchestrator.dart' as _i74;
 import '../../features/teams/presentation/bloc/team_bloc.dart' as _i550;
 import '../../features/users/data/datasources/user_preferences_remote_data_source.dart'
     as _i488;
@@ -378,6 +386,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1051.AdminContentFlaggingDataSource>(
       () => _i1051.AdminContentFlaggingDataSourceImpl(gh<_i557.ApiClient>()),
     );
+    gh.lazySingleton<_i986.DraftsCubit>(
+      () => _i986.DraftsCubit(gh<_i995.DraftsRemoteDataSource>()),
+    );
     gh.lazySingleton<_i963.AdminLicenseDataSource>(
       () => _i963.AdminLicenseDataSourceImpl(gh<_i557.ApiClient>()),
     );
@@ -434,6 +445,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i343.HooksRemoteDataSource>(
       () => _i343.HooksRemoteDataSourceImpl(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i1045.TeamGroupsCubit>(
+      () => _i1045.TeamGroupsCubit(gh<_i236.GroupsRemoteDataSource>()),
     );
     gh.lazySingleton<_i1010.ReactionsRemoteDataSource>(
       () => _i1010.ReactionsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
@@ -508,6 +522,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i117.AdminAccessControlDataSource>(),
       ),
     );
+    gh.lazySingleton<_i1072.ThreadsSummaryCubit>(
+      () => _i1072.ThreadsSummaryCubit(gh<_i931.ThreadsRemoteDataSource>()),
+    );
     gh.lazySingleton<_i343.OAuthAppsBloc>(
       () => _i343.OAuthAppsBloc(gh<_i240.OAuthRepository>()),
     );
@@ -569,6 +586,9 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.singleton<_i909.ServerManager>(
       () => _i909.ServerManager(gh<_i557.ApiClient>()),
+    );
+    gh.lazySingleton<_i953.AgentsRemoteDataSource>(
+      () => _i953.AgentsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
     );
     gh.lazySingleton<_i582.ScheduledPostsRemoteDataSource>(
       () => _i582.ScheduledPostsRemoteDataSourceImpl(gh<_i557.ApiClient>()),
@@ -732,6 +752,21 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i686.PostRepository>(),
       ),
     );
+    gh.lazySingleton<_i74.TeamDashboardOrchestrator>(
+      () => _i74.TeamDashboardOrchestrator(
+        gh<_i236.ChannelRepository>(),
+        gh<_i236.GroupsRemoteDataSource>(),
+        gh<_i931.ThreadsRemoteDataSource>(),
+        gh<_i995.DraftsRemoteDataSource>(),
+        gh<_i582.ScheduledPostsRemoteDataSource>(),
+        gh<_i864.UsersRemoteDataSource>(),
+        gh<_i969.UserStatusRemoteDataSource>(),
+        gh<_i960.PlaybooksRemoteDataSource>(),
+        gh<_i580.ChannelBookmarksRemoteDataSource>(),
+        gh<_i953.AgentsRemoteDataSource>(),
+        gh<_i20.PostRemoteDataSource>(),
+      ),
+    );
     gh.lazySingleton<_i797.AuthBloc>(
       () => _i797.AuthBloc(
         gh<_i787.AuthRepository>(),
@@ -749,6 +784,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i236.ChannelRepository>(),
         gh<_i777.WebSocketClientManager>(),
         gh<_i550.TeamBloc>(),
+        gh<_i74.TeamDashboardOrchestrator>(),
+        gh<_i986.DraftsCubit>(),
+        gh<_i1072.ThreadsSummaryCubit>(),
+        gh<_i1045.TeamGroupsCubit>(),
       ),
     );
     gh.lazySingleton<_i478.RhsBloc>(
@@ -762,6 +801,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i666.SecureStorageService>(),
         gh<_i515.ChannelBloc>(),
         gh<_i478.RhsBloc>(),
+        gh<_i236.ChannelRepository>(),
       ),
     );
     return this;

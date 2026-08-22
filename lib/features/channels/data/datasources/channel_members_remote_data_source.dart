@@ -284,9 +284,7 @@ class ChannelMembersRemoteDataSourceImpl
     final result = await _apiClient.get<List<ChannelModerationModel>>(
       ChannelsEndPoint.moderations(channelId),
       fromJson: (json) => (json as List<dynamic>)
-          .map(
-            (e) => ChannelModerationModel.fromMap(e as Map<String, dynamic>),
-          )
+          .map((e) => ChannelModerationModel.fromMap(e as Map<String, dynamic>))
           .toList(),
     );
     if (result is ApiSuccess<List<ChannelModerationModel>>) {
@@ -304,9 +302,7 @@ class ChannelMembersRemoteDataSourceImpl
       ChannelsEndPoint.moderationsPatch(channelId),
       data: body,
       fromJson: (json) => (json as List<dynamic>)
-          .map(
-            (e) => ChannelModerationModel.fromMap(e as Map<String, dynamic>),
-          )
+          .map((e) => ChannelModerationModel.fromMap(e as Map<String, dynamic>))
           .toList(),
     );
     if (result is ApiSuccess<List<ChannelModerationModel>>) {
@@ -322,7 +318,7 @@ class ChannelMembersRemoteDataSourceImpl
     int perPage = 60,
   }) async {
     final result = await _apiClient.get<List<ChannelMemberModel>>(
-      UsersEndPoint.teamsChannelsMembers('me', teamId),
+      '/users/me/teams/$teamId/channels/members',
       queryParameters: {'page': page, 'per_page': perPage},
       fromJson: (json) => (json as List<dynamic>)
           .map((e) => ChannelMemberModel.fromMap(e as Map<String, dynamic>))

@@ -12,6 +12,14 @@ import 'package:flutter_mattermost/features/channels/domain/entities/channel_mem
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_stats_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/chat/data/datasources/chat_remote_data_sources.dart';
+import 'package:flutter_mattermost/features/common/data/datasources/playbooks_remote_data_source.dart';
+import 'package:flutter_mattermost/features/channels/data/datasources/channel_bookmarks_remote_data_source.dart';
+import 'package:flutter_mattermost/features/teams/domain/team_dashboard_orchestrator.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/drafts_cubit.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/threads_summary_cubit.dart';
+import 'package:flutter_mattermost/features/groups/presentation/cubit/team_groups_cubit.dart';
 
 // Events
 abstract class ChannelEvent extends Equatable {
@@ -24,7 +32,11 @@ class LoadChannelsForTeamEvent extends ChannelEvent {
   final String teamId;
   final String? userId;
   final bool seamless;
-  const LoadChannelsForTeamEvent(this.teamId, {this.userId, this.seamless = false});
+  const LoadChannelsForTeamEvent(
+    this.teamId, {
+    this.userId,
+    this.seamless = false,
+  });
   @override
   List<Object?> get props => [teamId, userId, seamless];
 }
@@ -272,6 +284,14 @@ class InternalMembershipChangeEvent extends ChannelEvent {
   List<Object?> get props => [channelId, delta];
 }
 
+class InternalStatsLoadedEvent extends ChannelEvent {
+  final ChannelStats stats;
+  const InternalStatsLoadedEvent(this.stats);
+  @override
+  List<Object?> get props => [stats];
+}
+
+
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -344,6 +364,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   final ChannelRepository _channelRepository;
   final WebSocketClientManager _webSocketManager;
   final TeamBloc _teamBloc;
+  final TeamDashboardOrchestrator _dashboardOrchestrator;
+  final DraftsCubit _draftsCubit;
+  final ThreadsSummaryCubit _threadsSummaryCubit;
+  final TeamGroupsCubit _teamGroupsCubit;
   StreamSubscription? _wsSubscription;
   StreamSubscription? _teamSubscription;
 
@@ -356,7 +380,12 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     this._channelRepository,
     this._webSocketManager,
     this._teamBloc,
+    this._dashboardOrchestrator,
+    this._draftsCubit,
+    this._threadsSummaryCubit,
+    this._teamGroupsCubit,
   ) : super(ChannelInitialState()) {
+
     on<LoadChannelsForTeamEvent>(_onLoadChannels);
     on<SelectChannelEvent>(_onSelectChannel);
     on<UpsertChannelEvent>(_onUpsertChannel);
@@ -379,6 +408,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     on<MarkChannelsAsReadEvent>(_onMarkChannelsAsRead);
     on<MarkChannelAsUnreadEvent>(_onMarkChannelAsUnread);
     on<InternalMembershipChangeEvent>(_onInternalMembershipChange);
+    on<InternalStatsLoadedEvent>(_onInternalStatsLoaded);
 
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
       if (event is ChannelUpdatedEvent) {
@@ -393,14 +423,18 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     _teamSubscription = _teamBloc.stream.listen((teamState) {
       if (teamState is TeamsLoadedState && teamState.selectedTeam != null) {
         final current = state;
-        final currentTeamId = current is ChannelsLoadedState ? current.teamId : '';
+        final currentTeamId = current is ChannelsLoadedState
+            ? current.teamId
+            : '';
         if (currentTeamId != teamState.selectedTeam!.id) {
           _statsCache.clear();
-          add(LoadChannelsForTeamEvent(
-            teamState.selectedTeam!.id,
-            userId: current is ChannelsLoadedState ? current.userId : null,
-            seamless: true,
-          ));
+          add(
+            LoadChannelsForTeamEvent(
+              teamState.selectedTeam!.id,
+              userId: current is ChannelsLoadedState ? current.userId : null,
+              seamless: true,
+            ),
+          );
         }
       }
     });
@@ -439,29 +473,35 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     );
   }
 
+  void _onInternalStatsLoaded(
+    InternalStatsLoadedEvent event,
+    Emitter<ChannelState> emit,
+  ) {
+    final latest = state;
+    if (latest is! ChannelsLoadedState) return;
+    emit(
+      ChannelsLoadedState(
+        teamId: latest.teamId,
+        channels: latest.channels,
+        categories: latest.categories,
+        unreadCounts: latest.unreadCounts,
+        selectedChannel: latest.selectedChannel,
+        userId: latest.userId,
+        members: latest.members,
+        channelStats: {...latest.channelStats, event.stats.channelId: event.stats},
+      ),
+    );
+  }
+
   /// جلب إحصاءات قناة (مرة واحدة لكل قناة) وإضافتها للحالة الحالية.
   Future<void> _refreshChannelStats(String channelId) async {
     if (channelId.isEmpty) return;
     if (_statsCache.containsKey(channelId)) return;
-    final current = state;
-    if (current is! ChannelsLoadedState) return;
+    if (state is! ChannelsLoadedState) return;
     try {
       final stats = await _channelRepository.getChannelStats(channelId);
       _statsCache[channelId] = stats;
-      final latest = state;
-      if (latest is! ChannelsLoadedState) return;
-      emit(
-        ChannelsLoadedState(
-          teamId: latest.teamId,
-          channels: latest.channels,
-          categories: latest.categories,
-          unreadCounts: latest.unreadCounts,
-          selectedChannel: latest.selectedChannel,
-          userId: latest.userId,
-          members: latest.members,
-          channelStats: {...latest.channelStats, channelId: stats},
-        ),
-      );
+      add(InternalStatsLoadedEvent(stats));
     } catch (_) {
       // فشل جلب الإحصاءات لا يُفشل عرض القناة.
     }
@@ -475,43 +515,28 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       emit(ChannelLoadingState());
     }
     try {
-      // العملية الأساسية: GetChannelsForTeamForUser — تجلب كل قنوات المستخدم
-      // في الفريق (عامة/خاصة/DM/GM) ليعمل قسم DM في الشريط الجانبي.
-      var channels = <ChannelEntity>[];
-      try {
-        channels = await _channelRepository.getMyChannels(event.teamId);
-      } catch (_) {
-        // بعض الخوادم لا تفعّل هذا المسار — نعود للقنوات العامة فقط.
-        channels = await _channelRepository.getChannelsForTeam(event.teamId);
-      }
+      final dashboardData = await _dashboardOrchestrator.loadTeamDashboard(
+        teamId: event.teamId,
+        userId: event.userId,
+      );
 
-      var categories = <ChannelCategoryEntity>[];
-      if (event.userId != null) {
-        try {
-          categories = await _channelRepository.getChannelCategories(
-            event.teamId,
-            event.userId!,
-          );
-        } catch (_) {
-          // بعض الخوادم لا تدعم الفئات — تُبنى فئات افتراضية في الواجهة.
-        }
-      }
+      final channels = dashboardData.channels;
+      final categories = dashboardData.categories;
+      final unread = dashboardData.unreadCounts;
+      final members = dashboardData.members;
+      final userId = dashboardData.userId;
 
-      final unread = await _fetchUnread(event.teamId, channels);
-
-      var userId = event.userId ?? '';
-      var members = <String, ChannelMemberEntity>{};
-      try {
-        final memberList = await _channelRepository.getMyChannelMembersInTeam(
-          event.teamId,
-        );
-        members = {for (final m in memberList) m.channelId: m};
-        if (userId.isEmpty && memberList.isNotEmpty) {
-          userId = memberList.first.userId;
-        }
-      } catch (_) {
-        // بعض الخوادم لا تعيد الأعضاء — تُترك الخريطة فارغة.
-      }
+      // إيصال البيانات للـ Cubits المخصصة (Option B)
+      _draftsCubit.updateDraftsLocally(dashboardData.teamDrafts, event.teamId);
+      _threadsSummaryCubit.updateSummaryLocally(
+        event.teamId,
+        dashboardData.threadsSummary,
+      );
+      _teamGroupsCubit.updateGroupsLocally(
+        event.teamId,
+        dashboardData.userGroups,
+        dashboardData.channelGroups,
+      );
 
       // الحفاظ على القناة المختارة سابقاً إن كانت ما زالت موجودة في القائمة.
       final previous = state;
@@ -522,10 +547,11 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           (previousSelected != null &&
               channels.any((c) => c.id == previousSelected.id))
           ? previousSelected
-          : channels.firstWhere(
-              (c) => c.type == ChannelType.open || c.type == ChannelType.private,
-              orElse: () => channels.isNotEmpty ? channels.first : null as dynamic,
-            );
+          : (channels.where(
+                  (c) =>
+                      c.type == ChannelType.open || c.type == ChannelType.private,
+                ).firstOrNull ??
+                (channels.isNotEmpty ? channels.first : null));
 
       emit(
         ChannelsLoadedState(
@@ -538,15 +564,18 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           members: members,
         ),
       );
-      // إحصاءات القناة المختارة (الأعضاء/الضيوف/المثبتات) في الخلفية.
-      final chId = selectedChannel?.id;
-      if (chId != null) {
-        unawaited(_refreshChannelStats(chId));
+      if (selectedChannel != null) {
+        unawaited(_refreshChannelStats(selectedChannel.id));
+        unawaited(_dashboardOrchestrator.loadActiveChannelDetails(
+          channelId: selectedChannel.id,
+          userId: userId,
+        ));
       }
     } catch (e) {
       emit(ChannelErrorState(e.toString(), teamId: event.teamId));
     }
   }
+
 
   Future<Map<String, ChannelUnreadCounts>> _fetchUnread(
     String teamId,
@@ -578,26 +607,82 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     final current = state;
     if (current is ChannelsLoadedState &&
         current.selectedChannel?.id != event.channel.id) {
+      final prevChannelId = current.selectedChannel?.id;
+      final unread = Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
+        ..remove(event.channel.id);
+      _unreadOverrides.remove(event.channel.id);
+
       emit(
         ChannelsLoadedState(
           teamId: current.teamId,
           channels: current.channels,
           categories: current.categories,
-          unreadCounts: current.unreadCounts,
+          unreadCounts: unread,
           selectedChannel: event.channel,
           userId: current.userId,
           members: current.members,
           channelStats: current.channelStats,
         ),
       );
-      // إحصاءات القناة الجديدة (الأعضاء/الضيوف/المثبتات) في الخلفية.
-      unawaited(_refreshChannelStats(event.channel.id));
-      // إبلاغ السيرفر بالقناة النشطة فوراً (مطابق updateActiveChannel في
-      // channel_view.tsx) — يشترك في حالات تواجد المستخدمين الظاهرين فقط.
+
+      // 1. الخطوة 1: إشعار الخادم المبدئي برؤية القناة وتحديث تواجد المستخدم
+      try {
+        await _channelRepository.viewMyChannel(
+          event.channel.id,
+          prevChannelId: prevChannelId,
+          collapsedThreads: true,
+        );
+      } catch (_) {}
+
+      // إبلاغ السيرفر بالقناة النشطة فوراً عبر WebSocket
       _webSocketManager.updateActiveChannel(event.channel.id);
-      // تعليم القناة كمقروءة تلقائياً عند فتحها (مطابق view على الخادم).
-      add(MarkChannelAsReadEvent(event.channel.id));
+
+      // 2. الخطوة 2: مزامنة التحديثات المعلقة للقناة السابقة في الخلفية
+      if (prevChannelId != null && prevChannelId.isNotEmpty) {
+        unawaited(_syncPreviousChannelPosts(prevChannelId));
+      }
+
+      // 3. الخطوات 3 و 4 و 5: تهيئة إحصائيات وقواعد وإشارات القناة الجديدة والرسائل غير المقروءة (Active Channel Load)
+      unawaited(_refreshChannelStats(event.channel.id));
+      unawaited(_fetchChannelPlaybookActions(event.channel.id));
+      unawaited(_refreshChannelBookmarks(event.channel.id));
+      unawaited(_dashboardOrchestrator.loadActiveChannelDetails(
+        channelId: event.channel.id,
+        userId: current.userId,
+      ));
     }
+  }
+
+
+  Future<void> _syncPreviousChannelPosts(String prevChannelId) async {
+    try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final since = now - 60000; // وقت مزامنة مبدئي
+      await getIt<PostRemoteDataSource>().getPostsForChannel(
+        prevChannelId,
+        since: since,
+        collapsedThreads: true,
+      );
+    } catch (e) {
+      _failures.add('تعذَّر مزامنة القناة السابقة: ${e.toString()}');
+    }
+  }
+
+  Future<void> _fetchChannelPlaybookActions(String channelId) async {
+    try {
+      await getIt<PlaybooksRemoteDataSource>().getChannelActions(
+        channelId,
+        triggerType: 'new_member_joins',
+      );
+    } catch (_) {}
+  }
+
+  Future<void> _refreshChannelBookmarks(String channelId) async {
+    try {
+      await getIt<ChannelBookmarksRemoteDataSource>().getChannelBookmarks(
+        channelId,
+      );
+    } catch (_) {}
   }
 
   // إدراج قناة DM/GM جديدة في القائمة، أو تحديثها مكانها إن كانت موجودة.

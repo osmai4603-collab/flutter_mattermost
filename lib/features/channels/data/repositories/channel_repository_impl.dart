@@ -357,8 +357,16 @@ class ChannelRepositoryImpl implements ChannelRepository {
       _remoteDataSource.getGroupMessageMembersCommonTeams(channelId);
 
   @override
-  Future<void> viewMyChannel(String channelId) =>
-      _remoteDataSource.viewMyChannel(channelId);
+  Future<void> viewMyChannel(
+    String channelId, {
+    String? prevChannelId,
+    bool collapsedThreads = true,
+  }) =>
+      _remoteDataSource.viewMyChannel(
+        channelId,
+        prevChannelId: prevChannelId,
+        collapsedThreads: collapsedThreads,
+      );
 
   @override
   Future<void> readMultipleChannels(List<String> channelIds) =>
