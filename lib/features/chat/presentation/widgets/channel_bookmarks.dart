@@ -115,24 +115,38 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    _syncWithChannel();
-    if (errorMessage != null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: SelectableText(errorMessage!, style: TextStyle(fontSize: 17)),
-      );
-    }
-    if (_bookmarks.isEmpty && !_loading) return const SizedBox.shrink();
+    return BlocListener<ChannelBloc, ChannelState>(
+      listenWhen: (previous, current) {
+        final prevId = previous is ChannelsLoadedState
+            ? previous.selectedChannel?.id
+            : null;
+        final currId = current is ChannelsLoadedState
+            ? current.selectedChannel?.id
+            : null;
+        return prevId != currId;
+      },
+      listener: (context, state) {
+        _syncWithChannel();
+      },
+      child: Builder(
+        builder: (context) {
+          if (errorMessage != null) {
+            return Container(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: SelectableText(errorMessage!, style: const TextStyle(fontSize: 17)),
+            );
+          }
+          if (_bookmarks.isEmpty && !_loading) return const SizedBox.shrink();
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      color: theme.centerChannelColor.withValues(alpha: 0.03),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Row(
-          children: [
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            color: theme.centerChannelColor.withValues(alpha: 0.03),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                children: [
             for (final bookmark in _bookmarks)
               Padding(
                 padding: const EdgeInsets.only(left: 6),
@@ -148,8 +162,11 @@ class _ChannelBookmarksState extends State<ChannelBookmarks> {
               padding: const EdgeInsets.only(left: 6),
               child: _AddBookmarkButton(onTap: _addBookmark),
             ),
-          ],
-        ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

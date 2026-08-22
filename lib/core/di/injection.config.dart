@@ -801,7 +801,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i666.SecureStorageService>(),
         gh<_i515.ChannelBloc>(),
         gh<_i478.RhsBloc>(),
-        gh<_i236.ChannelRepository>(),
       ),
     );
     return this;

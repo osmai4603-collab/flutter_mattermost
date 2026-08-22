@@ -66,12 +66,12 @@ class OsmApiClient {
 
     dio.interceptors.add(
       LogInterceptor(
-        requestBody: true,
-        responseBody: true,
+        requestBody: false,
+        responseBody: false,
         error: true,
-        request: true,
-        requestHeader: true,
-        responseHeader: true,
+        request: false,
+        requestHeader: false,
+        responseHeader: false,
         requestUrl: true,
         responseUrl: true,
       ),

@@ -15,7 +15,6 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/features/chat/data/datasources/chat_remote_data_sources.dart';
 import 'package:flutter_mattermost/features/common/data/datasources/playbooks_remote_data_source.dart';
-import 'package:flutter_mattermost/features/channels/data/datasources/channel_bookmarks_remote_data_source.dart';
 import 'package:flutter_mattermost/features/teams/domain/team_dashboard_orchestrator.dart';
 import 'package:flutter_mattermost/features/chat/presentation/cubit/drafts_cubit.dart';
 import 'package:flutter_mattermost/features/chat/presentation/cubit/threads_summary_cubit.dart';
@@ -370,6 +369,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   final TeamGroupsCubit _teamGroupsCubit;
   StreamSubscription? _wsSubscription;
   StreamSubscription? _teamSubscription;
+  String? _selectingChannelId;
 
   /// بث رسائل فشل العمليات التفاؤلية لعرضها في الواجهة (SnackBar).
   final StreamController<String> _failures =
@@ -606,50 +606,51 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   ) async {
     final current = state;
     if (current is ChannelsLoadedState &&
-        current.selectedChannel?.id != event.channel.id) {
-      final prevChannelId = current.selectedChannel?.id;
-      final unread = Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
-        ..remove(event.channel.id);
-      _unreadOverrides.remove(event.channel.id);
-
-      emit(
-        ChannelsLoadedState(
-          teamId: current.teamId,
-          channels: current.channels,
-          categories: current.categories,
-          unreadCounts: unread,
-          selectedChannel: event.channel,
-          userId: current.userId,
-          members: current.members,
-          channelStats: current.channelStats,
-        ),
-      );
-
-      // 1. الخطوة 1: إشعار الخادم المبدئي برؤية القناة وتحديث تواجد المستخدم
+        current.selectedChannel?.id != event.channel.id &&
+        _selectingChannelId != event.channel.id) {
+      _selectingChannelId = event.channel.id;
       try {
-        await _channelRepository.viewMyChannel(
-          event.channel.id,
-          prevChannelId: prevChannelId,
-          collapsedThreads: true,
+        final prevChannelId = current.selectedChannel?.id;
+        final unread = Map<String, ChannelUnreadCounts>.of(current.unreadCounts)
+          ..remove(event.channel.id);
+        _unreadOverrides.remove(event.channel.id);
+
+        emit(
+          ChannelsLoadedState(
+            teamId: current.teamId,
+            channels: current.channels,
+            categories: current.categories,
+            unreadCounts: unread,
+            selectedChannel: event.channel,
+            userId: current.userId,
+            members: current.members,
+            channelStats: current.channelStats,
+          ),
         );
-      } catch (_) {}
 
-      // إبلاغ السيرفر بالقناة النشطة فوراً عبر WebSocket
-      _webSocketManager.updateActiveChannel(event.channel.id);
+        // 1. الخطوة 1: إشعار الخادم المبدئي برؤية القناة وتحديث تواجد المستخدم
+        try {
+          await _channelRepository.viewMyChannel(
+            event.channel.id,
+            prevChannelId: prevChannelId,
+            collapsedThreads: true,
+          );
+        } catch (_) {}
 
-      // 2. الخطوة 2: مزامنة التحديثات المعلقة للقناة السابقة في الخلفية
-      if (prevChannelId != null && prevChannelId.isNotEmpty) {
-        unawaited(_syncPreviousChannelPosts(prevChannelId));
+        // إبلاغ السيرفر بالقناة النشطة فوراً عبر WebSocket
+        _webSocketManager.updateActiveChannel(event.channel.id);
+
+        // 2. الخطوة 2: مزامنة التحديثات المعلقة للقناة السابقة في الخلفية
+        if (prevChannelId != null && prevChannelId.isNotEmpty) {
+          unawaited(_syncPreviousChannelPosts(prevChannelId));
+        }
+
+        // 3. الخطوات 3 و 4: تهيئة إحصائيات وقواعد القناة الجديدة في الخلفية
+        unawaited(_refreshChannelStats(event.channel.id));
+        unawaited(_fetchChannelPlaybookActions(event.channel.id));
+      } finally {
+        _selectingChannelId = null;
       }
-
-      // 3. الخطوات 3 و 4 و 5: تهيئة إحصائيات وقواعد وإشارات القناة الجديدة والرسائل غير المقروءة (Active Channel Load)
-      unawaited(_refreshChannelStats(event.channel.id));
-      unawaited(_fetchChannelPlaybookActions(event.channel.id));
-      unawaited(_refreshChannelBookmarks(event.channel.id));
-      unawaited(_dashboardOrchestrator.loadActiveChannelDetails(
-        channelId: event.channel.id,
-        userId: current.userId,
-      ));
     }
   }
 
@@ -673,14 +674,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       await getIt<PlaybooksRemoteDataSource>().getChannelActions(
         channelId,
         triggerType: 'new_member_joins',
-      );
-    } catch (_) {}
-  }
-
-  Future<void> _refreshChannelBookmarks(String channelId) async {
-    try {
-      await getIt<ChannelBookmarksRemoteDataSource>().getChannelBookmarks(
-        channelId,
       );
     } catch (_) {}
   }

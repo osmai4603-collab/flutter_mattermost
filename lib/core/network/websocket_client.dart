@@ -20,7 +20,6 @@ import 'package:flutter_mattermost/features/channels/domain/entities/channel_ent
 import 'package:osm_network/osm_network.dart' show WebSocketStatus;
 export 'package:osm_network/osm_network.dart' show WebSocketStatus;
 
-
 sealed class TypedWebSocketEvent {
   final int seq;
   TypedWebSocketEvent({required this.seq});
@@ -599,7 +598,7 @@ class WebSocketClientManager {
   void _onMessageReceived(dynamic rawData) {
     try {
       final decoded = jsonDecode(rawData as String) as Map<String, dynamic>;
-      printMap(title: 'RECEIVE DATA FROM Socket Client: ', data: decoded);
+      // printMap(title: 'RECEIVE DATA FROM Socket Client: ', data: decoded);
       final seq = decoded['seq'] as int? ?? 0;
       final seqReply = decoded['seq_reply'] as int?;
       final eventName = decoded['event'] as String?;
@@ -666,7 +665,9 @@ class WebSocketClientManager {
             final postField = data['post'];
             final postJson = (postField is String && postField.isNotEmpty)
                 ? jsonDecode(postField) as Map<String, dynamic>
-                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
+                : (postField is Map<String, dynamic>
+                      ? postField
+                      : <String, dynamic>{});
             final postEntity = _parsePost(postJson);
             final channelId =
                 (data['channel_id'] as String?)?.isNotEmpty == true
@@ -684,7 +685,9 @@ class WebSocketClientManager {
             final postField = data['post'];
             final postJson = (postField is String && postField.isNotEmpty)
                 ? jsonDecode(postField) as Map<String, dynamic>
-                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
+                : (postField is Map<String, dynamic>
+                      ? postField
+                      : <String, dynamic>{});
             final postEntity = _parsePost(postJson);
             final channelId =
                 (data['channel_id'] as String?)?.isNotEmpty == true
@@ -702,7 +705,9 @@ class WebSocketClientManager {
             final postField = data['post'];
             final postJson = (postField is String && postField.isNotEmpty)
                 ? jsonDecode(postField) as Map<String, dynamic>
-                : (postField is Map<String, dynamic> ? postField : <String, dynamic>{});
+                : (postField is Map<String, dynamic>
+                      ? postField
+                      : <String, dynamic>{});
             _typedEventStreamController.add(
               PostDeletedEvent(
                 postId: postJson['id'] as String? ?? '',
@@ -714,9 +719,12 @@ class WebSocketClientManager {
           case 'reaction_added':
           case 'reaction_removed':
             final reactionField = data['reaction'];
-            final reactionJson = (reactionField is String && reactionField.isNotEmpty)
+            final reactionJson =
+                (reactionField is String && reactionField.isNotEmpty)
                 ? jsonDecode(reactionField) as Map<String, dynamic>
-                : (reactionField is Map<String, dynamic> ? reactionField : <String, dynamic>{});
+                : (reactionField is Map<String, dynamic>
+                      ? reactionField
+                      : <String, dynamic>{});
             final reactionEntity = _parseReaction(reactionJson);
             _typedEventStreamController.add(
               ReactionChangedEvent(
@@ -730,9 +738,12 @@ class WebSocketClientManager {
           case 'channel_created':
           case 'channel_deleted':
             final channelField = data['channel'];
-            final channelJson = (channelField is String && channelField.isNotEmpty)
+            final channelJson =
+                (channelField is String && channelField.isNotEmpty)
                 ? jsonDecode(channelField) as Map<String, dynamic>
-                : (channelField is Map<String, dynamic> ? channelField : <String, dynamic>{});
+                : (channelField is Map<String, dynamic>
+                      ? channelField
+                      : <String, dynamic>{});
             final channelEntity = _parseChannel(channelJson);
             _typedEventStreamController.add(
               ChannelUpdatedEvent(
@@ -793,7 +804,9 @@ class WebSocketClientManager {
             final userField = data['user'];
             final userJson = (userField is String && userField.isNotEmpty)
                 ? jsonDecode(userField) as Map<String, dynamic>
-                : (userField is Map<String, dynamic> ? userField : <String, dynamic>{});
+                : (userField is Map<String, dynamic>
+                      ? userField
+                      : <String, dynamic>{});
             _typedEventStreamController.add(
               UserUpdatedEvent(userJson: userJson, seq: seq),
             );

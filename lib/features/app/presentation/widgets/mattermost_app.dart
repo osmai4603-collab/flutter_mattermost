@@ -18,6 +18,9 @@ import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.da
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_preferences_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/drafts_cubit.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/threads_summary_cubit.dart';
+import 'package:flutter_mattermost/features/groups/presentation/cubit/team_groups_cubit.dart';
 
 class MattermostApp extends StatefulWidget {
   const MattermostApp({super.key});
@@ -45,9 +48,13 @@ class _MattermostAppState extends State<MattermostApp> with WidgetsBindingObserv
         BlocProvider(create: (_) => getIt<ThreadsBloc>()),
         BlocProvider(create: (_) => getIt<SearchBloc>()),
         BlocProvider(create: (_) => getIt<CallsBloc>()),
+        BlocProvider(create: (_) => getIt<DraftsCubit>()),
+        BlocProvider(create: (_) => getIt<ThreadsSummaryCubit>()),
+        BlocProvider(create: (_) => getIt<TeamGroupsCubit>()),
         // إعدادات الواجهة: اللغة EN/AR + الوضع (فاتح/داكن).
         BlocProvider(create: (_) => AppSettingsCubit()),
       ],
+
       child: BlocBuilder<AppSettingsCubit, AppLocaleState>(
         builder: (context, settings) {
           return MaterialApp.router(

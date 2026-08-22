@@ -92,6 +92,9 @@ class _ChannelPageState extends State<ChannelPage> {
     super.dispose();
   }
 
+  /// معرف آخر قناة تم طلب تحديدها في مسار الصفحة لمنع التكرار.
+  String? _lastSyncedChannelId;
+
   void _syncWithRoute() {
     final teamState = context.read<TeamBloc>().state;
     if (teamState is! TeamsLoadedState) {
@@ -122,7 +125,10 @@ class _ChannelPageState extends State<ChannelPage> {
         final channel = channelState.channels
             .where((c) => c.name == widget.channelName)
             .firstOrNull;
-        if (channel != null && channel.id != channelState.selectedChannel?.id) {
+        if (channel != null &&
+            channel.id != channelState.selectedChannel?.id &&
+            _lastSyncedChannelId != channel.id) {
+          _lastSyncedChannelId = channel.id;
           context.read<ChannelBloc>().add(SelectChannelEvent(channel));
         }
       }

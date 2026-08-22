@@ -15,7 +15,6 @@ import 'package:flutter_mattermost/features/chat/domain/entities/reaction_entity
 import 'package:flutter_mattermost/features/chat/domain/repositories/post_repository.dart';
 import 'package:flutter_mattermost/features/chat/domain/repositories/threads_repository.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
-import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/users/data/datasources/users_remote_data_source.dart';
 
 // Events
@@ -337,7 +336,6 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
   final SecureStorageService _secureStorage;
   final ChannelBloc _channelBloc;
   final RhsBloc _rhsBloc;
-  final ChannelRepository _channelRepository;
   StreamSubscription? _wsSubscription;
   StreamSubscription? _channelSubscription;
   Timer? _typingClearTimer;
@@ -357,10 +355,8 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     this._typingDataSource,
     this._secureStorage,
     this._channelBloc,
-    this._rhsBloc, [
-    ChannelRepository? channelRepository,
-  ])  : _channelRepository = channelRepository ?? getIt<ChannelRepository>(),
-        super(PostInitialState()) {
+    this._rhsBloc,
+  ) : super(PostInitialState()) {
     on<LoadPostsForChannelEvent>(_onLoadPosts);
     on<LoadMorePostsEvent>(_onLoadMorePosts);
     on<LoadPostsAroundEvent>(_onLoadPostsAround);
@@ -392,7 +388,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
         final currentChannelId = current is PostsLoadedState
             ? current.channelId
             : '';
-        if (currentChannelId != selectedId) {
+        if (currentChannelId != selectedId && _loadingChannelId != selectedId) {
           add(LoadPostsForChannelEvent(selectedId));
         }
       }
@@ -439,14 +435,18 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     });
   }
 
+  String? _loadingChannelId;
+
   Future<void> _onLoadPosts(
     LoadPostsForChannelEvent event,
     Emitter<PostsState> emit,
   ) async {
     final current = state;
-    if (current is PostsLoadedState && current.channelId == event.channelId) {
+    if ((current is PostsLoadedState && current.channelId == event.channelId) ||
+        _loadingChannelId == event.channelId) {
       return;
     }
+    _loadingChannelId = event.channelId;
     emit(PostLoadingState(event.channelId));
     try {
       List<PostEntity> posts = [];
@@ -475,16 +475,10 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       await _loadFlagged(emit);
       await _loadChannelExtras(emit);
       await _loadThreadFollowing(emit);
-
-      // خطوة التأكيد النهائية: بعد تمام تحميل المحتوى وعرض الرسائل، يتم استدعاء view للتأكيد والربط الحقيقي
-      try {
-        await _channelRepository.viewMyChannel(
-          event.channelId,
-          collapsedThreads: true,
-        );
-      } catch (_) {}
     } catch (e) {
       emit(PostErrorState(e.toString()));
+    } finally {
+      _loadingChannelId = null;
     }
   }
 
