@@ -71,7 +71,7 @@ class OsmApiClient {
         error: true,
         request: false,
         requestHeader: false,
-        responseHeader: false,
+        responseHeader: true,
         requestUrl: true,
         responseUrl: true,
       ),

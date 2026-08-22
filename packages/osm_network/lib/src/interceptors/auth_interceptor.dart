@@ -27,14 +27,14 @@ class AuthInterceptor extends Interceptor {
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
       }
-      final cookies = await _authDelegate.getCookies();
-      if (cookies != null && cookies.isNotEmpty) {
-        options.headers['Cookie'] = cookies;
-        final csrf = await _authDelegate.getCsrfToken();
-        if (csrf != null && csrf.isNotEmpty) {
-          options.headers['X-CSRF-Token'] = csrf;
-        }
-      }
+      // final cookies = await _authDelegate.getCookies();
+      // if (cookies != null && cookies.isNotEmpty) {
+      //   options.headers['Cookie'] = cookies;
+      //   final csrf = await _authDelegate.getCsrfToken();
+      //   if (csrf != null && csrf.isNotEmpty) {
+      //     options.headers['X-CSRF-Token'] = csrf;
+      //   }
+      // }
     }
     options.headers['X-Requested-With'] = 'XMLHttpRequest';
     handler.next(options);

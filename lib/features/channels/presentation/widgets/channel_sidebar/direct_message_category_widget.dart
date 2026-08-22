@@ -11,7 +11,9 @@ import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dar
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
+import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direction_message_item_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
@@ -101,12 +103,12 @@ class _DirectMessageCategoryWidgetState
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-
     return BlocBuilder<UserStatusBloc, UserStatusState>(
       builder: (context, statusState) {
         final statuses = statusState is UserStatusesLoadedState
             ? statusState.statuses
             : const <String, UserStatus>{};
+
         return BlocBuilder<UserProfileBloc, UserProfileState>(
           builder: (context, profileState) {
             final profiles = <String, UserEntity>{};
@@ -123,6 +125,12 @@ class _DirectMessageCategoryWidgetState
                 final collapsed =
                     lhs is LhsSearchState &&
                     lhs.collapsedCategories.contains(widget.categoryId);
+
+                final channelBloc = context.read<ChannelBloc>();
+                final Map<String, ChannelMemberEntity> members =
+                    channelBloc.state is ChannelsLoadedState
+                    ? (channelBloc.state as ChannelsLoadedState).members
+                    : {};
 
                 // يقبل إفلات القنوات من الفئات الأخرى إلى قسم الرسائل المباشرة.
                 return DragTarget<SidebarCategoryDragData>(
@@ -221,10 +229,24 @@ class _DirectMessageCategoryWidgetState
                                             widget.currentUserId,
                                             statuses,
                                           ),
-                                          user: _counterpartFor(
-                                            channel,
-                                            widget.currentUserId,
-                                            profiles,
+                                          user: profiles.values.firstWhere(
+                                            (profile) {
+                                              final userId = channel.name
+                                                  .split('__')
+                                                  .where(
+                                                    (id) =>
+                                                        id != channel.creatorId,
+                                                  );
+                                              return userId.isEmpty
+                                                  ? false
+                                                  : profile.id == userId.first;
+                                            },
+                                            orElse: () => UserEntity(
+                                              username: 'unkown',
+                                              firstName: '',
+                                              lastName: '',
+                                              id: '',
+                                            ),
                                           ),
                                           unread:
                                               widget.unreadCounts[channel.id],
@@ -382,17 +404,25 @@ class _DirectMessageCategoryWidgetState
   }
 
   /// المستخدم المقابل في محادثة DM (null لمحادثة النفس/عدم التحميل بعد).
-  UserEntity? _counterpartFor(
+  UserEntity _counterpartFor(
     ChannelEntity channel,
     String currentUserId,
     Map<String, UserEntity> profiles,
   ) {
+    if (profiles.containsKey(channel.creatorId)) {
+      return profiles[channel.creatorId]!;
+    }
     final ids = dmCounterpartIds(channel, currentUserId);
     for (final id in ids) {
       final user = profiles[id];
       if (user != null) return user;
     }
-    if (ids.isEmpty) return profiles['me'];
-    return null;
+    return UserEntity(
+      nickname: '',
+      lastName: '',
+      firstName: '',
+      id: 'Not',
+      username: 'Not found Name',
+    );
   }
 }

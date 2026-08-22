@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
@@ -89,12 +88,13 @@ class _PostItemState extends State<PostItem> {
     final post = widget.post;
 
     final username = widget.profile != null
-        ? getMentionDisplayName(
-            username: widget.profile!.username,
-            nickname: widget.profile!.nickname,
-            firstName: widget.profile!.firstName,
-            lastName: widget.profile!.lastName,
-          )
+        ? widget.profile!.username
+        // ? getMentionDisplayName(
+        //     username: widget.profile!.username,
+        //     nickname: widget.profile!.nickname,
+        //     firstName: widget.profile!.firstName,
+        //     lastName: widget.profile!.lastName,
+        //   )
         : formatMemberName(post.userId);
     final time = _formatTime(post.createAt);
     final fullTime = DateFormat(

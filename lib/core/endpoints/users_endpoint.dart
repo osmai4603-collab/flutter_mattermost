@@ -104,6 +104,7 @@ sealed class UsersEndPoint {
   static String postsSetUnread(String userId, String postId) =>
       '$base/$userId/posts/$postId/set_unread';
   static String preferences(String userId) => '$base/$userId/preferences';
+  static const myPreferences = '$base/me/preferences';
   static String preferencesDelete(String userId) =>
       '$base/$userId/preferences/delete';
   static String preferences2(String userId, String category) =>

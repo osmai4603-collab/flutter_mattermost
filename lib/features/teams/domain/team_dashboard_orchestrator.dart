@@ -109,11 +109,9 @@ class TeamDashboardOrchestrator {
     final channelsFuture = _channelRepository
         .getMyChannels(teamId)
         .catchError((_) => <ChannelEntity>[]);
-    final categoriesFuture = (userId != null && userId.isNotEmpty)
-        ? _channelRepository
-              .getChannelCategories(teamId, userId)
-              .catchError((_) => <ChannelCategoryEntity>[])
-        : Future.value(<ChannelCategoryEntity>[]);
+    final categoriesFuture = _channelRepository
+        .getChannelCategories(teamId, uid)
+        .catchError((_) => <ChannelCategoryEntity>[]);
     final membersFuture = _channelRepository
         .getMyChannelMembersInTeam(teamId)
         .catchError((_) => <ChannelMemberEntity>[]);

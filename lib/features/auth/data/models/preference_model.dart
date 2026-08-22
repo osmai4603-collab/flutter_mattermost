@@ -2,7 +2,6 @@ import 'package:flutter_mattermost/features/auth/domain/entities/preference_enti
 
 final class PreferenceModel extends PreferenceEntity {
   const PreferenceModel({
-    required super.serverId,
     required super.userId,
     required super.category,
     required super.name,
@@ -11,7 +10,6 @@ final class PreferenceModel extends PreferenceEntity {
 
   factory PreferenceModel.fromMap(Map<String, dynamic> data) {
     return PreferenceModel(
-      serverId: data['server_id'] ?? '',
       userId: data['user_id'] ?? '',
       category: data['category'] ?? '',
       name: data['name'] ?? '',
@@ -21,7 +19,6 @@ final class PreferenceModel extends PreferenceEntity {
 
   factory PreferenceModel.fromEntity(PreferenceEntity entity) {
     return PreferenceModel(
-      serverId: entity.serverId,
       userId: entity.userId,
       category: entity.category,
       name: entity.name,
@@ -31,7 +28,6 @@ final class PreferenceModel extends PreferenceEntity {
 
   Map<String, dynamic> toMap() {
     return {
-      'server_id': serverId,
       'user_id': userId,
       'category': category,
       'name': name,
@@ -48,7 +44,6 @@ final class PreferenceModel extends PreferenceEntity {
     String? value,
   }) {
     return PreferenceModel(
-      serverId: serverId ?? this.serverId,
       userId: userId ?? this.userId,
       category: category ?? this.category,
       name: name ?? this.name,
@@ -58,7 +53,6 @@ final class PreferenceModel extends PreferenceEntity {
 
   PreferenceEntity toEntity() {
     return PreferenceEntity(
-      serverId: serverId,
       userId: userId,
       category: category,
       name: name,

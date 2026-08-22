@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
-import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_navigator.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar_header.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direct_message_category_widget.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direction_message_item_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/enums/category_sorting.dart';
@@ -16,19 +14,15 @@ import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
 import 'package:flutter_mattermost/core/enums/channel_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
-import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
-import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_context_menu.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/unread_channel_indicator.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
-import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// الشريط الجانبي للقنوات (LHS) — مطابق channel_sidebar.tsx في webapp:
 /// SidebarHeader + ChannelNavigator + فئات قابلة للطي (channels/DMs).
@@ -72,7 +66,7 @@ class ChannelSidebar extends StatelessWidget {
                 // القنوات المكتومة: notify_props.mark_unread == 'mention'.
                 mutedChannelIds: {
                   for (final entry in (loaded?.members ?? const {}).entries)
-                    if (entry.value.notifyProps['mark_unread'] == 'mention')
+                    if (entry.value.notifyProps?.markUnread == 'mention')
                       entry.key,
                 },
                 lhs: lhs,
@@ -453,7 +447,12 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                           ),
                           const SizedBox(height: 8),
                           for (final (categoryId, title, list) in sections)
-                            if (list.isNotEmpty)
+                            if (list.isNotEmpty ||
+                                widget.categories.any(
+                                  (c) =>
+                                      c.id == categoryId &&
+                                      c.type != ChannelCategoryType.favorites,
+                                ))
                               _buildCategory(
                                 context,
                                 categoryId: categoryId,
@@ -469,13 +468,12 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                             currentUserId: widget.currentUserId,
                             mutedChannelIds: widget.mutedChannelIds,
                             onChannelTap: (ch) => openChannelIn(context, ch),
-                            onMoveChannel: (channelId, fromId) =>
-                                _moveChannel(
-                                  context,
-                                  channelId,
-                                  fromId,
-                                  dmCategoryId,
-                                ),
+                            onMoveChannel: (channelId, fromId) => _moveChannel(
+                              context,
+                              channelId,
+                              fromId,
+                              dmCategoryId,
+                            ),
                           ),
                         ],
                       ),

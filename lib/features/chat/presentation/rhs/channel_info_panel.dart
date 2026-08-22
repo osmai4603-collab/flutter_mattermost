@@ -70,7 +70,7 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
         .any((c) => c.channelIds.contains(channel!.id));
 
     final member = members[channel.id];
-    final isMuted = member?.notifyProps['mark_unread'] == 'mention';
+    final isMuted = member?.notifyProps?.markUnread == 'mention';
     final isArchived = channel.deleteAt > 0;
 
     return SingleChildScrollView(
@@ -139,16 +139,20 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
                       width: cardWidth,
                       onTap: () {
                         if (userId != null) {
-                          context.read<ChannelBloc>().add(ToggleFavoriteEvent(
-                                channelId: channel!.id,
-                                userId: userId,
-                                teamId: channel.teamId,
-                              ));
+                          context.read<ChannelBloc>().add(
+                            ToggleFavoriteEvent(
+                              channelId: channel!.id,
+                              userId: userId,
+                              teamId: channel.teamId,
+                            ),
+                          );
                         }
                       },
                     ),
                     _ActionCard(
-                      icon: isMuted ? Icons.notifications_off : Icons.notifications_none,
+                      icon: isMuted
+                          ? Icons.notifications_off
+                          : Icons.notifications_none,
                       iconColor: isMuted ? theme.errorTextColor : null,
                       label: isMuted
                           ? l10n.channel_info_rhsTop_buttonsMuted
@@ -156,10 +160,12 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
                       width: cardWidth,
                       onTap: () {
                         if (userId != null) {
-                          context.read<ChannelBloc>().add(ToggleMuteEvent(
-                                channelId: channel!.id,
-                                userId: userId,
-                              ));
+                          context.read<ChannelBloc>().add(
+                            ToggleMuteEvent(
+                              channelId: channel!.id,
+                              userId: userId,
+                            ),
+                          );
                         }
                       },
                     ),
@@ -450,7 +456,10 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
     if (teamName != null) context.go('/$teamName/channels/town-square');
   }
 
-  Future<void> _leaveChannel(BuildContext context, ChannelEntity channel) async {
+  Future<void> _leaveChannel(
+    BuildContext context,
+    ChannelEntity channel,
+  ) async {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
@@ -550,7 +559,8 @@ class _ChannelInfoPanelState extends State<ChannelInfoPanel> {
     if (teamState is TeamsLoadedState) {
       final teamName = teamState.selectedTeam?.name;
       if (teamName != null) {
-        final link = 'https://mattermost.com/$teamName/channels/${channel.name}';
+        final link =
+            'https://mattermost.com/$teamName/channels/${channel.name}';
         _onCopy(link);
       }
     }

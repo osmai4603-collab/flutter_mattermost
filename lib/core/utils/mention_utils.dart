@@ -9,7 +9,11 @@ class SpecialMentions {
   final bool channel;
   final bool here;
 
-  const SpecialMentions({this.all = false, this.channel = false, this.here = false});
+  const SpecialMentions({
+    this.all = false,
+    this.channel = false,
+    this.here = false,
+  });
 
   bool get hasAny => all || channel || here;
 
@@ -23,7 +27,8 @@ class SpecialMentions {
   }
 
   @override
-  String toString() => 'SpecialMentions(all: $all, channel: $channel, here: $here)';
+  String toString() =>
+      'SpecialMentions(all: $all, channel: $channel, here: $here)';
 }
 
 // نفس الأنماط في webapp utils/constants.tsx:
@@ -89,8 +94,12 @@ List<String> allAtMentions(String text) {
 
 /// تعداد طبيعي للأسماء (رقمي + حساسية الحالة) — نظير localeCompare(numeric: true).
 int naturalCompare(String a, String b) {
-  final aTokens = RegExp(r'\d+|\D+').allMatches(a).map((m) => m.group(0)!).toList();
-  final bTokens = RegExp(r'\d+|\D+').allMatches(b).map((m) => m.group(0)!).toList();
+  final aTokens = RegExp(
+    r'\d+|\D+',
+  ).allMatches(a).map((m) => m.group(0)!).toList();
+  final bTokens = RegExp(
+    r'\d+|\D+',
+  ).allMatches(b).map((m) => m.group(0)!).toList();
 
   final length = math.min(aTokens.length, bTokens.length);
   for (var i = 0; i < length; i++) {

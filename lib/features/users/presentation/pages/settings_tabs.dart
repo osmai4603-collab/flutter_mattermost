@@ -337,8 +337,11 @@ class SettingsTextFieldRow extends StatelessWidget {
   }
 }
 
-String _notifyString(Map<String, dynamic> notifyProps, String key,
-    String fallback) {
+String _notifyString(
+  Map<String, dynamic> notifyProps,
+  String key,
+  String fallback,
+) {
   final v = notifyProps[key];
   if (v == null || v.toString().isEmpty) return fallback;
   return v.toString();
@@ -447,9 +450,9 @@ class _ProfileSettingsTabState extends State<ProfileSettingsTab> {
           });
           _syncFromUser(state.myProfile);
           if (state.myProfile != null) {
-            context
-                .read<AuthBloc>()
-                .add(AuthUserUpdatedEvent(state.myProfile!));
+            context.read<AuthBloc>().add(
+              AuthUserUpdatedEvent(state.myProfile!),
+            );
           }
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -588,7 +591,6 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
     context.read<UserPreferencesBloc>().add(
       SavePreferenceEvent(
         PreferenceEntity(
-          serverId: '',
           userId: user.id,
           category: preferenceCategoryNotifications,
           name: preferenceNameEmailInterval,
@@ -626,9 +628,9 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
       listener: (context, state) {
         if (state is UserProfileSaveSuccessState) {
           if (state.myProfile != null) {
-            context
-                .read<AuthBloc>()
-                .add(AuthUserUpdatedEvent(state.myProfile!));
+            context.read<AuthBloc>().add(
+              AuthUserUpdatedEvent(state.myProfile!),
+            );
           }
         } else if (state is UserProfileSaveErrorState) {
           ScaffoldMessenger.of(context)
@@ -682,9 +684,7 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
                   _ => l10n.userSettingsNotificationsNever,
                 },
                 onChanged: (v) {
-                  _saveNotifyProps({
-                    'email': v == 'never' ? 'false' : 'true',
-                  });
+                  _saveNotifyProps({'email': v == 'never' ? 'false' : 'true'});
                   _saveEmailInterval(v);
                 },
               ),
@@ -756,7 +756,6 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
     context.read<UserPreferencesBloc>().add(
       SavePreferenceEvent(
         PreferenceEntity(
-          serverId: '',
           userId: userId,
           category: category,
           name: name,
@@ -824,8 +823,7 @@ class _DisplaySettingsTabState extends State<DisplaySettingsTab> {
               labelOf: (v) => v == 'compact'
                   ? l10n.userSettingsDisplayCompact
                   : l10n.userSettingsDisplayStandard,
-              onChanged: (v) =>
-                  _saveDisplay(preferenceNameMessageDisplay, v),
+              onChanged: (v) => _saveDisplay(preferenceNameMessageDisplay, v),
             ),
           ],
         ),
@@ -1062,7 +1060,6 @@ class _SidebarSettingsTabState extends State<SidebarSettingsTab> {
     context.read<UserPreferencesBloc>().add(
       SavePreferenceEvent(
         PreferenceEntity(
-          serverId: '',
           userId: userId,
           category: category,
           name: name,
@@ -1169,7 +1166,6 @@ class _AdvancedSettingsTabState extends State<AdvancedSettingsTab> {
     context.read<UserPreferencesBloc>().add(
       SavePreferenceEvent(
         PreferenceEntity(
-          serverId: '',
           userId: _userId(),
           category: preferenceCategoryAdvanced,
           name: name,
@@ -1295,9 +1291,9 @@ class _SecuritySettingsTabState extends State<SecuritySettingsTab> {
     );
     codeController.dispose();
     if (code == null || code.isEmpty || !mounted) return;
-    context
-        .read<UserProfileBloc>()
-        .add(UpdateMfaEvent(activate: false, code: code));
+    context.read<UserProfileBloc>().add(
+      UpdateMfaEvent(activate: false, code: code),
+    );
   }
 
   @override
@@ -1311,9 +1307,9 @@ class _SecuritySettingsTabState extends State<SecuritySettingsTab> {
       listener: (context, state) {
         if (state is UserProfileSaveSuccessState) {
           if (state.myProfile != null) {
-            context
-                .read<AuthBloc>()
-                .add(AuthUserUpdatedEvent(state.myProfile!));
+            context.read<AuthBloc>().add(
+              AuthUserUpdatedEvent(state.myProfile!),
+            );
           }
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
@@ -1456,9 +1452,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
       return;
     }
 
-    Navigator.of(context).pop(
-      (current: current, newPassword: newPassword),
-    );
+    Navigator.of(context).pop((current: current, newPassword: newPassword));
   }
 
   @override
@@ -1510,10 +1504,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.generic_modalCancel),
         ),
-        TextButton(
-          onPressed: _submit,
-          child: Text(l10n.generic_modalConfirm),
-        ),
+        TextButton(onPressed: _submit, child: Text(l10n.generic_modalConfirm)),
       ],
     );
   }

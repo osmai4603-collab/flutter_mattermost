@@ -290,7 +290,6 @@ class InternalStatsLoadedEvent extends ChannelEvent {
   List<Object?> get props => [stats];
 }
 
-
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -385,7 +384,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     this._threadsSummaryCubit,
     this._teamGroupsCubit,
   ) : super(ChannelInitialState()) {
-
     on<LoadChannelsForTeamEvent>(_onLoadChannels);
     on<SelectChannelEvent>(_onSelectChannel);
     on<UpsertChannelEvent>(_onUpsertChannel);
@@ -488,7 +486,10 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
         selectedChannel: latest.selectedChannel,
         userId: latest.userId,
         members: latest.members,
-        channelStats: {...latest.channelStats, event.stats.channelId: event.stats},
+        channelStats: {
+          ...latest.channelStats,
+          event.stats.channelId: event.stats,
+        },
       ),
     );
   }
@@ -547,10 +548,13 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
           (previousSelected != null &&
               channels.any((c) => c.id == previousSelected.id))
           ? previousSelected
-          : (channels.where(
-                  (c) =>
-                      c.type == ChannelType.open || c.type == ChannelType.private,
-                ).firstOrNull ??
+          : (channels
+                    .where(
+                      (c) =>
+                          c.type == ChannelType.open ||
+                          c.type == ChannelType.private,
+                    )
+                    .firstOrNull ??
                 (channels.isNotEmpty ? channels.first : null));
 
       emit(
@@ -566,16 +570,17 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       );
       if (selectedChannel != null) {
         unawaited(_refreshChannelStats(selectedChannel.id));
-        unawaited(_dashboardOrchestrator.loadActiveChannelDetails(
-          channelId: selectedChannel.id,
-          userId: userId,
-        ));
+        unawaited(
+          _dashboardOrchestrator.loadActiveChannelDetails(
+            channelId: selectedChannel.id,
+            userId: userId,
+          ),
+        );
       }
     } catch (e) {
       emit(ChannelErrorState(e.toString(), teamId: event.teamId));
     }
   }
-
 
   Future<Map<String, ChannelUnreadCounts>> _fetchUnread(
     String teamId,
@@ -653,7 +658,6 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       }
     }
   }
-
 
   Future<void> _syncPreviousChannelPosts(String prevChannelId) async {
     try {
@@ -908,7 +912,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     final current = state;
     if (current is! ChannelsLoadedState) return;
     final member = current.members[event.channelId];
-    final muted = member?.notifyProps['mark_unread'] == 'mention';
+    final muted = member?.notifyProps?.markUnread == 'mention';
     try {
       await _channelRepository.updateChannel(
         event.channelId,
@@ -919,10 +923,9 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
       );
       if (member != null) {
         updatedMembers[event.channelId] = member.copyWith(
-          notifyProps: {
-            ...member.notifyProps,
-            'mark_unread': muted ? 'all' : 'mention',
-          },
+          notifyProps: member.notifyProps?.copyWith(
+            markRead: muted ? 'all' : 'mention',
+          ),
         );
       }
       emit(

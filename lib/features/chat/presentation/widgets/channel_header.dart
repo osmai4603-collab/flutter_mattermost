@@ -16,7 +16,8 @@ import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/modals/channel_notifications_modal.dart';
-import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart' hide ToggleMuteEvent;
+import 'package:flutter_mattermost/features/chat/presentation/bloc/calls_bloc.dart'
+    hide ToggleMuteEvent;
 import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/channel_header_text_popover.dart';
 import 'package:flutter_mattermost/features/chat/presentation/widgets/pluggable_channel_header_slots.dart';
@@ -45,10 +46,11 @@ class ChannelHeader extends StatelessWidget {
         final channelDisplayName = channel == null
             ? ''
             : channel.type == ChannelType.direct
-                ? formatMemberName(channel.displayName)
-                : channel.displayName;
+            ? formatMemberName(channel.displayName)
+            : channel.displayName;
 
-        final isFavorited = channel != null &&
+        final isFavorited =
+            channel != null &&
             loaded!.categories
                 .where((c) => c.type == ChannelCategoryType.favorites)
                 .any((c) => c.channelIds.contains(channel.id));
@@ -59,7 +61,7 @@ class ChannelHeader extends StatelessWidget {
         final pinnedCount = stats?.pinnedPostsCount ?? 0;
 
         final member = channel == null ? null : loaded?.members[channel.id];
-        final isMuted = member?.notifyProps['mark_unread'] == 'mention';
+        final isMuted = member?.notifyProps?.markUnread == 'mention';
 
         final headerText = channel == null
             ? ''
@@ -225,9 +227,9 @@ class ChannelHeader extends StatelessWidget {
                       transparent: true,
                       tooltip: l10n.channelHeaderStartCall,
                       onPressed: () {
-                        context
-                            .read<CallsBloc>()
-                            .add(StartCallEvent(channel.id));
+                        context.read<CallsBloc>().add(
+                          StartCallEvent(channel.id),
+                        );
                       },
                       child: Icon(
                         Icons.phone_outlined,
@@ -286,9 +288,7 @@ class ChannelHeader extends StatelessWidget {
                       transparent: true,
                       tooltip: l10n.channel_headerPinnedPosts,
                       onPressed: () {
-                        context
-                            .read<RhsBloc>()
-                            .add(ShowPinnedPostsEvent());
+                        context.read<RhsBloc>().add(ShowPinnedPostsEvent());
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -348,9 +348,7 @@ class ChannelHeader extends StatelessWidget {
                     onPressed: channel == null
                         ? null
                         : () {
-                            context
-                                .read<RhsBloc>()
-                                .add(ShowChannelInfoEvent());
+                            context.read<RhsBloc>().add(ShowChannelInfoEvent());
                           },
                     child: Icon(
                       Icons.info_outline,
@@ -376,11 +374,11 @@ class ChannelHeader extends StatelessWidget {
                             ? null
                             : () {
                                 context.read<ChannelBloc>().add(
-                                      ToggleMuteEvent(
-                                        channelId: channel.id,
-                                        userId: loaded!.userId,
-                                      ),
-                                    );
+                                  ToggleMuteEvent(
+                                    channelId: channel.id,
+                                    userId: loaded!.userId,
+                                  ),
+                                );
                               },
                       ),
                       MatterMenuItem(
@@ -400,7 +398,10 @@ class ChannelHeader extends StatelessWidget {
                       MatterMenuItem(
                         id: 'invite',
                         label: l10n.invite_modalInvite,
-                        icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.person_add_alt_1_outlined,
+                          size: 18,
+                        ),
                         onTap: channel == null
                             ? null
                             : () {
@@ -431,7 +432,10 @@ class ChannelHeader extends StatelessWidget {
                       MatterMenuItem(
                         id: 'files',
                         label: l10n.channel_headerChannelFiles,
-                        icon: const Icon(Icons.insert_drive_file_outlined, size: 18),
+                        icon: const Icon(
+                          Icons.insert_drive_file_outlined,
+                          size: 18,
+                        ),
                         onTap: () {
                           context.read<RhsBloc>().add(ShowChannelFilesEvent());
                         },
@@ -449,11 +453,11 @@ class ChannelHeader extends StatelessWidget {
                             ? null
                             : () {
                                 context.read<ChannelBloc>().add(
-                                      LeaveChannelEvent(
-                                        channelId: channel.id,
-                                        userId: loaded!.userId,
-                                      ),
-                                    );
+                                  LeaveChannelEvent(
+                                    channelId: channel.id,
+                                    userId: loaded!.userId,
+                                  ),
+                                );
                               },
                       ),
                     ],
@@ -464,7 +468,9 @@ class ChannelHeader extends StatelessWidget {
                         child: Icon(
                           Icons.more_horiz,
                           size: 20,
-                          color: theme.centerChannelColor.withValues(alpha: 0.7),
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                     ),
@@ -502,8 +508,7 @@ class ChannelHeader extends StatelessWidget {
         ? teamState.selectedTeam?.name
         : null;
     final channelName = channel?.name;
-    final link =
-        teamName != null && channelName != null
+    final link = teamName != null && channelName != null
         ? '/$teamName/channels/$channelName'
         : '';
     Clipboard.setData(ClipboardData(text: link));
@@ -530,11 +535,7 @@ class GuestsBadge extends StatelessWidget {
           color: theme.mentionColor.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Icon(
-          Icons.person_outline,
-          size: 13,
-          color: theme.mentionColor,
-        ),
+        child: Icon(Icons.person_outline, size: 13, color: theme.mentionColor),
       ),
     );
   }

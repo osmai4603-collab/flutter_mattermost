@@ -95,17 +95,7 @@ class _TeamIcon extends StatelessWidget {
   }
 
   String get _initials {
-    final parts = team.displayName
-        .split(' ')
-        .where((p) => p.isNotEmpty)
-        .toList();
-    if (parts.isEmpty) {
-      return team.name.isEmpty ? '?' : team.name[0].toUpperCase();
-    }
-    if (parts.length == 1) {
-      return parts.first.characters.take(2).toString().toUpperCase();
-    }
-    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+    return team.displayName.split('').take(2).join('').toUpperCase();
   }
 
   @override
@@ -118,13 +108,16 @@ class _TeamIcon extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-            width: 48,
-            height: 48,
+            width: 45,
+            height: 45,
             decoration: BoxDecoration(
-              color: isActive ? _teamColor() : theme.sidebarTeamBarBg,
+              color: theme.buttonBg.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               border: isActive
-                  ? Border.all(color: theme.sidebarTextActiveColor, width: 2)
+                  ? Border.all(
+                      color: Color(0xFF1E88E5).withValues(alpha: 0.80),
+                      width: 3,
+                    )
                   : Border.all(
                       color: Colors.white.withValues(alpha: 0.15),
                       width: 1,

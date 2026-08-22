@@ -31,7 +31,7 @@ List<MatterMenuItem> buildChannelMenuItems(
   final state = context.read<ChannelBloc>().state;
   final loaded = state is ChannelsLoadedState ? state : null;
   final member = loaded?.members[channel.id];
-  final muted = member?.notifyProps['mark_unread'] == 'mention';
+  final muted = member?.notifyProps?.markUnread == 'mention';
   final currentUserId = loaded?.userId ?? '';
   final isFavorited =
       loaded?.categories

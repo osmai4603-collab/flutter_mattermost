@@ -42,9 +42,9 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
     final member = state is ChannelsLoadedState && channel != null
         ? state.members[channel.id]
         : null;
-    _selectedDesktop = _levelIndex(member?.notifyProps['desktop'] ?? 'all');
-    _selectedMobile = _levelIndex(member?.notifyProps['push'] ?? 'all');
-    _isMuted = member?.notifyProps['mark_unread'] == 'mention';
+    _selectedDesktop = _levelIndex(member?.notifyProps?.desktop ?? 'all');
+    _selectedMobile = _levelIndex(member?.notifyProps?.push ?? 'all');
+    _isMuted = member?.notifyProps?.markUnread == 'mention';
   }
 
   int _levelIndex(Object? level) => switch (level) {
@@ -135,7 +135,10 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _groupLabel(theme, l10n.channelNotificationsDesktopNotificationsTitle2),
+                    _groupLabel(
+                      theme,
+                      l10n.channelNotificationsDesktopNotificationsTitle2,
+                    ),
                     const SizedBox(height: 8),
                     _option(
                       theme,
@@ -164,7 +167,10 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
                       isMobile: false,
                     ),
                     const SizedBox(height: 24),
-                    _groupLabel(theme, l10n.channelNotificationsMobileNotificationsTitle),
+                    _groupLabel(
+                      theme,
+                      l10n.channelNotificationsMobileNotificationsTitle,
+                    ),
                     const SizedBox(height: 8),
                     _option(
                       theme,
@@ -206,13 +212,11 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
                               setState(() => _isMuted = value);
                               final userId =
                                   context.read<ChannelBloc>().state
-                                          is ChannelsLoadedState
-                                      ? (context
-                                                  .read<ChannelBloc>()
-                                                  .state
-                                              as ChannelsLoadedState)
-                                          .userId
-                                      : '';
+                                      is ChannelsLoadedState
+                                  ? (context.read<ChannelBloc>().state
+                                            as ChannelsLoadedState)
+                                        .userId
+                                  : '';
                               context.read<ChannelBloc>().add(
                                 ToggleMuteEvent(
                                   channelId: channel.id,
@@ -232,7 +236,9 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
                       subtitle: Text(
                         l10n.channelNotificationsMuteChannelDesc,
                         style: TextStyle(
-                          color: theme.centerChannelColor.withValues(alpha: 0.6),
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.6,
+                          ),
                           fontSize: 12,
                         ),
                       ),
@@ -271,7 +277,9 @@ class _ChannelNotificationsModalState extends State<ChannelNotificationsModal> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : Text(
                                 l10n.channelNotificationsSave,

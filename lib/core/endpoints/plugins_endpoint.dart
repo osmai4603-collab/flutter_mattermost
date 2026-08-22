@@ -16,4 +16,6 @@ sealed class PluginsEndPoint {
   static String detach(String pluginId) => '$base/$pluginId/detach';
   static String disable(String pluginId) => '$base/$pluginId/disable';
   static String enable(String pluginId) => '$base/$pluginId/enable';
+  static String callPluginConfig = '$base/com.mattermost.calls/config';
+  static String callPluginVersion = '$base/com.mattermost.calls/version';
 }

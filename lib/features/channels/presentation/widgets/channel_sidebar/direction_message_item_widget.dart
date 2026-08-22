@@ -23,7 +23,7 @@ class DirectionMessageItemWidget extends StatelessWidget {
   final UserStatus? status;
 
   /// المستخدم المقابل لحل اسم المحادثة (الخادم يترك display_name فارغاً).
-  final UserEntity? user;
+  final UserEntity user;
   final ChannelUnreadCounts? unread;
   final bool isSelected;
   final bool isMuted;
@@ -41,9 +41,6 @@ class DirectionMessageItemWidget extends StatelessWidget {
     required this.onTap,
     required this.draggableFrom,
   });
-
-  /// اسم المحادثة: displayName من الخادم (GM) أو اسم المستخدم المقابل (DM)
-  /// بالصيغة المتبعة في الواجهة: الاسم الكامل ثم @username عند غيابه.
 
   @override
   Widget build(BuildContext context) {
@@ -107,6 +104,7 @@ class DirectionMessageItemWidget extends StatelessWidget {
     bool hasMentions,
     String label,
   ) {
+    print(user.username);
     return HoverWidget(
       cursor: SystemMouseCursors.click,
       builder: (_, isHovered) => GestureDetector(
@@ -145,8 +143,8 @@ class DirectionMessageItemWidget extends StatelessWidget {
                       alignment: AlignmentGeometry.bottomEnd,
                       children: [
                         ProfilePicture.sm(
-                          userId: user?.id,
-                          username: user?.firstName ?? user?.lastName ?? '',
+                          userId: user.id,
+                          username: user.username,
                         ),
                         Container(
                           width: 10,
@@ -169,7 +167,9 @@ class DirectionMessageItemWidget extends StatelessWidget {
                           start: 8,
                         ),
                         child: Text(
-                          label,
+                          channel.displayName.isEmpty
+                              ? user.username
+                              : channel.displayName,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -229,11 +229,13 @@ class DirectionMessageItemWidget extends StatelessWidget {
                         );
                       },
                     ),
+
                     // زر الإغلاق السريع X + قائمة القناة عند التمرير فقط.
-                    if (isHovered) ...[
-                      _CloseDmButton(channel: channel, theme: theme),
-                      ChannelRowMenu(channel: channel, iconSize: 16),
-                    ],
+                    AnimatedOpacity(
+                      opacity: isHovered ? 1 : 0.0,
+                      duration: const Duration(milliseconds: 100),
+                      child: ChannelRowMenu(channel: channel, iconSize: 16),
+                    ),
                   ],
                 ),
               ),
