@@ -5,6 +5,8 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
+import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/add_channel_bookmark_dialog.dart';
 import 'package:flutter_mattermost/features/chat/domain/entities/post_entity.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
@@ -109,127 +111,336 @@ class PostActions extends StatelessWidget {
                   );
                 },
               ),
-            PopupMenuButton<String>(
-              borderRadius: .circular(4),
-              child: Padding(
-                padding: const EdgeInsets.all(4.0),
-                child: Icon(
-                  Icons.more_vert,
-                  size: 16,
-                  color: theme.centerChannelColor.withValues(alpha: 0.65),
-                ),
-              ),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  value: 'reply',
-
+            MatterMenu(
+              offest: Offset(-100, 10),
+              items: [
+                MatterMenuItem(
+                  id: 'reply',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        const Icon(Icons.reply_outlined, size: 20),
+                        Text(l10n.postMenuReply),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('R', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   onTap: () {
                     context.read<RhsBloc>().add(
                       OpenThreadEvent(post.id, post.channelId),
                     );
                   },
-                  child: Row(
-                    spacing: 10,
-                    children: [
-                      const Icon(Icons.reply_outlined, size: 16),
-                      Text(l10n.postMenuReply),
-                    ],
-                  ),
                 ),
-                PopupMenuItem(
-                  value: 'copy',
+                MatterMenuItem(
+                  id: 'forward',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          Icons.forward_outlined,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        Text('Forward', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text(
+                                'Shift + F',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
+                ),
+                MatterMenuItem(
+                  id: 'follow_thread',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          Icons.message_outlined,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        Text('Follow Thread', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('F', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
+                ),
+                MatterMenuItem(
+                  id: 'mark_unread',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          Icons.menu_outlined,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        Text('Mark as Unread', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('U', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
+                ),
+                MatterMenuItem(
+                  id: 'save_message',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          Icons.bookmark_outline,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        Text('Save Message', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('S', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
+                ),
+                MatterMenuItem(
+                  id: 'pin_to_channel',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        Icon(
+                          Icons.pin_end_outlined,
+                          size: 20,
+                          color: theme.centerChannelColor.withValues(
+                            alpha: 0.65,
+                          ),
+                        ),
+                        Text('Pin to Channel', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('P', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  onTap: () {
+                    context.read<RhsBloc>().add(
+                      OpenThreadEvent(post.id, post.channelId),
+                    );
+                  },
+                ),
+                MatterMenuItem.divider(),
+                MatterMenuItem(
+                  id: 'copy',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        const Icon(Icons.copy, size: 16),
+                        Text('Copy Text', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('C', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   onTap: () =>
                       Clipboard.setData(ClipboardData(text: post.message)),
-
-                  child: Row(
-                    spacing: 10,
-                    children: [
-                      const Icon(Icons.copy, size: 16),
-                      Text(l10n.postMenuCopy),
-                    ],
-                  ),
                 ),
-                PopupMenuItem(
-                  value: 'copy link',
+                MatterMenuItem(
+                  id: 'copy_link',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        const Icon(Icons.link_outlined, size: 16),
+                        Text('Copy Link', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('K', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   onTap: () {
                     final serverUrl = getIt<ServerManager>().activeServerUrl;
                     final link = '$serverUrl/_redirect/pl/${post.id}';
                     Clipboard.setData(ClipboardData(text: link));
                   },
-                  child: Row(
-                    spacing: 10,
-                    children: [
-                      const Icon(Icons.link, size: 16),
-                      Text('Copy Link'),
-                    ],
-                  ),
                 ),
-                PopupMenuItem(
-                  value: 'bookmark',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.bookmark_add_outlined, size: 16),
-                      Text(l10n.channel_bookmarksAddBookmark),
-                    ],
-                  ),
-                  onTap: () => _addBookmark(context),
-                ),
-                PopupMenuItem(
-                  child: Row(
-                    children: [
-                      Icon(
-                        isSavedMessage ? Icons.flag : Icons.flag_outlined,
-                        size: 16,
-                      ),
-                      Text(
-                        isSavedMessage
-                            ? l10n.postMenuUnflag
-                            : l10n.postMenuFlag,
-                      ),
-                    ],
-                  ),
-                  onTap: () {
-                    context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
-                  },
-                ),
-                PopupMenuItem(
-                  child: Row(
-                    children: [
-                      Icon(
-                        isPinned ? Icons.push_pin : Icons.push_pin_outlined,
-                        size: 16,
-                      ),
-                      Text(isPinned ? l10n.postMenuUnpin : l10n.postMenuPin),
-                    ],
-                  ),
-                  onTap: () {
-                    context.read<PostBloc>().add(TogglePinPostEvent(post.id));
-                  },
-                ),
-                if (canEdit)
-                  PopupMenuItem(
+                MatterMenuItem.divider(),
+                MatterMenuItem(
+                  id: 'edit',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
                     child: Row(
+                      spacing: 10,
                       children: [
                         const Icon(Icons.edit_outlined, size: 16),
-                        Text(l10n.postMenuEdit),
-                      ],
-                    ),
-                    onTap: () => _startComposerEdit(context),
-                  ),
-                if (canDelete)
-                  PopupMenuItem(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.delete_outline, size: 16),
-                        Text(
-                          l10n.postMenuDelete,
-                          style: const TextStyle(color: Colors.red),
+                        Text('Edit', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text('E', style: TextStyle(fontSize: 12)),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    onTap: () => _confirmDelete(context),
                   ),
+                  onTap: () => _startComposerEdit(context),
+                ),
+                MatterMenuItem(
+                  id: 'delete',
+                  label: '',
+                  icon: SizedBox(
+                    width: 200,
+                    child: Row(
+                      spacing: 10,
+                      children: [
+                        const Icon(Icons.delete_outline, size: 16),
+                        Text('Delete', style: TextStyle(fontSize: 14)),
+                        Expanded(
+                          child: Align(
+                            alignment: .centerEnd,
+                            child: Padding(
+                              padding: .symmetric(horizontal: 0),
+                              child: Text(
+                                'delete',
+                                style: TextStyle(fontSize: 12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  danger: true,
+                  onTap: () => _confirmDelete(context),
+                ),
               ],
+              child: HoverWidget(
+                builder: (context, isHovered) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: .circular(4),
+                      color: isHovered
+                          ? theme.centerChannelColor.withValues(alpha: 0.10)
+                          : null,
+                    ),
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(
+                      Icons.more_vert,
+                      size: 16,
+                      color: theme.centerChannelColor.withValues(alpha: 0.65),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
         ),

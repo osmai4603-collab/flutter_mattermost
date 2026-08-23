@@ -240,6 +240,7 @@ class MatterMenu extends StatefulWidget {
   final List<MatterMenuItem> items;
   final bool openUp;
   final bool openLeft;
+  final Offset offest;
 
   const MatterMenu({
     super.key,
@@ -247,6 +248,7 @@ class MatterMenu extends StatefulWidget {
     required this.items,
     this.openUp = false,
     this.openLeft = false,
+    this.offest = Offset.zero,
   });
 
   @override
@@ -261,6 +263,7 @@ class _MatterMenuState extends State<MatterMenu> {
     final theme = AppTheme.of(context);
     return SizedBox(
       child: MenuAnchor(
+        alignmentOffset: widget.offest,
         controller: _controller,
         style: _menuStyle(theme),
         menuChildren: _buildMenuChildren(context, widget.items),
