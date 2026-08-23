@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
-import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 
 /// صفحة تخويل OAuth — مطابقة لـ OAuthAuthorize في webapp
 class OAuthAuthorizePage extends StatelessWidget {

@@ -86,4 +86,8 @@ class TeamGroupsCubit extends Cubit<TeamGroupsState> {
       ),
     );
   }
+
+  void clear() {
+    emit(TeamGroupsInitialState());
+  }
 }

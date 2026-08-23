@@ -164,6 +164,8 @@ class ToggleSaveEvent extends ThreadsEvent {
   List<Object?> get props => [teamId, threadId, isCurrentlySaved];
 }
 
+class ClearThreadsEvent extends ThreadsEvent {}
+
 /// حالات صفحة المحادثات.
 abstract class ThreadsState extends Equatable {
   const ThreadsState();
@@ -205,6 +207,11 @@ class ThreadsBloc extends Bloc<ThreadsEvent, ThreadsState> {
     on<ThreadFollowChangedSocketEvent>(_onSocketFollowChanged);
     on<ThreadReadChangedSocketEvent>(_onSocketReadChanged);
     on<ToggleSaveEvent>(_onToggleSave);
+    on<ClearThreadsEvent>(_onClear);
+  }
+
+  void _onClear(ClearThreadsEvent event, Emitter<ThreadsState> emit) {
+    emit(const ThreadsLoadedState(threads: []));
   }
 
   Future<void> _onLoad(

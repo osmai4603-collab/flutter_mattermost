@@ -22,37 +22,60 @@ class UserAccountMenuButton extends StatelessWidget {
     final user = authState is AuthenticatedState ? authState.user : null;
 
     final statusBloc = context.read<UserStatusBloc>();
-    final statusState = statusBloc.state;
+    final statusState = context.watch<UserStatusBloc>().state;
     final myStatus = statusState is UserStatusesLoadedState
-        ? statusState.statusOf('me')
-        : UserStatus.offline;
+        ? (statusState.statusOf(user?.id ?? 'me') ??
+              statusState.statusOf('me') ??
+              UserStatus.online)
+        : UserStatus.online;
 
     return MatterMenuScope(
       openUp: false,
       items: [
         MatterMenuItem(
           id: 'name',
-          label: user?.firstName ?? user?.username ?? '',
-          icon: Row(
-            children: [
-              ProfilePicture.md(
-                userId: user?.id,
-                username: user?.username ?? '?',
-                avatarUrl: null,
-                status: myStatus,
-                showStatus: true,
-              ),
-              Text(
-                user?.firstName ?? user?.username ?? '',
-                style: TextStyle(fontSize: 14, color: theme.sidebarBg),
-              ),
-            ],
+          label: '',
+          icon: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              spacing: 16,
+              children: [
+                ProfilePicture(
+                  size: 38,
+                  userId: user?.id,
+                  username: user?.username ?? '?',
+                  avatarUrl: null,
+                  status: myStatus,
+                  showStatus: true,
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "${user?.firstName ?? ""} ${user?.lastName ?? ''}"
+                              .trim()
+                              .isEmpty
+                          ? (user?.username ?? '')
+                          : "${user?.firstName ?? ""} ${user?.lastName ?? ''}",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: theme.sidebarBg,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      '@${user?.username ?? ''}',
+                      style: TextStyle(fontSize: 14, color: theme.sidebarBg),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 1),
+              ],
+            ),
           ),
           onTap: () {
-            ModalRegistry.open(
-              context,
-              id: ModalIdentifiers.userProfile,
-            );
+            ModalRegistry.open(context, id: ModalIdentifiers.userProfile);
           },
         ),
         MatterMenuItem.divider(),
@@ -60,13 +83,18 @@ class UserAccountMenuButton extends StatelessWidget {
           id: 'custom_status',
           label: l10n.userAccountMenuSetCustomStatus,
           icon: const Icon(Icons.emoji_emotions_outlined, size: 18),
-          onTap: () {},
+          onTap: () {
+            ModalRegistry.open(context, id: ModalIdentifiers.customStatus);
+          },
         ),
         MatterMenuItem.divider(),
         MatterMenuItem(
           id: 'status_online',
           label: l10n.statusSetOnline,
           icon: const Icon(Icons.check_circle, size: 18, color: Colors.green),
+          trailingIcon: myStatus == UserStatus.online
+              ? Icon(Icons.check, size: 18, color: theme.sidebarBg)
+              : null,
           onTap: () =>
               statusBloc.add(const SetMyUserStatusEvent(UserStatus.online)),
         ),
@@ -74,6 +102,9 @@ class UserAccountMenuButton extends StatelessWidget {
           id: 'status_away',
           label: l10n.statusSetAway,
           icon: const Icon(Icons.punch_clock, size: 18, color: Colors.orange),
+          trailingIcon: myStatus == UserStatus.away
+              ? Icon(Icons.check, size: 18, color: theme.sidebarBg)
+              : null,
           onTap: () =>
               statusBloc.add(const SetMyUserStatusEvent(UserStatus.away)),
         ),
@@ -82,6 +113,9 @@ class UserAccountMenuButton extends StatelessWidget {
           label: l10n.statusSetDnd,
           subtitle: 'Disable all notifications',
           icon: const Icon(Icons.remove_circle, size: 18, color: Colors.red),
+          trailingIcon: myStatus == UserStatus.dnd
+              ? Icon(Icons.check, size: 18, color: theme.sidebarBg)
+              : null,
           onTap: () =>
               statusBloc.add(const SetMyUserStatusEvent(UserStatus.dnd)),
         ),
@@ -93,6 +127,9 @@ class UserAccountMenuButton extends StatelessWidget {
             size: 18,
             color: Colors.grey,
           ),
+          trailingIcon: myStatus == UserStatus.offline
+              ? Icon(Icons.check, size: 18, color: theme.sidebarBg)
+              : null,
           onTap: () =>
               statusBloc.add(const SetMyUserStatusEvent(UserStatus.offline)),
         ),
@@ -130,7 +167,7 @@ class UserAccountMenuButton extends StatelessWidget {
                   userId: user?.id,
                   username: user?.username ?? '?',
                   avatarUrl: null,
-                  status: UserStatus.online,
+                  status: myStatus,
                   showStatus: true,
                 ),
                 Icon(

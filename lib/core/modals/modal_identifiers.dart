@@ -20,4 +20,6 @@ abstract class ModalIdentifiers {
   static const appSettings = 'app_settings';
 
   static const teamSettings = 'team_settings';
+
+  static const String customStatus = 'custom_status';
 }

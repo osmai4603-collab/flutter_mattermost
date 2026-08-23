@@ -60,4 +60,8 @@ class ThreadsSummaryCubit extends Cubit<ThreadsSummaryState> {
   void updateSummaryLocally(String teamId, Map<String, dynamic> summary) {
     emit(ThreadsSummaryLoadedState(teamId: teamId, summary: summary));
   }
+
+  void clear() {
+    emit(ThreadsSummaryInitialState());
+  }
 }

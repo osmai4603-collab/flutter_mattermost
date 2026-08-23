@@ -20,12 +20,17 @@ import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/modals/team_settings_modal.dart';
 import 'package:flutter_mattermost/features/teams/presentation/widgets/invitation_modal.dart';
+import 'package:flutter_mattermost/features/users/presentation/modals/custom_status_modal.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_profile_page.dart';
 import 'package:flutter_mattermost/features/users/presentation/pages/user_settings_modal.dart';
 
 /// تسجيل نوافذ webapp المنبثقة (مكافئ ModalController.registerModal)
 /// ليتم فتحها عبر [ModalRegistry.open] بأي مكان.
 void registerMattermostModals() {
+  ModalRegistry.register(
+    ModalIdentifiers.customStatus,
+    (context, args) => const CustomStatusModal(),
+  );
   ModalRegistry.register(
     ModalIdentifiers.moreChannels,
     (context, args) => const _BrowseChannelsModal(),

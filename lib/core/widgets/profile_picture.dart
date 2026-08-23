@@ -53,6 +53,8 @@ class ProfilePicture extends StatelessWidget {
   final UserStatus? status;
   final double size;
   final bool showStatus;
+  final Color? backColor;
+  final Color? foreColor;
 
   const ProfilePicture({
     super.key,
@@ -62,6 +64,8 @@ class ProfilePicture extends StatelessWidget {
     this.status,
     this.size = 32,
     this.showStatus = false,
+    this.backColor,
+    this.foreColor,
   });
 
   factory ProfilePicture.sm({
@@ -125,7 +129,7 @@ class ProfilePicture extends StatelessWidget {
   Color _getAvatarColor(String? userId, String username) {
     final seedString = userId != null && userId.isNotEmpty ? userId : username;
     if (seedString.isEmpty) return const Color(0xFFC5087E);
-    
+
     // FNV-1a 32-bit hash implementation
     int hash = 2166136261;
     final bytes = utf8.encode(seedString);
@@ -133,7 +137,7 @@ class ProfilePicture extends StatelessWidget {
       hash ^= byte;
       hash = (hash * 16777619) & 0xFFFFFFFF;
     }
-    
+
     return avatarColors[hash % avatarColors.length];
   }
 
@@ -145,7 +149,7 @@ class ProfilePicture extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: _getAvatarColor(userId, username),
+        color: backColor ?? _getAvatarColor(userId, username),
         borderRadius: BorderRadius.circular(20),
       ),
       clipBehavior: Clip.antiAlias,
@@ -212,7 +216,7 @@ class ProfilePicture extends StatelessWidget {
       child: Text(
         initials,
         style: TextStyle(
-          color: Colors.white,
+          color: foreColor ?? Colors.white,
           fontSize: size * 0.4,
           fontWeight: FontWeight.bold,
         ),

@@ -184,17 +184,16 @@ class _ParticipantAvatars extends StatelessWidget {
     final theme = AppTheme.of(context);
     final toShow = participants.take(4).toList();
     final hasMore = participants.length > 4;
-    final stackWidth = hasMore
-        ? (4 * 20.0) + 20.0
-        : ((toShow.length - 1) * 20.0);
+    final stackWidth = hasMore ? (4 * 20.0) + 20.0 : ((toShow.length) * 20.0);
 
     return SizedBox(
-      width: stackWidth,
+      width: stackWidth + 10,
       height: 30,
       child: Stack(
+        fit: .loose,
         clipBehavior: Clip.none,
         children: [
-          for (var i = 0; i < toShow.length - 1; i++)
+          for (var i = 0; i < toShow.length; i++)
             Positioned(
               left: i * 20.0,
               child: Container(
@@ -207,8 +206,9 @@ class _ParticipantAvatars extends StatelessWidget {
                     return AnimatedScale(
                       scale: isHovered ? 1.20 : 1.0,
                       duration: const Duration(milliseconds: 200),
-                      child: ProfilePicture.sm(
+                      child: ProfilePicture(
                         userId: toShow[i].id,
+                        size: 26,
                         username: toShow[i].username,
                         avatarUrl: serverUserAvatarUrl(toShow[i].id),
                       ),
@@ -219,26 +219,35 @@ class _ParticipantAvatars extends StatelessWidget {
             ),
           if (hasMore)
             Positioned(
-              left: 4 * 20.0,
               top: 2,
-              child: Container(
-                width: 25,
-                height: 25,
-                decoration: BoxDecoration(
-                  color: theme.centerChannelColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
-                ),
-                child: Center(
-                  child: Text(
-                    '+${participants.length - 4}',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: theme.centerChannelColor,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+              left: 4 * 20.0 + 8,
+              child: ProfilePicture(
+                userId: '+${participants.length - 4}',
+                size: 26,
+                backColor: theme.centerChannelColor.withValues(alpha: 0.20),
+                foreColor: theme.centerChannelColor,
+                username: '+${participants.length - 4}',
+                // avatarUrl: serverUserAvatarUrl(toShow[i].id),
               ),
+              // top: 2,
+              // child: Container(
+              //   width: 26,
+              //   height: 26,
+              //   decoration: BoxDecoration(
+              //     color: theme.centerChannelColor.withValues(alpha: 0.1),
+              //     borderRadius: BorderRadius.circular(DesignTokens.radiusPill),
+              //   ),
+              //   child: Center(
+              //     child: Text(
+              //       '+${participants.length - 4}',
+              //       style: TextStyle(
+              //         fontSize: 9,
+              //         color: theme.centerChannelColor,
+              //         fontWeight: FontWeight.bold,
+              //       ),
+              //     ),
+              //   ),
+              // ),
             ),
         ],
       ),

@@ -33,6 +33,14 @@ abstract class UserRepository {
   Future<List<UserStatusEntity>> getStatusesByIds(List<String> userIds);
   Future<UserStatusEntity> getStatus(String userId);
   Future<UserStatusEntity> updateMyStatus(UserStatus status, {String? dndEndTime});
+  Future<UserStatusEntity> updateMyCustomStatus({
+    required String emoji,
+    String? text,
+    String? duration,
+    String? expiresAt,
+  });
+  Future<void> unsetMyCustomStatus();
+  Future<void> removeRecentCustomStatus(String emoji);
 
   Future<List<PreferenceEntity>> getMyPreferences();
   Future<void> saveMyPreferences(List<PreferenceEntity> preferences);

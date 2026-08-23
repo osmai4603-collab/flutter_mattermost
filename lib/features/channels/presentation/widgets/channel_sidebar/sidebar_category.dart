@@ -8,13 +8,20 @@ import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
+import 'package:flutter_mattermost/features/auth/data/models/user_model.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/repositories/channel_repository.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_category_row.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direction_message_item_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_channel_row.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// نوع القناة المجرورة — مطابق DraggingStateTypes (DM/CHANNEL) في webapp:
 /// يُستخدم لمنع الإفلات غير المسموح به (DM لا تُفلت في فئة القنوات والعكس).
@@ -133,149 +140,167 @@ class _SidebarCategoryState extends State<SidebarCategory> {
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
+    final targetType = widget.category?.type;
 
-    return SizedBox(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ChannelCategoryRow(
-            categoryId: widget.categoryId,
-            category: widget.category,
-            userId: widget.userId,
-            teamId: widget.teamId,
-            title: widget.title,
-            channels: widget.channels,
-            unreadCounts: widget.unreadCounts,
-            context: context,
-            collapsed: isCollapsed,
-            theme: theme,
-            l10n: l10n,
-            onToggleChanged: (value) {
-              setState(() => isCollapsed = value);
-              widget.onToggleChanged(value);
-            },
-          ),
-          if (!isCollapsed)
-            Column(
-              children: [
-                for (final channel in widget.channels)
-                  SidebarChannelRow(
-                    channel: channel,
-                    unread: widget.unreadCounts[channel.id],
-                    isSelected: channel.id == widget.selectedChannelId,
-                    isMuted: widget.mutedChannelIds.contains(channel.id),
-                    onTap: () {
-                      widget.onChannelTap(channel);
-                    },
+    return DragTarget<SidebarCategoryDragData>(
+      onWillAcceptWithDetails: (details) {
+        if (details.data.fromCategoryId == widget.categoryId) return false;
+        return !isSidebarDropDisabled(targetType, details.data.channelType);
+      },
+      onAcceptWithDetails: (details) {
+        widget.onMoveChannel?.call(
+          details.data.channelId,
+          details.data.fromCategoryId,
+        );
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isDropTarget = candidateData.isNotEmpty;
+        return Container(
+          decoration: isDropTarget
+              ? BoxDecoration(
+                  border: Border.all(
+                    color: theme.sidebarTextActiveBorder,
+                    width: 1.5,
                   ),
-              ],
-            ),
-          InkWell(
-            onTap: () =>
-                ModalRegistry.open(context, id: ModalIdentifiers.newChannel),
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(start: 24, top: 4, bottom: 4),
-              child: Row(
-                spacing: 8,
-                children: [
-                  Icon(
-                    Icons.add_box_rounded,
-                    size: 18,
-                    color: theme.sidebarText.withValues(alpha: 0.70),
-                  ),
-                  Text(
-                    'Add channel',
-                    style: TextStyle(
-                      color: theme.sidebarText.withValues(alpha: 0.70),
-                    ),
-                  ),
-                ],
+                  borderRadius: BorderRadius.circular(4),
+                )
+              : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ChannelCategoryRow(
+                categoryId: widget.categoryId,
+                category: widget.category,
+                userId: widget.userId,
+                teamId: widget.teamId,
+                title: widget.title,
+                channels: widget.channels,
+                unreadCounts: widget.unreadCounts,
+                context: context,
+                collapsed: isCollapsed,
+                theme: theme,
+                l10n: l10n,
+                onToggleChanged: (value) {
+                  setState(() => isCollapsed = value);
+                  widget.onToggleChanged(value);
+                },
               ),
-            ),
+              if (!isCollapsed)
+                BlocBuilder<UserProfileBloc, UserProfileState>(
+                  builder: (context, profileState) {
+                    final profiles = <String, UserEntity>{};
+                    if (profileState is UserProfileLoadedState) {
+                      for (final user in profileState.profiles) {
+                        profiles[user.id] = user;
+                      }
+                      if (profileState.myProfile != null) {
+                        profiles['me'] = profileState.myProfile!;
+                      }
+                    }
+                    return BlocBuilder<UserStatusBloc, UserStatusState>(
+                      builder: (context, statusState) {
+                        final statuses = statusState is UserStatusesLoadedState
+                            ? statusState.statuses
+                            : const <String, UserStatus>{};
+
+                        return Column(
+                          children: [
+                            for (final channel in widget.channels)
+                              if (channel.type == ChannelType.direct ||
+                                  channel.type == ChannelType.group)
+                                _buildDirectChannelRow(
+                                  context,
+                                  channel,
+                                  profiles,
+                                  statuses,
+                                )
+                              else
+                                SidebarChannelRow(
+                                  channel: channel,
+                                  unread: widget.unreadCounts[channel.id],
+                                  isSelected:
+                                      channel.id == widget.selectedChannelId,
+                                  isMuted: widget.mutedChannelIds.contains(
+                                    channel.id,
+                                  ),
+                                  onTap: () {
+                                    widget.onChannelTap(channel);
+                                  },
+                                ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              InkWell(
+                onTap: () {
+                  final modalId =
+                      widget.category?.type ==
+                          ChannelCategoryType.directMessages
+                      ? ModalIdentifiers.moreDirectChannels
+                      : ModalIdentifiers.newChannel;
+                  ModalRegistry.open(context, id: modalId);
+                },
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    start: 24,
+                    top: 4,
+                    bottom: 4,
+                  ),
+                  child: Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        Icons.add_box_rounded,
+                        size: 18,
+                        color: theme.sidebarText.withValues(alpha: 0.70),
+                      ),
+                      Text(
+                        widget.category?.type ==
+                                ChannelCategoryType.directMessages
+                            ? l10n.sidebarDirectMessages
+                            : 'Add channel',
+                        style: TextStyle(
+                          color: theme.sidebarText.withValues(alpha: 0.70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  // Widget _buildRow(ChannelEntity channel, MattermostColors theme) {
-  //   final row = SidebarChannelRow(
-  //     channel: channel,
-  //     unread: widget.unreadCounts[channel.id],
-  //     isSelected: channel.id == widget.selectedChannelId,
-  //     isMuted: widget.mutedChannelIds.contains(channel.id),
-  //     onTap: () => widget.onChannelTap(channel),
-  //     rowKey: widget.rowKeyBuilder?.call(channel),
-  //   );
+  Widget _buildDirectChannelRow(
+    BuildContext context,
+    ChannelEntity channel,
+    Map<String, UserEntity> profiles,
+    Map<String, UserStatus> statuses,
+  ) {
+    final ids = dmCounterpartIds(channel, widget.userId);
+    final partnerId = ids.firstOrNull ?? widget.userId;
+    final user =
+        profiles[partnerId] ??
+        UserEntity(
+          id: partnerId,
+          username: dmUsernameFor(context, channel, widget.userId) ?? '',
+        );
+    final status = statuses[user.id];
 
-  //   if (widget.onMoveChannel == null) return row;
-
-  //   final isDirect =
-  //       channel.type == ChannelType.direct || channel.type == ChannelType.group;
-  //   return LongPressDraggable<SidebarCategoryDragData>(
-  //     data: SidebarCategoryDragData(
-  //       channelId: channel.id,
-  //       fromCategoryId: widget.categoryId,
-  //       channelType: isDirect
-  //           ? DraggingChannelType.directMessage
-  //           : DraggingChannelType.channel,
-  //     ),
-  //     feedback: Material(
-  //       color: Colors.transparent,
-  //       child: Container(
-  //         // padding: const EdgeInsets.symmetric(vertical: 6),
-  //         decoration: BoxDecoration(
-  //           color: theme.sidebarBg,
-  //           // borderRadius: BorderRadius.circular(6),
-  //           boxShadow: [
-  //             BoxShadow(
-  //               color: Colors.black.withValues(alpha: 0.3),
-  //               blurRadius: 8,
-  //             ),
-  //           ],
-  //         ),
-  //         child: Text(
-  //           channel.displayName,
-  //           maxLines: 1,
-  //           overflow: TextOverflow.ellipsis,
-  //           style: TextStyle(color: theme.sidebarText, fontSize: 14),
-  //         ),
-  //       ),
-  //     ),
-  //     childWhenDragging: Opacity(opacity: 0.3, child: row),
-  //     child: row,
-  //   );
-  // }
-}
-
-class _CategoryIconButton extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  const _CategoryIconButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Tooltip(
-        message: tooltip,
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(
-            icon,
-            size: 14,
-            color: theme.sidebarText.withValues(alpha: 0.64),
-          ),
-        ),
-      ),
+    return DirectionMessageItemWidget(
+      channel: channel,
+      status: status,
+      user: user,
+      unread: widget.unreadCounts[channel.id],
+      isSelected: channel.id == widget.selectedChannelId,
+      isMuted: widget.mutedChannelIds.contains(channel.id),
+      onTap: () => widget.onChannelTap(channel),
+      draggableFrom: widget.categoryId,
     );
   }
 }

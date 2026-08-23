@@ -777,6 +777,7 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i223.OfflineSyncService>(),
         gh<_i286.ConnectivityMonitor>(),
         gh<_i1041.DeltaSyncService>(),
+        gh<_i977.SystemConfigRemoteDataSource>(),
       ),
     );
     gh.lazySingleton<_i515.ChannelBloc>(

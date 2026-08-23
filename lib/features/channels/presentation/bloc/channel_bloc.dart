@@ -290,6 +290,8 @@ class InternalStatsLoadedEvent extends ChannelEvent {
   List<Object?> get props => [stats];
 }
 
+class ClearChannelsEvent extends ChannelEvent {}
+
 // States
 abstract class ChannelState extends Equatable {
   const ChannelState();
@@ -407,6 +409,7 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
     on<MarkChannelAsUnreadEvent>(_onMarkChannelAsUnread);
     on<InternalMembershipChangeEvent>(_onInternalMembershipChange);
     on<InternalStatsLoadedEvent>(_onInternalStatsLoaded);
+    on<ClearChannelsEvent>(_onClearChannels);
 
     _wsSubscription = _webSocketManager.eventStream.listen((event) {
       if (event is ChannelUpdatedEvent) {
@@ -1441,6 +1444,13 @@ class ChannelBloc extends Bloc<ChannelEvent, ChannelState> {
   // حالات «غير مقروء» المحلية (Mark as Unread) — تدمج فوق عدادات الخادم
   // وتمسح عند تعليم القناة كمقروءة.
   final Map<String, ChannelUnreadCounts> _unreadOverrides = {};
+
+  void _onClearChannels(ClearChannelsEvent event, Emitter<ChannelState> emit) {
+    _statsCache.clear();
+    _unreadCacheByTeam.clear();
+    _unreadOverrides.clear();
+    emit(ChannelInitialState());
+  }
 
   @override
   Future<void> close() {

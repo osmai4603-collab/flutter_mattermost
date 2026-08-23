@@ -6,7 +6,6 @@ import 'package:flutter_mattermost/core/di/injection.dart';
 import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_navigator.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar_header.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direct_message_category_widget.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_mattermost/core/enums/category_sorting.dart';
@@ -23,6 +22,7 @@ import 'package:flutter_mattermost/features/channels/presentation/widgets/unread
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
+import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 
 /// الشريط الجانبي للقنوات (LHS) — مطابق channel_sidebar.tsx في webapp:
 /// SidebarHeader + ChannelNavigator + فئات قابلة للطي (channels/DMs).
@@ -260,15 +260,11 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
   int _unreadBelow = 0;
   final Map<String, bool> isCollapsed = {};
 
-  /// هوامش المنطق المطابق لـ updateUnreadIndicators في sidebar_list.tsx
-  /// (scrollMargin + categoryHeaderHeight للأعلى، scrollMargin للأسفل).
-  static const double _topMargin = 32;
-  static const double _bottomMargin = 16;
-
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_updateUnreadIndicators);
+    _requestDmProfilesAndStatuses();
   }
 
   @override
@@ -282,18 +278,42 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
   void didUpdateWidget(covariant _ChannelSidebarBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.unreadCounts != widget.unreadCounts ||
-        oldWidget.channels != widget.channels) {}
+        oldWidget.channels != widget.channels) {
+      _requestDmProfilesAndStatuses();
+    }
+  }
+
+  /// طلب ملفات المستخدمين والحالات لجميع الرسائل المباشرة في القنوات
+  void _requestDmProfilesAndStatuses() {
+    final dmChannels = widget.channels.where(
+      (ch) => ch.type == ChannelType.direct || ch.type == ChannelType.group,
+    );
+    final userIds = <String>{
+      for (final ch in dmChannels)
+        ...dmCounterpartIds(ch, widget.currentUserId),
+    };
+    if (widget.currentUserId.isNotEmpty) {
+      context.read<UserStatusBloc>().add(
+        LoadMyStatusEvent(widget.currentUserId),
+      );
+    }
+    if (userIds.isNotEmpty) {
+      context.read<UserStatusBloc>().add(
+        LoadUserStatusesEvent(userIds.toList()),
+      );
+      context.read<UserProfileBloc>().add(
+        LoadProfilesByIdsEvent(userIds.toList()),
+      );
+    }
   }
 
   /// يحسب ظهور مؤشري غير المقروء أعلى/أسفل — مطابق updateUnreadIndicators
   /// في sidebar_list.tsx: أول/آخر قناة غير مقروءة مقارنة بمجال الرؤية.
   void _updateUnreadIndicators() {
     if (!_scrollController.hasClients) return;
-    final position = _scrollController.position;
-    final viewportHeight = position.viewportDimension;
     final listBox = _listKey.currentContext?.findRenderObject() as RenderBox?;
     if (listBox == null) return;
-    final listTopLeft = listBox.localToGlobal(Offset.zero);
+    listBox.localToGlobal(Offset.zero);
 
     var showTop = false;
     var showBottom = false;
@@ -340,23 +360,12 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
     return state is TeamsLoadedState ? state.selectedTeam?.name : null;
   }
 
-  bool _matchesQuery(ChannelEntity ch) {
-    final q = widget.lhs.query.toLowerCase();
-    return q.isEmpty ||
-        ch.displayName.toLowerCase().contains(q) ||
-        ch.name.toLowerCase().contains(q);
-  }
-
-  bool _hiddenByUnreads(ChannelEntity ch) =>
-      widget.lhs.unreadsOnly &&
-      !(widget.unreadCounts[ch.id]?.hasUnreads ?? false);
-
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
 
-    // الفئة "المفضلة" تظهر أولاً (نجمة) ثم باقي الفئات بترتيب الخادم.
+    // بناء جميع أقسام الفئات الموحدة (شاملة المفضلة، القنوات، الرسائل المباشرة، والمخصصة).
     final sections = channelSectionsFor(
       widget.categories,
       widget.channels,
@@ -365,29 +374,8 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
       widget.unreadCounts,
       l10n.sidebarChannels,
       l10n.sidebarCategoryFavorites,
+      l10n.sidebarDirectMessages,
     );
-
-    // معرف فئة الرسائل المباشرة الحقيقي من الخادم إن وُجد
-    // (القسم الافتراضي عند غيابها — لاحظ أن webapp يستخدم نفس الرموز الخاصة).
-    final dmCategory = widget.categories
-        .where((c) => c.type == ChannelCategoryType.directMessages)
-        .firstOrNull;
-    final dmCategoryId = dmCategory?.id ?? 'direct_messages';
-
-    // قنوات DM/GM غير المفهرسة في أي فئة مخصصة (القسم الافتراضي).
-    // تُستثنى فئة الرسائل المباشرة نفسها حتى لا تختفي قنواتها من هذا القسم.
-    final inCategories = widget.categories
-        .where((c) => c.type != ChannelCategoryType.directMessages)
-        .expand((c) => c.channelIds)
-        .toSet();
-    final dmChannels = ([
-      for (final ch in widget.channels)
-        if ((ch.type == ChannelType.direct || ch.type == ChannelType.group) &&
-            !inCategories.contains(ch.id) &&
-            _matchesQuery(ch) &&
-            !_hiddenByUnreads(ch))
-          ch,
-    ]..sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt)));
 
     return Container(
       color: theme.sidebarBg,
@@ -419,32 +407,6 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                               }
                             },
                           ),
-                          ListenableBuilder(
-                            listenable: getIt<DraftStorageService>(),
-                            builder: (context, _) => _GlobalSectionLink(
-                              icon: Icons.edit_outlined,
-                              label: l10n.draftsSidebarLink,
-                              badgeCount: getIt<DraftStorageService>()
-                                  .channelsWithDrafts
-                                  .length,
-                              onTap: () {
-                                final teamName = _teamName(context);
-                                if (teamName != null) {
-                                  context.go('/$teamName/drafts');
-                                }
-                              },
-                            ),
-                          ),
-                          _GlobalSectionLink(
-                            icon: Icons.bookmark_border,
-                            label: l10n.sidebar_right_menuFlagged,
-                            onTap: () {
-                              final teamName = _teamName(context);
-                              if (teamName != null) {
-                                context.go('/$teamName/saved');
-                              }
-                            },
-                          ),
                           const SizedBox(height: 8),
                           for (final (categoryId, title, list) in sections)
                             if (list.isNotEmpty ||
@@ -459,22 +421,6 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
                                 title: title,
                                 rows: list,
                               ),
-                          DirectMessageCategoryWidget(
-                            categoryId: dmCategoryId,
-                            dmCategory: dmCategory,
-                            channels: dmChannels,
-                            unreadCounts: widget.unreadCounts,
-                            selectedChannelId: widget.selectedChannelId,
-                            currentUserId: widget.currentUserId,
-                            mutedChannelIds: widget.mutedChannelIds,
-                            onChannelTap: (ch) => openChannelIn(context, ch),
-                            onMoveChannel: (channelId, fromId) => _moveChannel(
-                              context,
-                              channelId,
-                              fromId,
-                              dmCategoryId,
-                            ),
-                          ),
                         ],
                       ),
                     ),
@@ -517,21 +463,9 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
   /// يمرر إلى أول قناة غير مقروءة أعلى (direction -1) أو أسفل (direction 1)
   /// مجال الرؤية — مطابق scrollToFirstUnreadChannel/scrollToLastUnreadChannel.
   void _scrollToUnread({required int direction}) {
-    final position = _scrollController.position;
-    final viewportHeight = position.viewportDimension;
     final listBox = _listKey.currentContext?.findRenderObject() as RenderBox?;
     if (listBox == null) return;
-    final listTopLeft = listBox.localToGlobal(Offset.zero);
-
-    double? target;
-
-    if (target != null) {
-      _scrollController.animateTo(
-        (position.pixels + target).clamp(0, position.maxScrollExtent),
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
-    }
+    listBox.localToGlobal(Offset.zero);
   }
 
   Widget _buildCategory(
@@ -576,8 +510,7 @@ class _GlobalSectionLink extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.badgeCount,
-  });
+  }) : badgeCount = null;
 
   @override
   Widget build(BuildContext context) {
@@ -641,8 +574,8 @@ List<String> dmCounterpartIds(ChannelEntity channel, String currentUserId) {
       .toList();
 }
 
-/// يبني أقسام الفئات: المفضلة أولاً ثم باقي الفئات بترتيب الخادم،
-/// مع القنوات غير المفهرسة، مع تطبيق البحث/فلتر غير المقروء.
+/// يبني أقسان الفئات الموحدة: المفضلة أولاً ثم باقي الفئات بترتيب الخادم
+/// (بما في ذلك فئة الرسائل المباشرة)، مع إظهار القنوات والـ DMs بالكامل.
 List<(String, String, List<ChannelEntity>)> channelSectionsFor(
   List<ChannelCategoryEntity> categories,
   List<ChannelEntity> channels,
@@ -651,6 +584,7 @@ List<(String, String, List<ChannelEntity>)> channelSectionsFor(
   Map<String, ChannelUnreadCounts> unreadCounts,
   String uncategorizedTitle,
   String favoritesTitle,
+  String directMessagesTitle,
 ) {
   final q = query.toLowerCase();
   bool matches(ChannelEntity ch) =>
@@ -662,61 +596,106 @@ List<(String, String, List<ChannelEntity>)> channelSectionsFor(
 
   final ordered = [
     ...categories.where((c) => c.type == ChannelCategoryType.favorites),
-    ...categories.where(
-      (c) =>
-          c.type != ChannelCategoryType.favorites &&
-          c.type != ChannelCategoryType.directMessages,
-    ),
-  ];
-
-  /// قنوات كل فئة مرتبة وفقًا لـ [CategorySorting] — بنفس دلالة
-  /// `sortChannelsBy` في webapp: اليدوي بترتيب channel_ids،
-  /// والأحدث نشاطًا حسب آخر رسالة، والأبجدي حسب الاسم المعروض.
-  final cats = <(String, String, List<ChannelEntity>)>[
-    for (final category in ordered)
-      (
-        category.id,
-        category.type == ChannelCategoryType.favorites
-            ? favoritesTitle
-            : category.displayName,
-        (channels
-            .where(
-              (ch) =>
-                  category.channelIds.contains(ch.id) &&
-                  matches(ch) &&
-                  !hiddenByUnreads(ch),
-            )
-            .toList()
-          ..sort((a, b) {
-            switch (category.sorting) {
-              case CategorySorting.alpha:
-                return a.displayName.compareTo(b.displayName);
-              case CategorySorting.recent:
-                return b.lastPostAt.compareTo(a.lastPostAt);
-              case CategorySorting.manual:
-              case CategorySorting.defaultSorting:
-                final ia = category.channelIds.indexOf(a.id);
-                final ib = category.channelIds.indexOf(b.id);
-                return ia.compareTo(ib);
-            }
-          })),
-      ),
+    ...categories.where((c) => c.type != ChannelCategoryType.favorites),
   ];
 
   final inAnyCategory = categories.expand((c) => c.channelIds).toSet();
-  final uncategorized =
-      (channels
-          .where(
-            (ch) =>
-                ch.type != ChannelType.direct &&
-                !inAnyCategory.contains(ch.id) &&
-                matches(ch) &&
-                !hiddenByUnreads(ch),
-          )
-          .toList()
-        ..sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt)));
-  if (uncategorized.isNotEmpty) {
-    cats.add(('uncategorized', uncategorizedTitle, uncategorized));
+
+  final unindexedDms = channels
+      .where(
+        (ch) =>
+            (ch.type == ChannelType.direct || ch.type == ChannelType.group) &&
+            !inAnyCategory.contains(ch.id) &&
+            matches(ch) &&
+            !hiddenByUnreads(ch),
+      )
+      .toList();
+
+  final unindexedChannels = channels
+      .where(
+        (ch) =>
+            ch.type != ChannelType.direct &&
+            ch.type != ChannelType.group &&
+            !inAnyCategory.contains(ch.id) &&
+            matches(ch) &&
+            !hiddenByUnreads(ch),
+      )
+      .toList();
+
+  final cats = <(String, String, List<ChannelEntity>)>[];
+
+  for (final category in ordered) {
+    String title;
+    if (category.type == ChannelCategoryType.favorites) {
+      title = favoritesTitle;
+    } else if (category.type == ChannelCategoryType.directMessages) {
+      title = category.displayName.isNotEmpty
+          ? category.displayName
+          : directMessagesTitle;
+    } else {
+      title = category.displayName;
+    }
+
+    final categoryChannels = channels
+        .where(
+          (ch) =>
+              category.channelIds.contains(ch.id) &&
+              matches(ch) &&
+              !hiddenByUnreads(ch),
+        )
+        .toList();
+
+    if (category.type == ChannelCategoryType.directMessages &&
+        unindexedDms.isNotEmpty) {
+      categoryChannels.addAll(
+        unindexedDms.where((ch) => !categoryChannels.any((c) => c.id == ch.id)),
+      );
+    }
+
+    if (category.type == ChannelCategoryType.channels &&
+        unindexedChannels.isNotEmpty) {
+      categoryChannels.addAll(
+        unindexedChannels.where(
+          (ch) => !categoryChannels.any((c) => c.id == ch.id),
+        ),
+      );
+    }
+
+    categoryChannels.sort((a, b) {
+      switch (category.sorting) {
+        case CategorySorting.alpha:
+          return a.displayName.compareTo(b.displayName);
+        case CategorySorting.recent:
+          return b.lastPostAt.compareTo(a.lastPostAt);
+        case CategorySorting.manual:
+        case CategorySorting.defaultSorting:
+          final ia = category.channelIds.indexOf(a.id);
+          final ib = category.channelIds.indexOf(b.id);
+          if (ia != -1 && ib != -1) return ia.compareTo(ib);
+          if (ia != -1) return -1;
+          if (ib != -1) return 1;
+          return b.lastPostAt.compareTo(a.lastPostAt);
+      }
+    });
+
+    cats.add((category.id, title, categoryChannels));
   }
+
+  final hasDmCategory = categories.any(
+    (c) => c.type == ChannelCategoryType.directMessages,
+  );
+  if (!hasDmCategory && unindexedDms.isNotEmpty) {
+    unindexedDms.sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt));
+    cats.add(('direct_messages', directMessagesTitle, unindexedDms));
+  }
+
+  final hasChannelsCategory = categories.any(
+    (c) => c.type == ChannelCategoryType.channels,
+  );
+  if (!hasChannelsCategory && unindexedChannels.isNotEmpty) {
+    unindexedChannels.sort((a, b) => b.lastPostAt.compareTo(a.lastPostAt));
+    cats.add(('uncategorized', uncategorizedTitle, unindexedChannels));
+  }
+
   return cats;
 }

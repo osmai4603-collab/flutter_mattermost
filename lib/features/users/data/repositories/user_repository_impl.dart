@@ -166,12 +166,43 @@ class UserRepositoryImpl implements UserRepository {
     UserStatus status, {
     String? dndEndTime,
   }) async {
+    final me = await getMyProfile();
     final model = await _statusDataSource.updateStatus(
-      'me',
+      me.id,
       status,
       dndEndTime: dndEndTime,
     );
     return model.toEntity();
+  }
+
+  @override
+  Future<UserStatusEntity> updateMyCustomStatus({
+    required String emoji,
+    String? text,
+    String? duration,
+    String? expiresAt,
+  }) async {
+    final me = await getMyProfile();
+    final model = await _statusDataSource.updateCustomStatus(
+      me.id,
+      emoji: emoji,
+      text: text,
+      duration: duration,
+      expiresAt: expiresAt,
+    );
+    return model.toEntity();
+  }
+
+  @override
+  Future<void> unsetMyCustomStatus() async {
+    final me = await getMyProfile();
+    await _statusDataSource.unsetCustomStatus(me.id);
+  }
+
+  @override
+  Future<void> removeRecentCustomStatus(String emoji) async {
+    final me = await getMyProfile();
+    await _statusDataSource.removeRecentCustomStatus(me.id, emoji);
   }
 
   @override
@@ -244,6 +275,10 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<void> updateMyMfa({required bool activate, String? code}) {
-    return _remoteDataSource.updateUserMfa('me', activate: activate, code: code);
+    return _remoteDataSource.updateUserMfa(
+      'me',
+      activate: activate,
+      code: code,
+    );
   }
 }

@@ -54,9 +54,10 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < 900;
@@ -84,7 +85,7 @@ class _SignupPageState extends State<SignupPage> {
                               Text(
                                 'Mattermost',
                                 style: theme.textTheme.displayMedium?.copyWith(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: -0.02,
                                 ),
@@ -93,7 +94,9 @@ class _SignupPageState extends State<SignupPage> {
                               Text(
                                 'Create your Mattermost account to start collaborating with your team.',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: Colors.white70,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   height: 1.5,
                                 ),
                               ),
@@ -107,23 +110,23 @@ class _SignupPageState extends State<SignupPage> {
                         child: Text(
                           'Mattermost',
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                     Container(
-                      width: 500,
+                      width: isCompact ? 500 : 500,
                       constraints: const BoxConstraints(maxWidth: 500),
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF181825),
+                        color: colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Colors.black26,
+                            color: colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 16,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -131,18 +134,18 @@ class _SignupPageState extends State<SignupPage> {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.chat_bubble_outline,
-                                color: Colors.blueAccent,
+                                color: colorScheme.primary,
                                 size: 28,
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Text(
                                 'Mattermost Desktop',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -150,10 +153,10 @@ class _SignupPageState extends State<SignupPage> {
                             ],
                           ),
                           const SizedBox(height: 24),
-                          const Text(
+                          Text(
                             'Create your account',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: colorScheme.onSurface,
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
                             ),
@@ -162,30 +165,76 @@ class _SignupPageState extends State<SignupPage> {
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: colorScheme.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Email address',
-                              hintStyle: const TextStyle(color: Colors.white38),
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
                               filled: true,
-                              fillColor: const Color(0xFF313244),
+                              fillColor: colorScheme.surfaceContainerHigh,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.primary,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 16),
                           TextField(
                             controller: _usernameController,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: colorScheme.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Choose a username',
-                              hintStyle: const TextStyle(color: Colors.white38),
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
                               filled: true,
-                              fillColor: const Color(0xFF313244),
+                              fillColor: colorScheme.surfaceContainerHigh,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.primary,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -193,15 +242,38 @@ class _SignupPageState extends State<SignupPage> {
                           TextField(
                             controller: _passwordController,
                             obscureText: true,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: colorScheme.onSurface),
                             decoration: InputDecoration(
                               hintText: 'Password',
-                              hintStyle: const TextStyle(color: Colors.white38),
+                              hintStyle: TextStyle(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.38,
+                                ),
+                              ),
                               filled: true,
-                              fillColor: const Color(0xFF313244),
+                              fillColor: colorScheme.surfaceContainerHigh,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.outline.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide(
+                                  color: colorScheme.primary,
+                                  width: 1.5,
+                                ),
                               ),
                             ),
                           ),
@@ -210,16 +282,18 @@ class _SignupPageState extends State<SignupPage> {
                             value: _acceptedTerms,
                             onChanged: (value) =>
                                 setState(() => _acceptedTerms = value ?? false),
-                            title: const Text(
+                            title: Text(
                               'I agree to the Acceptable Use Policy and Privacy Policy',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 13,
                               ),
                             ),
                             controlAffinity: ListTileControlAffinity.leading,
                             contentPadding: EdgeInsets.zero,
-                            activeColor: Colors.blueAccent,
+                            activeColor: colorScheme.primary,
                           ),
                           const SizedBox(height: 18),
                           SizedBox(
@@ -227,45 +301,49 @@ class _SignupPageState extends State<SignupPage> {
                             height: 44,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blueAccent,
-                                foregroundColor: Colors.white,
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
                               onPressed: _isSubmitting ? null : _handleSubmit,
                               child: _isSubmitting
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color: colorScheme.onPrimary,
                                       ),
                                     )
-                                  : const Text(
+                                  : Text(
                                       'Create account',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: colorScheme.onPrimary,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                             ),
                           ),
                           const SizedBox(height: 22),
-                          const Divider(color: Colors.white12),
+                          Divider(
+                            color: colorScheme.outline.withValues(alpha: 0.2),
+                          ),
                           const SizedBox(height: 18),
-                          const Center(
+                          Center(
                             child: Text(
                               'or create an account with',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
                                 fontSize: 12,
                               ),
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Wrap(
+                          const Wrap(
                             spacing: 8,
                             runSpacing: 8,
                             children: [
@@ -291,9 +369,13 @@ class _SignupPageState extends State<SignupPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text(
+                              Text(
                                 'Already have an account?',
-                                style: TextStyle(color: Colors.white70),
+                                style: TextStyle(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                ),
                               ),
                               TextButton(
                                 onPressed: () => context.go(AuthRoutes.login),
@@ -323,12 +405,23 @@ class _ExternalButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return OutlinedButton.icon(
       onPressed: () {},
-      icon: Icon(icon, size: 16, color: Colors.white70),
-      label: Text(label, style: const TextStyle(color: Colors.white)),
+      icon: Icon(
+        icon,
+        size: 16,
+        color: colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
+      label: Text(
+        label,
+        style: TextStyle(color: colorScheme.onSurface),
+      ),
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: Colors.white12),
+        side: BorderSide(
+          color: colorScheme.outline.withValues(alpha: 0.3),
+        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );

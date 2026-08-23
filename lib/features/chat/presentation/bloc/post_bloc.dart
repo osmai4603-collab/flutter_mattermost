@@ -192,6 +192,8 @@ class RealtimeReactionEvent extends PostEvent {
   List<Object?> get props => [reaction, added];
 }
 
+class ClearPostsEvent extends PostEvent {}
+
 // States
 abstract class PostsState extends Equatable {
   const PostsState();
@@ -376,6 +378,7 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
     on<RealtimeThreadReadChangedEvent>(_onRealtimeThreadReadChanged);
     on<ToggleThreadFollowEvent>(_onToggleThreadFollow);
     on<_ClearTypingEvent>(_onClearTyping);
+    on<ClearPostsEvent>(_onClearPosts);
 
     _listenToWebSocketEvents();
 
@@ -1134,6 +1137,12 @@ class PostBloc extends Bloc<PostEvent, PostsState> {
       debugPrint('[PostBloc] _onToggleThreadFollow error: $e');
       // يحافظ على الحالة عند فشل الشبكة.
     }
+  }
+
+  void _onClearPosts(ClearPostsEvent event, Emitter<PostsState> emit) {
+    _lastReactionToggleAt.clear();
+    _typingClearTimer?.cancel();
+    emit(PostInitialState());
   }
 
   @override

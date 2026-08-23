@@ -19,6 +19,7 @@ abstract class SystemConfigRemoteDataSource {
   Future<Map<String, dynamic>> getServerBusyExpires();
   Future<void> clearServerBusy();
   Future<void> setServerBusy({int? seconds});
+  Future<Map<String, dynamic>> getServerLimits();
   Future<Map<String, dynamic>> getRedirectLocation(String url);
   Future<void> submitPerformanceReport(Map<String, dynamic> report);
 }
@@ -28,6 +29,18 @@ class SystemConfigRemoteDataSourceImpl implements SystemConfigRemoteDataSource {
   final ApiClient _apiClient;
 
   SystemConfigRemoteDataSourceImpl(this._apiClient);
+
+  @override
+  Future<Map<String, dynamic>> getServerLimits() async {
+    final result = await _apiClient.get<Map<String, dynamic>>(
+      LimitsEndPoint.server,
+      fromJson: (json) => json as Map<String, dynamic>,
+    );
+    if (result is ApiSuccess<Map<String, dynamic>>) {
+      return result.data;
+    }
+    return <String, dynamic>{};
+  }
 
   @override
   Future<ClientConfigModel> getClientConfig() async {

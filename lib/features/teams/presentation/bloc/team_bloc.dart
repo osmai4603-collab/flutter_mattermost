@@ -58,6 +58,8 @@ class AddTeamMembersEvent extends TeamEvent {
   List<Object?> get props => [teamId, userIds];
 }
 
+class ClearTeamsEvent extends TeamEvent {}
+
 // States
 abstract class TeamState extends Equatable {
   const TeamState();
@@ -105,6 +107,11 @@ class TeamBloc extends Bloc<TeamEvent, TeamState> {
     on<CreateTeamEvent>(_onCreateTeam);
     on<AddTeamMemberEvent>(_onAddTeamMember);
     on<AddTeamMembersEvent>(_onAddTeamMembers);
+    on<ClearTeamsEvent>(_onClearTeams);
+  }
+
+  void _onClearTeams(ClearTeamsEvent event, Emitter<TeamState> emit) {
+    emit(TeamInitialState());
   }
 
   Future<void> _onLoadMyTeams(TeamEvent event, Emitter<TeamState> emit) async {

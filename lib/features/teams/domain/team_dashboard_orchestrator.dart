@@ -203,7 +203,7 @@ class TeamDashboardOrchestrator {
       } catch (_) {}
     }
 
-    return TeamDashboardData(
+    final data = TeamDashboardData(
       teamId: teamId,
       userId: resolvedUserId,
       channels: channels,
@@ -220,6 +220,16 @@ class TeamDashboardOrchestrator {
       agents: agents,
       agentsStatus: agentsStatus,
     );
+    _lastDashboardData = data;
+    return data;
+  }
+
+  TeamDashboardData? _lastDashboardData;
+  TeamDashboardData? get lastDashboardData => _lastDashboardData;
+
+  /// مسح بيانات واجهة الفريق عند تسجيل الخروج
+  void clear() {
+    _lastDashboardData = null;
   }
 
   /// فتح القناة النشطة وجلب الرسائل غير المقروءة والروابط الإضافية (المرحلة 4 + 5)
@@ -256,3 +266,4 @@ class TeamDashboardOrchestrator {
     }
   }
 }
+

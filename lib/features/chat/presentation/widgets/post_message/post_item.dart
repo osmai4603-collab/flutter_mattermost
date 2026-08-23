@@ -346,16 +346,20 @@ class _PostItemState extends State<PostItem> {
                     ),
                   ],
                 ),
-                if (_hovered && post.deleteAt == 0)
+                if (post.deleteAt == 0)
                   PositionedDirectional(
-                    child: PostActions(
-                      controller: _menuActionController,
-                      post: post,
-                      isSavedMessage: widget.isFlagged,
-                      isPinned: widget.isPinned,
-                      isReply: widget.isReply,
-                      canDelete: canDelete,
-                      canEdit: isMine,
+                    child: AnimatedOpacity(
+                      opacity: _hovered ? 1 : 0,
+                      duration: const Duration(milliseconds: 100),
+                      child: PostActions(
+                        controller: _menuActionController,
+                        post: post,
+                        isSavedMessage: widget.isFlagged,
+                        isPinned: widget.isPinned,
+                        isReply: widget.isReply,
+                        canDelete: canDelete,
+                        canEdit: isMine,
+                      ),
                     ),
                   ),
               ],

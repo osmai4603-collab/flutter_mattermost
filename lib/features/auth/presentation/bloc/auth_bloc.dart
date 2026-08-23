@@ -12,6 +12,18 @@ import 'package:flutter_mattermost/features/auth/domain/repositories/auth_reposi
 import 'package:flutter_mattermost/core/sync/websocket_db_sync_service.dart';
 import 'package:flutter_mattermost/core/sync/outbox_retry_service.dart';
 import 'package:flutter_mattermost/core/notifications/local_notification_service.dart';
+import 'package:flutter_mattermost/core/di/injection.dart';
+import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
+import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_history_cubit.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/post_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/rhs_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/bloc/threads_bloc.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/drafts_cubit.dart';
+import 'package:flutter_mattermost/features/chat/presentation/cubit/threads_summary_cubit.dart';
+import 'package:flutter_mattermost/features/groups/presentation/cubit/team_groups_cubit.dart';
+import 'package:flutter_mattermost/features/teams/domain/team_dashboard_orchestrator.dart';
+import 'package:flutter_mattermost/features/system/data/datasources/system_config_remote_data_source.dart';
 
 // Events
 abstract class AuthEvent extends Equatable {
@@ -79,6 +91,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
   final OfflineSyncService _offlineSyncService;
   final ConnectivityMonitor _connectivityMonitor;
   final DeltaSyncService _deltaSyncService;
+  final SystemConfigRemoteDataSource _systemConfigRemoteDataSource;
 
   StreamSubscription<bool>? _connectivitySubscription;
   StreamSubscription<TypedWebSocketEvent>? _wsEventSubscription;
@@ -92,6 +105,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     this._offlineSyncService,
     this._connectivityMonitor,
     this._deltaSyncService,
+    this._systemConfigRemoteDataSource,
   ) : super(AuthInitialState()) {
     on<CheckAuthStatusEvent>(_onCheckAuthStatus);
     on<LoginSubmittedEvent>(_onLoginSubmitted);
@@ -105,15 +119,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
 
     // عودة الاتصال بالشبكة → إعادة ربط الـ WebSocket ومزامنة العمليات
     // المعلقة ثم مزامنة تزايدية (الأحداث المفقودة تُستعاد أو تُكتمل).
-    _connectivitySubscription =
-        _connectivityMonitor.connectionChangeStream.listen(
-      (hasConnection) {
-        if (!hasConnection) return;
-        _webSocketClientManager.connect();
-        _offlineSyncService.syncPendingActions();
-        _outboxRetryService.processOutbox();
-      },
-    );
+    _connectivitySubscription = _connectivityMonitor.connectionChangeStream
+        .listen((hasConnection) {
+          if (!hasConnection) return;
+          _webSocketClientManager.connect();
+          _offlineSyncService.syncPendingActions();
+          _outboxRetryService.processOutbox();
+        });
 
     // فشل مصادقة الـ WebSocket (توكن منتهي/ملغى) → تسجيل الخروج.
     _wsEventSubscription = _webSocketClientManager.eventStream.listen((event) {
@@ -132,23 +144,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     _outboxRetryService.processOutbox();
   }
 
+  Future<void> _fetchSystemConfigurations() async {
+    try {
+      await Future.wait([
+        _systemConfigRemoteDataSource.getClientConfig().catchError(
+          (_) => throw Exception(),
+        ),
+        _systemConfigRemoteDataSource.getLicenseConfig().catchError(
+          (_) => throw Exception(),
+        ),
+        _systemConfigRemoteDataSource.getServerLimits().catchError(
+          (_) => <String, dynamic>{},
+        ),
+      ]);
+    } catch (e) {
+      debugPrint('[auth] system configuration fetch failed: $e');
+    }
+  }
+
   Future<void> _onCheckAuthStatus(
     CheckAuthStatusEvent event,
     Emitter<AuthState> emit,
   ) async {
     try {
       emit(AuthLoadingState());
-    final user = await _authRepository.getCurrentUser();
-    if (user != null) {
-      _websocketDbSyncService.start();
-      _outboxRetryService.start();
-      _notificationService.startListening();
-      _deltaSyncService.start();
-      _webSocketClientManager.connect();
-      emit(AuthenticatedState(user));
-    } else {
-      emit(UnauthenticatedState());
-    }
+      final user = await _authRepository.getCurrentUser();
+      if (user != null) {
+        _websocketDbSyncService.start();
+        _outboxRetryService.start();
+        _notificationService.startListening();
+        _deltaSyncService.start();
+        _webSocketClientManager.connect();
+        unawaited(_fetchSystemConfigurations());
+        emit(AuthenticatedState(user));
+      } else {
+        emit(UnauthenticatedState());
+      }
     } catch (e) {
       debugPrint('[auth] check auth status failed: $e');
       emit(AuthFailureState('Failed to check authentication status: $e'));
@@ -170,6 +201,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
         _notificationService.startListening();
         _deltaSyncService.start();
         _webSocketClientManager.connect();
+        unawaited(_fetchSystemConfigurations());
         await _offlineSyncService.syncPendingActions();
         await _outboxRetryService.processOutbox();
       } catch (e) {
@@ -192,13 +224,48 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> with WidgetsBindingObserver {
     _notificationService.stopListening();
     _deltaSyncService.stop();
     _webSocketClientManager.disconnect();
+    _clearWorkspaceState();
     emit(UnauthenticatedState());
   }
 
-  void _onAuthUserUpdated(
-    AuthUserUpdatedEvent event,
-    Emitter<AuthState> emit,
-  ) {
+  void _clearWorkspaceState() {
+    try {
+      if (getIt.isRegistered<TeamBloc>()) {
+        getIt<TeamBloc>().add(ClearTeamsEvent());
+      }
+      if (getIt.isRegistered<ChannelBloc>()) {
+        getIt<ChannelBloc>().add(ClearChannelsEvent());
+      }
+      if (getIt.isRegistered<PostBloc>()) {
+        getIt<PostBloc>().add(ClearPostsEvent());
+      }
+      if (getIt.isRegistered<TeamDashboardOrchestrator>()) {
+        getIt<TeamDashboardOrchestrator>().clear();
+      }
+      if (getIt.isRegistered<DraftsCubit>()) {
+        getIt<DraftsCubit>().clear();
+      }
+      if (getIt.isRegistered<ThreadsSummaryCubit>()) {
+        getIt<ThreadsSummaryCubit>().clear();
+      }
+      if (getIt.isRegistered<TeamGroupsCubit>()) {
+        getIt<TeamGroupsCubit>().clear();
+      }
+      if (getIt.isRegistered<ChannelHistoryCubit>()) {
+        getIt<ChannelHistoryCubit>().clear();
+      }
+      if (getIt.isRegistered<RhsBloc>()) {
+        getIt<RhsBloc>().add(CloseRhsEvent());
+      }
+      if (getIt.isRegistered<ThreadsBloc>()) {
+        getIt<ThreadsBloc>().add(ClearThreadsEvent());
+      }
+    } catch (e) {
+      debugPrint('[auth] error clearing workspace state: $e');
+    }
+  }
+
+  void _onAuthUserUpdated(AuthUserUpdatedEvent event, Emitter<AuthState> emit) {
     final current = state;
     if (current is AuthenticatedState) {
       emit(AuthenticatedState(event.user));

@@ -74,6 +74,9 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
   final UserRepository _userRepository;
   final WebSocketClientManager _webSocketManager;
 
+  /// معرف المستخدم الحالي
+  String? _myUserId;
+
   /// معرفات المستخدمين المطلوب تتبع حالتهم — يُحدَّث من أحداث التحميل.
   final Set<String> _trackedUserIds = {};
 
@@ -123,6 +126,9 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
       final merged = {...current};
       for (final s in statuses) {
         merged[s.userId] = s.status;
+        if (s.userId == _myUserId) {
+          merged['me'] = s.status;
+        }
       }
       emit(UserStatusesLoadedState(merged));
     } catch (_) {}
@@ -146,6 +152,9 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
       final merged = {...current};
       for (final s in statuses) {
         merged[s.userId] = s.status;
+        if (s.userId == _myUserId) {
+          merged['me'] = s.status;
+        }
       }
       emit(UserStatusesLoadedState(merged));
     } catch (_) {}
@@ -155,6 +164,7 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
     LoadMyStatusEvent event,
     Emitter<UserStatusState> emit,
   ) async {
+    _myUserId = event.userId;
     try {
       final statuses = await _userRepository.getStatusesByIds([event.userId]);
       if (statuses.isNotEmpty) {
@@ -181,7 +191,11 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
       final current = state is UserStatusesLoadedState
           ? (state as UserStatusesLoadedState).statuses
           : const <String, UserStatus>{};
-      emit(UserStatusesLoadedState({...current, 'me': event.status}));
+      final updated = {...current, 'me': event.status};
+      if (_myUserId != null && _myUserId!.isNotEmpty) {
+        updated[_myUserId!] = event.status;
+      }
+      emit(UserStatusesLoadedState(updated));
     } catch (_) {}
   }
 
@@ -192,6 +206,10 @@ class UserStatusBloc extends Bloc<UserStatusEvent, UserStatusState> {
     final current = state is UserStatusesLoadedState
         ? (state as UserStatusesLoadedState).statuses
         : const <String, UserStatus>{};
-    emit(UserStatusesLoadedState({...current, event.userId: event.status}));
+    final updated = {...current, event.userId: event.status};
+    if (event.userId == _myUserId) {
+      updated['me'] = event.status;
+    }
+    emit(UserStatusesLoadedState(updated));
   }
 }

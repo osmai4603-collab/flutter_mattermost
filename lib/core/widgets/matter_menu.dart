@@ -5,6 +5,7 @@ import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 class MatterMenuItem {
   final String id;
   final Widget? icon;
+  final Widget? trailingIcon;
   final String label;
   final TextSpan? richText;
   final String? subtitle;
@@ -20,6 +21,7 @@ class MatterMenuItem {
     required this.id,
     required this.label,
     this.icon,
+    this.trailingIcon,
     this.richText,
     this.subtitle,
     this.onTap,
@@ -33,6 +35,7 @@ class MatterMenuItem {
     : id = '',
       label = '',
       icon = null,
+      trailingIcon = null,
       richText = null,
       subtitle = null,
       onTap = null,
@@ -45,6 +48,7 @@ class MatterMenuItem {
     required this.id,
     required this.richText,
     this.icon,
+    this.trailingIcon,
     this.subtitle,
     this.onTap,
     this.danger = false,
@@ -159,6 +163,7 @@ List<Widget> _buildMenuChildren(
           style: _itemStyle(theme, item.danger),
           menuChildren: _buildMenuChildren(context, item.submenu!),
           leadingIcon: item.icon,
+          trailingIcon: item.trailingIcon,
           submenuIcon: WidgetStatePropertyAll(
             Icon(
               Icons.chevron_right,
@@ -177,6 +182,7 @@ List<Widget> _buildMenuChildren(
       MenuItemButton(
         style: _itemStyle(theme, item.danger),
         leadingIcon: item.icon,
+        trailingIcon: item.trailingIcon,
         onPressed: () => item.onTap?.call(),
         child: _itemLabel(theme, item),
       ),

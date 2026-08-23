@@ -142,6 +142,12 @@ class ChannelHistoryCubit extends Cubit<ChannelHistoryState> {
     );
   }
 
+  /// مسح سجل القنوات عند تسجيل الخروج.
+  void clear() {
+    _navigating = false;
+    emit(const ChannelHistoryState());
+  }
+
   @override
   Future<void> close() {
     _subscription?.cancel();

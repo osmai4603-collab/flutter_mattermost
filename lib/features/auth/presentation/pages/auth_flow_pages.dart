@@ -20,10 +20,12 @@ class AuthPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isCompact = MediaQuery.sizeOf(context).width < 900;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           return Center(
@@ -48,21 +50,21 @@ class AuthPageShell extends StatelessWidget {
                             children: [
                               Text(
                                 heroText ?? 'Mattermost',
-                                style: Theme.of(context).textTheme.displayMedium
-                                    ?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: -0.02,
-                                    ),
+                                style: theme.textTheme.displayMedium?.copyWith(
+                                  color: colorScheme.onSurface,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.02,
+                                ),
                               ),
                               const SizedBox(height: 12),
                               Text(
                                 'All your team communication, search, and collaboration in one place.',
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: Colors.white70,
-                                      height: 1.5,
-                                    ),
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
+                                  height: 1.5,
+                                ),
                               ),
                             ],
                           ),
@@ -73,25 +75,24 @@ class AuthPageShell extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 24),
                         child: Text(
                           heroText ?? 'Mattermost',
-                          style: Theme.of(context).textTheme.headlineMedium
-                              ?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style: theme.textTheme.headlineMedium?.copyWith(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     Container(
-                      width: 500,
+                      width: isCompact ? 500 : 500,
                       constraints: const BoxConstraints(maxWidth: 500),
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF181825),
+                        color: colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Colors.black26,
+                            color: colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 16,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -99,18 +100,18 @@ class AuthPageShell extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.chat_bubble_outline,
-                                color: Colors.blueAccent,
+                                color: colorScheme.primary,
                                 size: 28,
                               ),
-                              SizedBox(width: 12),
+                              const SizedBox(width: 12),
                               Text(
                                 'Mattermost Desktop',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -120,17 +121,18 @@ class AuthPageShell extends StatelessWidget {
                           const SizedBox(height: 24),
                           Text(
                             title,
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             subtitle,
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                               fontSize: 15,
                               height: 1.5,
                             ),
@@ -187,6 +189,8 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AuthPageShell(
       title: 'Reset password',
       subtitle:
@@ -196,15 +200,32 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Email address',
-              hintStyle: const TextStyle(color: Colors.white38),
+              hintStyle: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.38),
+              ),
               filled: true,
-              fillColor: const Color(0xFF313244),
+              fillColor: colorScheme.surfaceContainerHigh,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -221,9 +242,11 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
       footer: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
+          Text(
             'Remembered your password?',
-            style: TextStyle(color: Colors.white70),
+            style: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
           TextButton(
             onPressed: () => context.go(AuthRoutes.login),
@@ -339,6 +362,8 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AuthPageShell(
       title: 'Terms of service',
       subtitle: 'Review and accept the server terms before you continue.',
@@ -347,13 +372,16 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
           CheckboxListTile(
             value: _accepted,
             onChanged: (value) => setState(() => _accepted = value ?? false),
-            title: const Text(
+            title: Text(
               'I agree to the server terms and privacy policy',
-              style: TextStyle(color: Colors.white70, fontSize: 13),
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                fontSize: 13,
+              ),
             ),
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
-            activeColor: Colors.blueAccent,
+            activeColor: colorScheme.primary,
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -453,6 +481,8 @@ class _MfaPageState extends State<MfaPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return AuthPageShell(
       title: 'Multi-factor authentication',
       subtitle: 'Enter the MFA code from your authenticator app to continue.',
@@ -461,15 +491,32 @@ class _MfaPageState extends State<MfaPage> {
           TextField(
             controller: _codeController,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               hintText: 'Authentication code',
-              hintStyle: const TextStyle(color: Colors.white38),
+              hintStyle: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.38),
+              ),
               filled: true,
-              fillColor: const Color(0xFF313244),
+              fillColor: colorScheme.surfaceContainerHigh,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(
+                  color: colorScheme.primary,
+                  width: 1.5,
+                ),
               ),
             ),
           ),

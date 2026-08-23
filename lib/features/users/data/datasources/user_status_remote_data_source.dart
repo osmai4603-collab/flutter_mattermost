@@ -19,7 +19,7 @@ abstract class UserStatusRemoteDataSource {
     required String emoji,
     String? text,
     String? duration,
-    int? expiresAt,
+    String? expiresAt,
   });
   Future<void> unsetCustomStatus(String userId);
   Future<void> removeRecentCustomStatus(String userId, String emoji);
@@ -66,7 +66,11 @@ class UserStatusRemoteDataSourceImpl implements UserStatusRemoteDataSource {
   }) async {
     final result = await _apiClient.put<UserStatusModel>(
       UsersEndPoint.status(userId),
-      data: {'status': status.value, 'dnd_end_time': dndEndTime ?? 0},
+      data: {
+        'user_id': userId,
+        'status': status.value,
+        'dnd_end_time': dndEndTime != null ? int.tryParse(dndEndTime) ?? 0 : 0,
+      },
       fromJson: (json) => UserStatusModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<UserStatusModel>) {
@@ -81,27 +85,27 @@ class UserStatusRemoteDataSourceImpl implements UserStatusRemoteDataSource {
     required String emoji,
     String? text,
     String? duration,
-    int? expiresAt,
+    String? expiresAt,
   }) async {
-    final result = await _apiClient.put<UserStatusModel>(
-      UsersEndPoint.statusCustom(userId),
+    final result = await _apiClient.put<dynamic>(
+      UsersEndPoint.statusCustom('me'),
       data: {
         'emoji': emoji,
-        if (text != null) 'text': text,
-        if (duration != null) 'duration': duration,
-        if (expiresAt != null) 'expires_at': expiresAt,
+        'text': text ?? '',
+        if (duration != null && duration.isNotEmpty) 'duration': duration,
+        if (expiresAt != null && expiresAt.isNotEmpty) 'expires_at': expiresAt,
       },
-      fromJson: (json) => UserStatusModel.fromMap(json as Map<String, dynamic>),
+      fromJson: (json) => json,
     );
-    if (result is ApiSuccess<UserStatusModel>) {
-      return result.data;
+    if (result is ApiSuccess) {
+      return UserStatusModel(userId: userId, customStatus: text ?? '');
     }
     throw Exception('Failed to update custom status for user $userId');
   }
 
   @override
   Future<void> unsetCustomStatus(String userId) async {
-    await _apiClient.delete(UsersEndPoint.statusCustom(userId));
+    await _apiClient.delete(UsersEndPoint.statusCustom('me'));
   }
 
   @override

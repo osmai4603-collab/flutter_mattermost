@@ -16,13 +16,27 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameFocusNode = FocusNode();
+  final _passwordFocusNode = FocusNode();
+
+  void _submitLogin(bool isLoading) {
+    if (isLoading) return;
+    final username = _usernameController.text.trim();
+    final password = _passwordController.text.trim();
+    if (username.isNotEmpty && password.isNotEmpty) {
+      context.read<AuthBloc>().add(
+        LoginSubmittedEvent(username: username, password: password),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2E),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < 900;
@@ -50,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
                               Text(
                                 'Mattermost',
                                 style: theme.textTheme.displayMedium?.copyWith(
-                                  color: Colors.white,
+                                  color: colorScheme.onSurface,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: -0.02,
                                 ),
@@ -59,7 +73,9 @@ class _LoginPageState extends State<LoginPage> {
                               Text(
                                 'All your team communication, search, and collaboration in one place.',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: Colors.white70,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   height: 1.5,
                                 ),
                               ),
@@ -73,7 +89,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: Text(
                           'Mattermost',
                           style: theme.textTheme.headlineMedium?.copyWith(
-                            color: Colors.white,
+                            color: colorScheme.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -83,13 +99,13 @@ class _LoginPageState extends State<LoginPage> {
                       constraints: const BoxConstraints(maxWidth: 500),
                       padding: const EdgeInsets.all(32),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF181825),
+                        color: colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: const [
+                        boxShadow: [
                           BoxShadow(
-                            color: Colors.black26,
+                            color: colorScheme.shadow.withValues(alpha: 0.1),
                             blurRadius: 16,
-                            offset: Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
@@ -102,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(state.message),
-                                backgroundColor: Colors.redAccent,
+                                backgroundColor: colorScheme.error,
                               ),
                             );
                           }
@@ -114,18 +130,18 @@ class _LoginPageState extends State<LoginPage> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Row(
+                              Row(
                                 children: [
                                   Icon(
                                     Icons.chat_bubble_outline,
-                                    color: Colors.blueAccent,
+                                    color: colorScheme.primary,
                                     size: 28,
                                   ),
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Text(
                                     'Mattermost Desktop',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: colorScheme.onSurface,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -133,45 +149,99 @@ class _LoginPageState extends State<LoginPage> {
                                 ],
                               ),
                               const SizedBox(height: 24),
-                              const Text(
+                              Text(
                                 'Sign in to your server',
                                 style: TextStyle(
-                                  color: Colors.white70,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.7,
+                                  ),
                                   fontSize: 14,
                                 ),
                               ),
                               const SizedBox(height: 20),
                               TextField(
                                 controller: _usernameController,
-                                style: const TextStyle(color: Colors.white),
+                                focusNode: _usernameFocusNode,
+                                textInputAction: TextInputAction.next,
+                                onSubmitted: (_) {
+                                  FocusScope.of(
+                                    context,
+                                  ).requestFocus(_passwordFocusNode);
+                                },
+                                style: TextStyle(color: colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   hintText: 'Username or Email',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.white38,
+                                  hintStyle: TextStyle(
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.38,
+                                    ),
                                   ),
                                   filled: true,
-                                  fillColor: const Color(0xFF313244),
+                                  fillColor: colorScheme.surfaceContainerHigh,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outline.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outline.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
                               const SizedBox(height: 16),
                               TextField(
                                 controller: _passwordController,
+                                focusNode: _passwordFocusNode,
                                 obscureText: true,
-                                style: const TextStyle(color: Colors.white),
+                                textInputAction: TextInputAction.done,
+                                onSubmitted: (_) => _submitLogin(isLoading),
+                                style: TextStyle(color: colorScheme.onSurface),
                                 decoration: InputDecoration(
                                   hintText: 'Password',
-                                  hintStyle: const TextStyle(
-                                    color: Colors.white38,
+                                  hintStyle: TextStyle(
+                                    color: colorScheme.onSurface.withValues(
+                                      alpha: 0.38,
+                                    ),
                                   ),
                                   filled: true,
-                                  fillColor: const Color(0xFF313244),
+                                  fillColor: colorScheme.surfaceContainerHigh,
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(8),
-                                    borderSide: BorderSide.none,
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outline.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.outline.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary,
+                                      width: 1.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -190,44 +260,28 @@ class _LoginPageState extends State<LoginPage> {
                                 height: 44,
                                 child: ElevatedButton(
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueAccent,
-                                    foregroundColor: Colors.white,
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
                                   onPressed: isLoading
                                       ? null
-                                      : () {
-                                          final username = _usernameController
-                                              .text
-                                              .trim();
-                                          final password = _passwordController
-                                              .text
-                                              .trim();
-                                          if (username.isNotEmpty &&
-                                              password.isNotEmpty) {
-                                            context.read<AuthBloc>().add(
-                                              LoginSubmittedEvent(
-                                                username: username,
-                                                password: password,
-                                              ),
-                                            );
-                                          }
-                                        },
+                                      : () => _submitLogin(isLoading),
                                   child: isLoading
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 20,
                                           height: 20,
                                           child: CircularProgressIndicator(
                                             strokeWidth: 2,
-                                            color: Colors.white,
+                                            color: colorScheme.onPrimary,
                                           ),
                                         )
-                                      : const Text(
+                                      : Text(
                                           'Log In',
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color: colorScheme.onPrimary,
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
@@ -240,10 +294,14 @@ class _LoginPageState extends State<LoginPage> {
                                   alignment: WrapAlignment.center,
                                   crossAxisAlignment: WrapCrossAlignment.center,
                                   spacing: 8,
-                                  children: const [
+                                  children: [
                                     Text(
                                       "Don't have an account?",
-                                      style: TextStyle(color: Colors.white70),
+                                      style: TextStyle(
+                                        color: colorScheme.onSurface.withValues(
+                                          alpha: 0.7,
+                                        ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -276,6 +334,8 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _usernameFocusNode.dispose();
+    _passwordFocusNode.dispose();
     super.dispose();
   }
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_mattermost/core/enums/category_sorting.dart';
 import 'package:flutter_mattermost/core/enums/channel_category_type.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/modals/modal_identifiers.dart';
+import 'package:flutter_mattermost/core/modals/modal_registry.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
@@ -81,25 +83,55 @@ class ChannelCategoryRow extends StatelessWidget {
                 AnimatedOpacity(
                   opacity: isHovered ? 1 : 0,
                   duration: const Duration(milliseconds: 100),
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: CategoryMenu(
-                      l10n: l10n,
-                      theme: theme,
-                      category: ChannelCategoryEntity(
-                        id: categoryId,
-                        teamId: teamId,
-                        userId: userId,
-                        displayName: title,
-                        type: category?.type ?? ChannelCategoryType.channels,
-                        channelIds: channels.map((e) => e.id).toList(),
-                        muted: category?.muted ?? false,
-                        sorting: category?.sorting ?? CategorySorting.recent,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Tooltip(
+                        message:
+                            category?.type == ChannelCategoryType.directMessages
+                            ? (l10n.sidebarDirectMessages.isNotEmpty
+                                  ? l10n.sidebarDirectMessages
+                                  : 'Direct Messages')
+                            : 'Add Channel',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(4),
+                          onTap: () {
+                            final modalId =
+                                category?.type ==
+                                    ChannelCategoryType.directMessages
+                                ? ModalIdentifiers.moreDirectChannels
+                                : ModalIdentifiers.newChannel;
+                            ModalRegistry.open(context, id: modalId);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.add,
+                              size: 16,
+                              color: theme.sidebarText.withValues(alpha: 0.64),
+                            ),
+                          ),
+                        ),
                       ),
-                      userId: userId,
-                      teamId: teamId,
-                      unreadCounts: unreadCounts,
-                    ),
+                      const SizedBox(width: 2),
+                      CategoryMenu(
+                        l10n: l10n,
+                        theme: theme,
+                        category: ChannelCategoryEntity(
+                          id: categoryId,
+                          teamId: teamId,
+                          userId: userId,
+                          displayName: title,
+                          type: category?.type ?? ChannelCategoryType.channels,
+                          channelIds: channels.map((e) => e.id).toList(),
+                          muted: category?.muted ?? false,
+                          sorting: category?.sorting ?? CategorySorting.recent,
+                        ),
+                        userId: userId,
+                        teamId: teamId,
+                        unreadCounts: unreadCounts,
+                      ),
+                    ],
                   ),
                 ),
               ],

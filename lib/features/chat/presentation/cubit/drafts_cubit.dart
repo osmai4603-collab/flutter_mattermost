@@ -54,4 +54,8 @@ class DraftsCubit extends Cubit<DraftsState> {
   void updateDraftsLocally(List<DraftModel> drafts, String teamId) {
     emit(DraftsLoadedState(drafts: drafts, teamId: teamId));
   }
+
+  void clear() {
+    emit(DraftsInitialState());
+  }
 }
