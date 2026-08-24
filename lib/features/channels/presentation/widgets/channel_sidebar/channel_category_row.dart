@@ -80,12 +80,10 @@ class ChannelCategoryRow extends StatelessWidget {
                     ),
                   ),
                 ),
-                AnimatedOpacity(
-                  opacity: isHovered ? 1 : 0,
-                  duration: const Duration(milliseconds: 100),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (category?.type == ChannelCategoryType.directMessages)
                       Tooltip(
                         message:
                             category?.type == ChannelCategoryType.directMessages
@@ -113,8 +111,11 @@ class ChannelCategoryRow extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 2),
-                      CategoryMenu(
+                    const SizedBox(width: 2),
+                    AnimatedOpacity(
+                      opacity: isHovered ? 1 : 0,
+                      duration: const Duration(milliseconds: 150),
+                      child: CategoryMenu(
                         l10n: l10n,
                         theme: theme,
                         category: ChannelCategoryEntity(
@@ -131,8 +132,8 @@ class ChannelCategoryRow extends StatelessWidget {
                         teamId: teamId,
                         unreadCounts: unreadCounts,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),

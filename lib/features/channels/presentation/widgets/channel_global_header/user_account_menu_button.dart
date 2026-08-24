@@ -37,41 +37,44 @@ class UserAccountMenuButton extends StatelessWidget {
           label: '',
           icon: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Row(
-              spacing: 16,
-              children: [
-                ProfilePicture(
-                  size: 38,
-                  userId: user?.id,
-                  username: user?.username ?? '?',
-                  avatarUrl: null,
-                  status: myStatus,
-                  showStatus: true,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "${user?.firstName ?? ""} ${user?.lastName ?? ''}"
-                              .trim()
-                              .isEmpty
-                          ? (user?.username ?? '')
-                          : "${user?.firstName ?? ""} ${user?.lastName ?? ''}",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: theme.sidebarBg,
-                        fontWeight: FontWeight.bold,
+            child: SizedBox(
+              width: 200,
+              child: Row(
+                spacing: 16,
+                children: [
+                  ProfilePicture(
+                    size: 38,
+                    userId: user?.id,
+                    username: user?.username ?? '?',
+                    avatarUrl: null,
+                    status: myStatus,
+                    showStatus: true,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "${user?.firstName ?? ""} ${user?.lastName ?? ''}"
+                                .trim()
+                                .isEmpty
+                            ? (user?.username ?? '')
+                            : "${user?.firstName ?? ""} ${user?.lastName ?? ''}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: theme.sidebarBg,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 1),
-                    Text(
-                      '@${user?.username ?? ''}',
-                      style: TextStyle(fontSize: 14, color: theme.sidebarBg),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 1),
-              ],
+                      const SizedBox(height: 1),
+                      Text(
+                        '@${user?.username ?? ''}',
+                        style: TextStyle(fontSize: 14, color: theme.sidebarBg),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 1),
+                ],
+              ),
             ),
           ),
           onTap: () {
@@ -163,7 +166,8 @@ class UserAccountMenuButton extends StatelessWidget {
             Stack(
               alignment: Alignment.bottomRight,
               children: [
-                ProfilePicture.md(
+                ProfilePicture(
+                  size: 26,
                   userId: user?.id,
                   username: user?.username ?? '?',
                   avatarUrl: null,

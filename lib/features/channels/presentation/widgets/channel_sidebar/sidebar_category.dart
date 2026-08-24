@@ -18,7 +18,7 @@ import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_b
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_category_row.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/direction_message_item_widget.dart';
-import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_channel_row.dart';
+import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_channel_item.dart';
 import 'package:flutter_mattermost/features/chat/presentation/bloc/lhs_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_profile_bloc.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
@@ -215,7 +215,7 @@ class _SidebarCategoryState extends State<SidebarCategory> {
                                   statuses,
                                 )
                               else
-                                SidebarChannelRow(
+                                SidebarChannelItem(
                                   channel: channel,
                                   unread: widget.unreadCounts[channel.id],
                                   isSelected:

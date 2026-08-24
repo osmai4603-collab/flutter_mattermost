@@ -9,6 +9,7 @@ final class RoleModel extends RoleEntity {
     super.permissions,
     super.schemeManaged,
     super.builtIn,
+    super.schemeId,
   });
 
   factory RoleModel.fromMap(Map<String, dynamic> data) {
@@ -20,6 +21,7 @@ final class RoleModel extends RoleEntity {
       permissions: List<String>.from(data['permissions'] ?? const []),
       schemeManaged: data['scheme_managed'] ?? false,
       builtIn: data['built_in'] ?? false,
+      schemeId: data['scheme_id'],
     );
   }
 
@@ -32,6 +34,7 @@ final class RoleModel extends RoleEntity {
       permissions: entity.permissions,
       schemeManaged: entity.schemeManaged,
       builtIn: entity.builtIn,
+      schemeId: entity.schemeId,
     );
   }
 
@@ -44,6 +47,7 @@ final class RoleModel extends RoleEntity {
       'permissions': permissions,
       'scheme_managed': schemeManaged,
       'built_in': builtIn,
+      'scheme_id': schemeId,
     };
   }
 
@@ -56,6 +60,7 @@ final class RoleModel extends RoleEntity {
     List<String>? permissions,
     bool? schemeManaged,
     bool? builtIn,
+    String? schemeId,
   }) {
     return RoleModel(
       id: id ?? this.id,
@@ -65,6 +70,7 @@ final class RoleModel extends RoleEntity {
       permissions: permissions ?? this.permissions,
       schemeManaged: schemeManaged ?? this.schemeManaged,
       builtIn: builtIn ?? this.builtIn,
+      schemeId: schemeId ?? this.schemeId,
     );
   }
 
@@ -77,6 +83,7 @@ final class RoleModel extends RoleEntity {
       permissions: permissions,
       schemeManaged: schemeManaged,
       builtIn: builtIn,
+      schemeId: schemeId,
     );
   }
 }

@@ -9,6 +9,7 @@ import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/mattermost_colors.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
+import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_category_entity.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_entity.dart';
 import 'package:flutter_mattermost/features/channels/presentation/bloc/channel_bloc.dart';
@@ -31,6 +32,7 @@ List<MatterMenuItem> buildChannelMenuItems(
   final state = context.read<ChannelBloc>().state;
   final loaded = state is ChannelsLoadedState ? state : null;
   final member = loaded?.members[channel.id];
+
   final muted = member?.notifyProps?.markUnread == 'mention';
   final currentUserId = loaded?.userId ?? '';
   final isFavorited =
@@ -41,6 +43,14 @@ List<MatterMenuItem> buildChannelMenuItems(
   final isDirect = channel.type == ChannelType.direct;
   final isGroup = channel.type == ChannelType.group;
   final isArchived = channel.deleteAt > 0;
+  final authBloc = context.read<AuthBloc>();
+  final currentUser = authBloc.state is AuthenticatedState
+      ? (authBloc.state as AuthenticatedState).user
+      : null;
+
+  if (currentUser == null) {
+    return [];
+  }
 
   // التعديل/الأرشفة لمنشئ القناة (creatorId)، وإن لم يوجد تُعتمد صلاحية
   // مدير القناة (channel_admin) من أدوار العضو.
@@ -55,14 +65,20 @@ List<MatterMenuItem> buildChannelMenuItems(
     MatterMenuItem(
       id: 'new_window',
       label: 'Open in a new window',
-      icon: Icon(Icons.content_copy, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: Icon(Icons.content_copy, size: 18),
+      ),
     ),
     MatterMenuItem.divider(),
 
     MatterMenuItem(
       id: 'mark_as_unread',
       label: l10n.sidebar_leftSidebar_channel_menuMarkAsUnread,
-      icon: const Icon(Icons.mark_email_unread_outlined, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: const Icon(Icons.mark_email_unread_outlined, size: 18),
+      ),
       onTap: () {
         context.read<ChannelBloc>().add(MarkChannelAsUnreadEvent(channel.id));
       },
@@ -73,7 +89,10 @@ List<MatterMenuItem> buildChannelMenuItems(
       label: isFavorited
           ? l10n.sidebar_leftSidebar_channel_menuUnfavoriteChannel
           : l10n.sidebar_leftSidebar_channel_menuFavoriteChannel,
-      icon: Icon(isFavorited ? Icons.star : Icons.star_outline, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: Icon(isFavorited ? Icons.star : Icons.star_outline, size: 18),
+      ),
       onTap: () {
         final teamState = context.read<TeamBloc>().state;
         final teamId = teamState is TeamsLoadedState
@@ -94,9 +113,12 @@ List<MatterMenuItem> buildChannelMenuItems(
       label: muted
           ? l10n.sidebar_leftSidebar_channel_menuUnmuteChannel
           : l10n.sidebar_leftSidebar_channel_menuMuteChannel,
-      icon: Icon(
-        muted ? Icons.notifications_off : Icons.notifications_off_outlined,
-        size: 18,
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: Icon(
+          muted ? Icons.notifications_off : Icons.notifications_off_outlined,
+          size: 18,
+        ),
       ),
       onTap: () {
         context.read<ChannelBloc>().add(
@@ -108,20 +130,33 @@ List<MatterMenuItem> buildChannelMenuItems(
     MatterMenuItem(
       id: 'move_to',
       label: l10n.sidebar_leftSidebar_channel_menuMoveTo,
-      icon: const Icon(Icons.drive_file_move_outlined, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: const Icon(Icons.drive_file_move_outlined, size: 18),
+      ),
       submenu: _moveToItems(context, channel, loaded),
     ),
     MatterMenuItem.divider(),
     MatterMenuItem(
       id: 'copy_link',
       label: l10n.sidebar_leftSidebar_channel_menuCopyLink,
-      icon: const Icon(Icons.link, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: AnimatedRotation(
+          turns: 0.38,
+          duration: const Duration(milliseconds: 500),
+          child: const Icon(Icons.link_outlined, size: 20),
+        ),
+      ),
       onTap: () => _copyLink(context, channel),
     ),
     MatterMenuItem(
       id: 'add_members',
       label: l10n.sidebar_leftSidebar_channel_menuAddMembers,
-      icon: const Icon(Icons.group, size: 18),
+      icon: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 11.0),
+        child: const Icon(Icons.person_add_outlined, size: 20),
+      ),
       onTap: () {
         showDialog<void>(
           context: context,
@@ -131,12 +166,12 @@ List<MatterMenuItem> buildChannelMenuItems(
     ),
     // ==== المشاركة والمعلومات ====
     // رسائل DM/GM لا تملك رابط قناة ضمن فريق — لا يُعرض بند نسخ الرابط لها.
-    MatterMenuItem(
-      id: 'view_channel_info',
-      label: l10n.channelHeaderChannelInfo,
-      icon: const Icon(Icons.info_outline, size: 18),
-      onTap: () => _showChannelInfo(context, channel),
-    ),
+    // MatterMenuItem(
+    //   id: 'view_channel_info',
+    //   label: l10n.channelHeaderChannelInfo,
+    //   icon: const Icon(Icons.info_outline, size: 18),
+    //   onTap: () => _showChannelInfo(context, channel),
+    // ),
     // تعديل القناة (الاسم/الغرض/الرأس/الخصوصية) — للقنوات العادية وللإدارة فقط.
     if (!isDirect && !isGroup && canManage)
       MatterMenuItem(
@@ -150,17 +185,17 @@ List<MatterMenuItem> buildChannelMenuItems(
           );
         },
       ),
-    MatterMenuItem(
-      id: 'notification_preferences',
-      label: l10n.channel_info_rhsMenuNotification_preferences,
-      icon: const Icon(Icons.notifications_outlined, size: 18),
-      onTap: () {
-        showDialog<void>(
-          context: context,
-          builder: (_) => ChannelNotificationsModal(channel: channel),
-        );
-      },
-    ),
+    // MatterMenuItem(
+    //   id: 'notification_preferences',
+    //   label: l10n.channel_info_rhsMenuNotification_preferences,
+    //   icon: const Icon(Icons.notifications_outlined, size: 18),
+    //   onTap: () {
+    //     showDialog<void>(
+    //       context: context,
+    //       builder: (_) => ChannelNotificationsModal(channel: channel),
+    //     );
+    //   },
+    // ),
     // أرشفة القناة — للقنوات العادية وللإدارة فقط (مطابق archiveChannel في webapp).
     if (!isDirect && !isGroup && canManage)
       MatterMenuItem(
@@ -312,12 +347,12 @@ void showChannelContextMenu(
 }
 
 /// زر ⋯ الذي يظهر عند التمرير على صف القناة (نفس البنود).
-class ChannelRowMenu extends StatelessWidget {
+class ChannelRowItemMenu extends StatelessWidget {
   final ChannelEntity channel;
   final double iconSize;
   final Color? iconColor;
 
-  const ChannelRowMenu({
+  const ChannelRowItemMenu({
     super.key,
     required this.channel,
     this.iconSize = 18,
@@ -480,33 +515,35 @@ void _showChannelInfo(BuildContext context, ChannelEntity channel) {
 Future<void> _confirmLeave(BuildContext context, ChannelEntity channel) async {
   final l10n = AppLocalizations.of(context);
   final theme = AppTheme.of(context);
-  final confirmed = await showDialog<bool>(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text(
-        channel.type == ChannelType.private
-            ? l10n.leave_private_channel_modalTitle(channel.displayName)
-            : l10n.leave_policy_channel_modalTitle(channel.displayName),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(l10n.generic_modalCancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          child: Text(
+  final confirmed =
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(
             channel.type == ChannelType.private
-                ? l10n.leave_private_channel_modalLeave
-                : l10n.leave_policy_channel_modalLeave,
-            style: TextStyle(color: theme.errorTextColor),
+                ? l10n.leave_private_channel_modalTitle(channel.displayName)
+                : l10n.leave_policy_channel_modalTitle(channel.displayName),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.generic_modalCancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(
+                channel.type == ChannelType.private
+                    ? l10n.leave_private_channel_modalLeave
+                    : l10n.leave_policy_channel_modalLeave,
+                style: TextStyle(color: theme.errorTextColor),
+              ),
+            ),
+          ],
         ),
-      ],
-    ),
-  );
+      ) ??
+      false;
   if (!context.mounted) return;
-  if (confirmed == true) {
+  if (confirmed) {
     final state = context.read<ChannelBloc>().state;
     final userId = state is ChannelsLoadedState ? state.userId : '';
     context.read<ChannelBloc>().add(

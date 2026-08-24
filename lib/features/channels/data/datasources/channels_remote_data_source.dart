@@ -963,7 +963,7 @@ class ChannelRemoteDataSourceImpl implements ChannelRemoteDataSource {
 
   @override
   Future<void> removeUserFromChannel(String channelId, String userId) async {
-    await _apiClient.delete(ChannelsEndPoint.members2(channelId, userId));
+    await _apiClient.delete('/channels/$channelId/members/$userId');
   }
 
   @override

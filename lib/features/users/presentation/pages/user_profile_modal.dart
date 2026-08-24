@@ -82,20 +82,18 @@ class _UserProfileModalState extends State<_UserProfileModal> {
 
   /// التوقيت المحلي للمستخدم من إعدادات المنطقة الزمنية (دعم الإزاحة اليدوية
   /// بصيغة UTC±HH[:MM])؛ وإلا يُعرض توقيت الجهاز كتقريب.
-  String _localTime(Map<String, dynamic> timezone) {
+  String _localTime(UserTimezone timezone) {
     final now = DateTime.now().toUtc();
     var offsetMinutes = 0;
-    final manual = timezone['manualTimezone'] as String?;
-    if (manual != null) {
-      final match = RegExp(
-        r'UTC([+-])(\d{1,2})(?::?(\d{2}))?',
-      ).firstMatch(manual);
-      if (match != null) {
-        final sign = match.group(1) == '-' ? -1 : 1;
-        final hours = int.parse(match.group(2)!);
-        final minutes = int.tryParse(match.group(3) ?? '') ?? 0;
-        offsetMinutes = sign * (hours * 60 + minutes);
-      }
+    final manual = timezone.manualTimezone;
+    final match = RegExp(
+      r'UTC([+-])(\d{1,2})(?::?(\d{2}))?',
+    ).firstMatch(manual);
+    if (match != null) {
+      final sign = match.group(1) == '-' ? -1 : 1;
+      final hours = int.parse(match.group(2)!);
+      final minutes = int.tryParse(match.group(3) ?? '') ?? 0;
+      offsetMinutes = sign * (hours * 60 + minutes);
     }
     final local = now.add(Duration(minutes: offsetMinutes));
     String two(int v) => v.toString().padLeft(2, '0');

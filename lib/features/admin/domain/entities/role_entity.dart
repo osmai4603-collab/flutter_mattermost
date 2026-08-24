@@ -8,6 +8,7 @@ class RoleEntity extends Entity {
   final List<String> permissions;
   final bool schemeManaged;
   final bool builtIn;
+  final String? schemeId;
 
   const RoleEntity({
     required this.id,
@@ -17,18 +18,20 @@ class RoleEntity extends Entity {
     this.permissions = const [],
     this.schemeManaged = false,
     this.builtIn = false,
+    this.schemeId,
   });
 
   @override
   List<Object?> get props => [
-        id,
-        name,
-        displayName,
-        description,
-        permissions,
-        schemeManaged,
-        builtIn,
-      ];
+    id,
+    name,
+    displayName,
+    description,
+    permissions,
+    schemeManaged,
+    builtIn,
+    schemeId,
+  ];
 
   RoleEntity copyWith({
     String? id,
@@ -38,6 +41,7 @@ class RoleEntity extends Entity {
     List<String>? permissions,
     bool? schemeManaged,
     bool? builtIn,
+    String? schemeId,
   }) {
     return RoleEntity(
       id: id ?? this.id,
@@ -47,8 +51,22 @@ class RoleEntity extends Entity {
       permissions: permissions ?? this.permissions,
       schemeManaged: schemeManaged ?? this.schemeManaged,
       builtIn: builtIn ?? this.builtIn,
+      schemeId: schemeId ?? this.schemeId,
     );
   }
 
-  bool hasPermission(String permission) => permissions.contains(permission);
+  bool hasPermission(dynamic permission) =>
+      permissions.contains(permission.toString());
+
+  bool canReadAdminConsole() {
+    return permissions.any(
+      (permission) => permission.contains('sysconsole_read'),
+    );
+  }
+
+  bool canWriteAdminConsole() {
+    return permissions.any(
+      (permission) => permission.contains('sysconsole_write'),
+    );
+  }
 }

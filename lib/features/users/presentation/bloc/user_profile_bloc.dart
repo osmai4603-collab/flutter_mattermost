@@ -49,7 +49,7 @@ class UpdateMyProfileEvent extends UserProfileEvent {
 
 /// حفظ خصائص الإشعارات notify_props (desktop/push/email/...).
 class UpdateNotifyPropsEvent extends UserProfileEvent {
-  final Map<String, dynamic> notifyProps;
+  final UserNotifyPropsEntity notifyProps;
   const UpdateNotifyPropsEvent(this.notifyProps);
   @override
   List<Object?> get props => [notifyProps];

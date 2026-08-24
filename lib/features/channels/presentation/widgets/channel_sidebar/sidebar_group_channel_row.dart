@@ -195,7 +195,7 @@ class _SidebarGroupChannelRowState extends State<SidebarGroupChannelRow> {
                     AnimatedOpacity(
                       opacity: _hovered ? 1 : 0,
                       duration: const Duration(milliseconds: 100),
-                      child: ChannelRowMenu(channel: channel, iconSize: 16),
+                      child: ChannelRowItemMenu(channel: channel, iconSize: 16),
                     ),
                   ],
                 ),

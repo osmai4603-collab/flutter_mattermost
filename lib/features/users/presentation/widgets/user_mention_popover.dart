@@ -5,7 +5,6 @@ import 'package:flutter_mattermost/core/localizations/generated/app_localization
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/widgets/profile_picture.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
-import 'package:flutter_mattermost/features/auth/domain/entities/user_status_entity.dart';
 import 'package:flutter_mattermost/features/users/presentation/bloc/user_status_bloc.dart';
 import 'package:flutter_mattermost/core/network/server_manager.dart';
 import 'package:intl/intl.dart';
@@ -33,20 +32,18 @@ class UserMentionPopover extends StatelessWidget {
     this.onClose,
   });
 
-  String _localTime(Map<String, dynamic> timezone) {
+  String _localTime(UserTimezone timezone) {
     final now = DateTime.now().toUtc();
     var offsetMinutes = 0;
-    final manual = timezone['manualTimezone'] as String?;
-    if (manual != null) {
-      final match = RegExp(
-        r'UTC([+-])(\d{1,2})(?::?(\d{2}))?',
-      ).firstMatch(manual);
-      if (match != null) {
-        final sign = match.group(1) == '-' ? -1 : 1;
-        final hours = int.parse(match.group(2)!);
-        final minutes = int.tryParse(match.group(3) ?? '') ?? 0;
-        offsetMinutes = sign * (hours * 60 + minutes);
-      }
+    final manual = timezone.manualTimezone;
+    final match = RegExp(
+      r'UTC([+-])(\d{1,2})(?::?(\d{2}))?',
+    ).firstMatch(manual);
+    if (match != null) {
+      final sign = match.group(1) == '-' ? -1 : 1;
+      final hours = int.parse(match.group(2)!);
+      final minutes = int.tryParse(match.group(3) ?? '') ?? 0;
+      offsetMinutes = sign * (hours * 60 + minutes);
     }
     final local = now.add(Duration(minutes: offsetMinutes));
     return DateFormat('hh:mm a').format(local);
@@ -61,8 +58,10 @@ class UserMentionPopover extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
     final l10n = AppLocalizations.of(context);
-    final status = context.watch<UserStatusBloc>().state is UserStatusesLoadedState
-        ? (context.read<UserStatusBloc>().state as UserStatusesLoadedState).statusOf(user.id)
+    final status =
+        context.watch<UserStatusBloc>().state is UserStatusesLoadedState
+        ? (context.read<UserStatusBloc>().state as UserStatusesLoadedState)
+              .statusOf(user.id)
         : null;
 
     return Container(
@@ -109,7 +108,9 @@ class UserMentionPopover extends StatelessWidget {
             ],
           ),
           Text(
-            user.nickname.isNotEmpty ? user.nickname : '${user.firstName} ${user.lastName}'.trim(),
+            user.nickname.isNotEmpty
+                ? user.nickname
+                : '${user.firstName} ${user.lastName}'.trim(),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,

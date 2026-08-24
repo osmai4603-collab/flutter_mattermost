@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_mattermost/app/routes/admin_console_route.dart';
 import 'package:flutter_mattermost/core/localizations/generated/app_localizations.dart';
+import 'package:flutter_mattermost/core/permissions/enums/mattermost_permission.dart';
 import 'package:flutter_mattermost/core/theme/app_theme.dart';
 import 'package:flutter_mattermost/core/theme/design_tokens.dart';
+import 'package:flutter_mattermost/core/widgets/hover_widget.dart';
 import 'package:flutter_mattermost/core/widgets/matter_menu.dart';
+import 'package:flutter_mattermost/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:flutter_mattermost/features/teams/presentation/bloc/team_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +21,11 @@ class ProductMenuButton extends StatelessWidget {
     final theme = AppTheme.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final textColor = theme.sidebarText.withValues(alpha: 0.64);
+    final authBloc = context.read<AuthBloc>();
+    if (authBloc.state is! AuthenticatedState) {
+      return Container();
+    }
+    final currentUser = (authBloc.state as AuthenticatedState).user;
     return Tooltip(
       message: l10n.global_headerProductSwitchMenu,
       child: MatterMenuScope(
@@ -26,8 +34,112 @@ class ProductMenuButton extends StatelessWidget {
         items: [
           MatterMenuItem(
             id: 'channels',
-            label: 'Channels',
-            icon: const Icon(Icons.groups_rounded, size: 18),
+            label: '',
+            icon: HoverWidget(
+              builder: (context, isHovered) {
+                return Container(
+                  padding: .symmetric(vertical: 12),
+                  width: 220,
+                  child: Row(
+                    spacing: 10,
+                    children: [
+                      Icon(
+                        Icons.chat_outlined,
+                        size: 18,
+                        color: theme.linkColor,
+                      ),
+                      Text(
+                        'Channels',
+                        style: TextStyle(
+                          fontWeight: .bold,
+                          color: isHovered ? theme.linkColor : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            onTap: () {
+              final teamState = context.read<TeamBloc>().state;
+              final teamName = teamState is TeamsLoadedState
+                  ? teamState.selectedTeam?.name
+                  : null;
+              if (teamName != null) {
+                context.go('/$teamName');
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          MatterMenuItem(
+            id: 'agents',
+            label: '',
+            icon: HoverWidget(
+              builder: (context, isHovered) {
+                return Container(
+                  padding: .symmetric(vertical: 12),
+                  width: 220,
+                  child: Row(
+                    spacing: 10,
+                    children: [
+                      Icon(
+                        Icons.support_agent,
+                        size: 18,
+                        color: theme.linkColor,
+                      ),
+                      Text(
+                        'Agents',
+                        style: TextStyle(
+                          fontWeight: .bold,
+                          color: isHovered ? theme.linkColor : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            onTap: () {
+              final teamState = context.read<TeamBloc>().state;
+              final teamName = teamState is TeamsLoadedState
+                  ? teamState.selectedTeam?.name
+                  : null;
+              if (teamName != null) {
+                context.go('/$teamName');
+              } else {
+                context.go('/');
+              }
+            },
+          ),
+          MatterMenuItem(
+            id: 'playbooks',
+            label: '',
+            icon: HoverWidget(
+              builder: (context, isHovered) {
+                return Container(
+                  padding: .symmetric(vertical: 12),
+                  width: 220,
+                  child: Row(
+                    spacing: 10,
+                    children: [
+                      Icon(
+                        Icons.book_outlined,
+                        size: 18,
+                        color: theme.linkColor,
+                      ),
+                      Text(
+                        'Playbooks',
+                        style: TextStyle(
+                          fontWeight: .bold,
+                          color: isHovered ? theme.linkColor : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
             onTap: () {
               final teamState = context.read<TeamBloc>().state;
               final teamName = teamState is TeamsLoadedState
@@ -41,40 +153,97 @@ class ProductMenuButton extends StatelessWidget {
             },
           ),
           MatterMenuItem.divider(),
+          if (currentUser.hasPermission(MMPermission.manageSystem))
+            MatterMenuItem(
+              id: 'system_console',
+              label: 'Admin Console',
+              icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
+              onTap: () => context.go(AdminConsoleRoutes.home),
+            ),
+          if (currentUser.hasPermission(MMPermission.manageWebhooks))
+            MatterMenuItem(
+              id: 'integrations',
+              label: 'Integrations',
+              icon: const Icon(
+                Icons.integration_instructions_rounded,
+                size: 18,
+              ),
+              onTap: () {
+                final teamState = context.read<TeamBloc>().state;
+                final teamName = teamState is TeamsLoadedState
+                    ? teamState.selectedTeam?.name
+                    : null;
+                context.go(
+                  teamName != null ? '/$teamName/integrations' : '/home',
+                );
+              },
+            ),
           MatterMenuItem(
-            id: 'system_console',
-            label: 'Admin Console',
-            icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
-            onTap: () => context.go(AdminConsoleRoutes.home),
-          ),
-          MatterMenuItem(
-            id: 'integrations',
-            label: 'Integrations',
-            icon: const Icon(Icons.integration_instructions_rounded, size: 18),
-            onTap: () {
-              final teamState = context.read<TeamBloc>().state;
-              final teamName = teamState is TeamsLoadedState
-                  ? teamState.selectedTeam?.name
-                  : null;
-              context.go(
-                teamName != null ? '/$teamName/integrations' : '/home',
-              );
-            },
-          ),
-          MatterMenuItem(
-            id: 'app_marketplace',
-            label: 'App Marketplace',
-            icon: const Icon(Icons.category_rounded, size: 18),
+            id: 'user_groups',
+            label: '',
+            icon: SizedBox(
+              width: 220,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Row(
+                  spacing: 10,
+                  children: [
+                    const Icon(Icons.groups_outlined, size: 18),
+                    Text('User Groups', style: TextStyle(fontSize: 15.50)),
+                  ],
+                ),
+              ),
+            ),
             onTap: () {
               ScaffoldMessenger.of(
                 context,
               ).showSnackBar(const SnackBar(content: Text('App Marketplace')));
             },
           ),
+          if (currentUser.hasPermission(
+            MMPermission.manageElasticsearchPostAggregationJob,
+          ))
+            MatterMenuItem(
+              id: 'app_marketplace',
+              label: '',
+              icon: SizedBox(
+                width: 220,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Row(
+                    spacing: 10,
+                    children: [
+                      const Icon(Icons.app_blocking_outlined, size: 18),
+                      Text(
+                        'App Marketplace',
+                        style: TextStyle(fontSize: 15.50),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              onTap: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('App Marketplace')),
+                );
+              },
+            ),
           MatterMenuItem(
             id: 'download_apps',
-            label: 'Download Apps',
-            icon: const Icon(Icons.download_rounded, size: 18),
+            label: '',
+            icon: SizedBox(
+              width: 220,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Row(
+                  spacing: 10,
+                  children: [
+                    const Icon(Icons.download_outlined, size: 18),
+                    Text('Download Apps', style: TextStyle(fontSize: 15.50)),
+                  ],
+                ),
+              ),
+            ),
             onTap: () {
               ScaffoldMessenger.of(
                 context,
@@ -83,8 +252,20 @@ class ProductMenuButton extends StatelessWidget {
           ),
           MatterMenuItem(
             id: 'about_mattermost',
-            label: 'About Mattermost',
-            icon: const Icon(Icons.info_outline, size: 18),
+            label: '',
+            icon: SizedBox(
+              width: 220,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0),
+                child: Row(
+                  spacing: 10,
+                  children: [
+                    const Icon(Icons.info_outline, size: 18),
+                    Text('About Mattermost', style: TextStyle(fontSize: 15.50)),
+                  ],
+                ),
+              ),
+            ),
             onTap: () {
               showAboutDialog(
                 context: context,

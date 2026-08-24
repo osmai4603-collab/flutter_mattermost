@@ -32,7 +32,10 @@ abstract class UserRepository {
 
   Future<List<UserStatusEntity>> getStatusesByIds(List<String> userIds);
   Future<UserStatusEntity> getStatus(String userId);
-  Future<UserStatusEntity> updateMyStatus(UserStatus status, {String? dndEndTime});
+  Future<UserStatusEntity> updateMyStatus(
+    UserStatus status, {
+    String? dndEndTime,
+  });
   Future<UserStatusEntity> updateMyCustomStatus({
     required String emoji,
     String? text,
@@ -53,7 +56,7 @@ abstract class UserRepository {
     String? position,
     String? locale,
   });
-  Future<UserEntity> updateMyNotifyProps(Map<String, dynamic> notifyProps);
+  Future<UserEntity> updateMyNotifyProps(UserNotifyPropsEntity notifyProps);
   Future<void> uploadProfileImage(String userId, String filePath);
   Future<void> updatePassword(
     String userId,

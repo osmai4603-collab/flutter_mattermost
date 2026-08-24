@@ -15,7 +15,7 @@ import 'package:flutter_mattermost/features/channels/presentation/widgets/channe
 /// + خط عمودي 4px، unread = نص عريض sidebar-unread-text، شارة منشنات pill،
 /// hover = sidebar-text-hover-bg، وقائمة ⋯ (sidebar_channel_menu) عند التمرير
 /// أو النقر اليميني: مفضلة/نقل/كتم/تفضيلات/نسخ/معلومات/إعدادات/مغادرة/أرشفة.
-class SidebarChannelRow extends StatelessWidget {
+class SidebarChannelItem extends StatelessWidget {
   final ChannelEntity channel;
   final ChannelUnreadCounts? unread;
   final bool isSelected;
@@ -24,7 +24,7 @@ class SidebarChannelRow extends StatelessWidget {
   final bool isMuted;
   final VoidCallback onTap;
 
-  const SidebarChannelRow({
+  const SidebarChannelItem({
     super.key,
     required this.channel,
     required this.unread,
@@ -58,14 +58,13 @@ class SidebarChannelRow extends StatelessWidget {
           child: Stack(
             alignment: AlignmentDirectional.centerStart,
             children: [
-              // خط نشط عمودي 4px (SidebarLink.active::before)
               if (isSelected)
                 PositionedDirectional(
                   start: 0,
                   top: 0,
                   bottom: 0,
                   child: VerticalDivider(
-                    thickness: 1.50,
+                    thickness: 2,
                     width: 0,
                     color: theme.sidebarTextActiveBorder,
                   ),
@@ -162,7 +161,7 @@ class SidebarChannelRow extends StatelessWidget {
                       duration: const Duration(milliseconds: 100),
                       child: Padding(
                         padding: const EdgeInsets.only(top: 4.0),
-                        child: ChannelRowMenu(channel: channel),
+                        child: ChannelRowItemMenu(channel: channel),
                       ),
                     ),
                   ],

@@ -61,12 +61,12 @@ class MatterMenuItem {
 /// تنسيق لوحة القائمة (مطابق لمظهر الويب: خلفية القناة، ظل، زوايا دائرية).
 MenuStyle _menuStyle(MattermostColors theme) => MenuStyle(
   backgroundColor: WidgetStatePropertyAll(theme.centerChannelBg),
-  elevation: const WidgetStatePropertyAll(4),
+  elevation: const WidgetStatePropertyAll(8),
   shape: WidgetStatePropertyAll(
-    RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+    RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
   ),
   minimumSize: const WidgetStatePropertyAll(Size(264, 0)),
-  maximumSize: const WidgetStatePropertyAll(Size(264, double.infinity)),
+  maximumSize: const WidgetStatePropertyAll(Size(300, double.infinity)),
 );
 
 /// تنسيق بند القائمة: لون النص/الأيقونة (أحمر للبنود الحسّاسة) مع تمييز عند
@@ -76,9 +76,9 @@ ButtonStyle _itemStyle(MattermostColors theme, bool danger) {
   final base = MenuItemButton.styleFrom(
     foregroundColor: fg,
     iconColor: fg,
-    iconSize: 18,
-    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    iconSize: 20,
+    textStyle: const TextStyle(fontSize: 15.50, fontWeight: FontWeight.w500),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
     minimumSize: const Size(0, 40),
   );
   return base.copyWith(
@@ -103,10 +103,13 @@ Widget _itemLabel(MattermostColors theme, MatterMenuItem item) {
   final color = item.danger ? theme.errorTextColor : theme.centerChannelColor;
 
   if (item.richText != null) {
-    return Text.rich(
-      item.richText!,
-      maxLines: 3,
-      style: TextStyle(fontSize: 14, color: color),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Text.rich(
+        item.richText!,
+        maxLines: 3,
+        style: TextStyle(fontSize: 14, color: color),
+      ),
     );
   }
 
@@ -115,21 +118,27 @@ Widget _itemLabel(MattermostColors theme, MatterMenuItem item) {
     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: color),
   );
 
-  if (item.subtitle == null) return label;
+  if (item.subtitle == null) {
+    return label;
+  }
 
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      label,
-      Text(
-        item.subtitle!,
-        style: TextStyle(
-          fontSize: 12,
-          color: theme.centerChannelColor.withValues(alpha: 0.72),
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4.0),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 5,
+      children: [
+        label,
+        Text(
+          item.subtitle!,
+          style: TextStyle(
+            fontSize: 12,
+            color: theme.centerChannelColor.withValues(alpha: 0.72),
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 }
 
@@ -154,6 +163,10 @@ List<Widget> _buildMenuChildren(
       );
       if (item.isDivider) continue;
     }
+    if (item.richText != null) {
+      widgets.add(_itemLabel(theme, item));
+      continue;
+    }
 
     // بند مع قائمة فرعية
     if (item.submenu != null && item.submenu!.isNotEmpty) {
@@ -164,6 +177,7 @@ List<Widget> _buildMenuChildren(
           menuChildren: _buildMenuChildren(context, item.submenu!),
           leadingIcon: item.icon,
           trailingIcon: item.trailingIcon,
+
           submenuIcon: WidgetStatePropertyAll(
             Icon(
               Icons.chevron_right,
@@ -241,6 +255,7 @@ class MatterMenu extends StatefulWidget {
   final bool openUp;
   final bool openLeft;
   final Offset offest;
+  final MenuController? controller;
 
   const MatterMenu({
     super.key,
@@ -249,6 +264,7 @@ class MatterMenu extends StatefulWidget {
     this.openUp = false,
     this.openLeft = false,
     this.offest = Offset.zero,
+    this.controller,
   });
 
   @override
@@ -256,7 +272,13 @@ class MatterMenu extends StatefulWidget {
 }
 
 class _MatterMenuState extends State<MatterMenu> {
-  final MenuController _controller = MenuController();
+  late MenuController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? MenuController();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -266,6 +288,7 @@ class _MatterMenuState extends State<MatterMenu> {
         alignmentOffset: widget.offest,
         controller: _controller,
         style: _menuStyle(theme),
+        clipBehavior: .none,
         menuChildren: _buildMenuChildren(context, widget.items),
         builder: (context, controller, _) {
           return GestureDetector(
@@ -305,6 +328,7 @@ class MatterMenuScope extends StatelessWidget {
       child: MenuAnchor(
         style: _menuStyle(theme),
         menuChildren: _buildMenuChildren(context, items),
+        clipBehavior: .none,
         builder: (context, controller, _) {
           return Material(
             color: Colors.transparent,

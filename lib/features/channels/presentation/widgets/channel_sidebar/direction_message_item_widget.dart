@@ -51,12 +51,9 @@ class DirectionMessageItemWidget extends StatelessWidget {
     String label() {
       if (channel.displayName.isNotEmpty) return channel.displayName;
       final u = user;
-      if (u != null) {
-        final full = '${u.firstName} ${u.lastName}'.trim();
-        if (full.isNotEmpty) return full;
-        return u.username;
-      }
-      return channel.name;
+      final full = '${u.firstName} ${u.lastName}'.trim();
+      if (full.isNotEmpty) return full;
+      return u.username;
     }
 
     // نفس نوع بيانات السحب المستخدم في SidebarCategory ليعمل الإفلات
@@ -104,7 +101,6 @@ class DirectionMessageItemWidget extends StatelessWidget {
     bool hasMentions,
     String label,
   ) {
-    print(user.username);
     return HoverWidget(
       cursor: SystemMouseCursors.click,
       builder: (_, isHovered) => GestureDetector(
@@ -129,7 +125,7 @@ class DirectionMessageItemWidget extends StatelessWidget {
                   bottom: 0,
                   child: VerticalDivider(
                     width: 0,
-                    thickness: 1.50,
+                    thickness: 2.00,
                     color: theme.sidebarTextActiveBorder,
                   ),
                 ),
@@ -139,27 +135,42 @@ class DirectionMessageItemWidget extends StatelessWidget {
                   children: [
                     const SizedBox(width: 20),
 
-                    Stack(
-                      alignment: AlignmentGeometry.bottomEnd,
-                      children: [
-                        ProfilePicture.sm(
-                          userId: user.id,
-                          username: user.username,
-                        ),
-                        Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _statusColor(theme),
-                            border: Border.all(
-                              color: theme.sidebarBg,
-                              width: 1,
+                    if (channel.displayName.split(', ').length < 3)
+                      Stack(
+                        alignment: AlignmentGeometry.bottomEnd,
+                        children: [
+                          ProfilePicture.sm(
+                            userId: user.id,
+                            username: user.username,
+                          ),
+
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: _statusColor(theme),
+                              border: Border.all(
+                                color: theme.sidebarBg,
+                                width: 1,
+                              ),
                             ),
                           ),
+                        ],
+                      )
+                    else
+                      Container(
+                        width: 25,
+                        height: 22,
+                        alignment: .center,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.10),
                         ),
-                      ],
-                    ),
+                        child: Text(
+                          '${channel.displayName.split(', ').length - 1}',
+                          style: TextStyle(color: theme.centerChannelBg),
+                        ),
+                      ),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsetsDirectional.only(
@@ -234,7 +245,7 @@ class DirectionMessageItemWidget extends StatelessWidget {
                     AnimatedOpacity(
                       opacity: isHovered ? 1 : 0.0,
                       duration: const Duration(milliseconds: 100),
-                      child: ChannelRowMenu(channel: channel, iconSize: 16),
+                      child: ChannelRowItemMenu(channel: channel, iconSize: 16),
                     ),
                   ],
                 ),

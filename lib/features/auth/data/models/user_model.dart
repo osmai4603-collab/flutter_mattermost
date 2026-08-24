@@ -1,3 +1,4 @@
+import 'package:flutter_mattermost/core/utils/printing.dart';
 import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 
 final class UserModel extends UserEntity {
@@ -28,6 +29,9 @@ final class UserModel extends UserEntity {
   });
 
   factory UserModel.fromMap(Map<String, dynamic> data) {
+    if (data['id'] == 'd8pcxbz1ejyhtm8bfg1jypycyo') {
+      printMap(title: 'UserModel.fromMap: ', data: data);
+    }
     return UserModel(
       id: data['id'] ?? '',
       createAt: (data['create_at'] ?? 0).toInt(),
@@ -42,13 +46,15 @@ final class UserModel extends UserEntity {
       authService: data['auth_service'] ?? '',
       roles: data['roles'] ?? 'system_user',
       locale: data['locale'] ?? '',
-      notifyProps: Map<String, dynamic>.from(data['notify_props'] ?? const {}),
+      notifyProps: UserNotifyPropsModel.fromMap(
+        data['notify_props'] ?? const {},
+      ),
       propsData: Map<String, dynamic>.from(data['props'] ?? const {}),
       lastPasswordUpdate: (data['last_password_update'] ?? 0).toInt(),
       lastPictureUpdate: (data['last_picture_update'] ?? 0).toInt(),
       failedAttempts: (data['failed_attempts'] ?? 0).toInt(),
       mfaActive: data['mfa_active'] ?? false,
-      timezone: Map<String, dynamic>.from(data['timezone'] ?? const {}),
+      timezone: UserTimezoneModel.fromMap(data['timezone'] ?? const {}),
       termsOfServiceId: data['terms_of_service_id'] ?? '',
       termsOfServiceCreateAt: (data['terms_of_service_create_at'] ?? 0).toInt(),
       position: data['position'] ?? '',
@@ -126,13 +132,13 @@ final class UserModel extends UserEntity {
     String? authService,
     String? roles,
     String? locale,
-    Map<String, dynamic>? notifyProps,
+    UserNotifyPropsEntity? notifyProps,
     Map<String, dynamic>? propsData,
     int? lastPasswordUpdate,
     int? lastPictureUpdate,
     int? failedAttempts,
     bool? mfaActive,
-    Map<String, dynamic>? timezone,
+    UserTimezone? timezone,
     String? termsOfServiceId,
     int? termsOfServiceCreateAt,
     String? position,
@@ -159,7 +165,8 @@ final class UserModel extends UserEntity {
       mfaActive: mfaActive ?? this.mfaActive,
       timezone: timezone ?? this.timezone,
       termsOfServiceId: termsOfServiceId ?? this.termsOfServiceId,
-      termsOfServiceCreateAt: termsOfServiceCreateAt ?? this.termsOfServiceCreateAt,
+      termsOfServiceCreateAt:
+          termsOfServiceCreateAt ?? this.termsOfServiceCreateAt,
       position: position ?? this.position,
     );
   }
@@ -190,5 +197,103 @@ final class UserModel extends UserEntity {
       termsOfServiceCreateAt: termsOfServiceCreateAt,
       position: position,
     );
+  }
+}
+
+class UserNotifyPropsModel extends UserNotifyPropsEntity {
+  const UserNotifyPropsModel({
+    required super.channel,
+    required super.channelMentionAutoFollowThreads,
+    required super.comments,
+    required super.desktop,
+    required super.desktopSound,
+    required super.desktopThreads,
+    required super.email,
+    required super.emailThreads,
+    required super.firstName,
+    required super.mentionKeys,
+    required super.push,
+    required super.pushStatus,
+    required super.pushThreads,
+  });
+
+  factory UserNotifyPropsModel.fromMap(Map<String, dynamic> data) {
+    return UserNotifyPropsModel(
+      channel: data['channel']?.toString() == 'true',
+      channelMentionAutoFollowThreads:
+          data['channel_mention_auto_follow_threads']?.toString() == 'true',
+      comments: data['comments'] as String? ?? '',
+      desktop: data['desktop'] as String? ?? 'all',
+      desktopSound: data['desktop_sound']?.toString() != 'false',
+      desktopThreads: data['desktop_threads'] as String? ?? 'all',
+      email: data['email']?.toString() != 'false',
+      emailThreads: data['email_threads'] as String? ?? 'all',
+      firstName: data['first_name']?.toString() != 'false',
+      mentionKeys: data['mention_keys'] as String? ?? '',
+      push: PushType.of(data['push'] as String? ?? 'mention'),
+      pushStatus: PushStatus.of(data['push_status'] as String? ?? 'online'),
+      pushThreads: data['push_threads'] as String? ?? 'all',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'channel': channel.toString(),
+      'channel_mention_auto_follow_threads': channelMentionAutoFollowThreads
+          .toString(),
+      'comments': comments,
+      'desktop': desktop,
+      'desktop_sound': desktopSound.toString(),
+      'desktop_threads': desktopThreads,
+      'email': email.toString(),
+      'email_threads': emailThreads,
+      'first_name': firstName.toString(),
+      'mention_keys': mentionKeys,
+      'push': push,
+      'push_status': pushStatus,
+      'push_threads': pushThreads,
+    };
+  }
+
+  static UserNotifyPropsModel fromEntity(UserNotifyPropsEntity entity) {
+    return UserNotifyPropsModel(
+      channel: entity.channel,
+      channelMentionAutoFollowThreads: entity.channelMentionAutoFollowThreads,
+      desktop: entity.desktop,
+      desktopSound: entity.desktopSound,
+      desktopThreads: entity.desktopThreads,
+      email: entity.email,
+      emailThreads: entity.emailThreads,
+      firstName: entity.firstName,
+      mentionKeys: entity.mentionKeys,
+      push: entity.push,
+      pushStatus: entity.pushStatus,
+      pushThreads: entity.pushThreads,
+      comments: entity.comments,
+    );
+  }
+}
+
+class UserTimezoneModel extends UserTimezone {
+  const UserTimezoneModel({
+    required super.automaticTimezone,
+    required super.manualTimezone,
+    required super.useAutomaticTimezone,
+  });
+
+  factory UserTimezoneModel.fromMap(Map<String, dynamic> data) {
+    return UserTimezoneModel(
+      automaticTimezone: (data['automaticTimezone'] as String?) == 'true',
+      manualTimezone: data['manualTimezone'] as String? ?? '',
+      useAutomaticTimezone: (data['useAutomaticTimezone'] as String?) == 'true',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'automaticTimezone': automaticTimezone,
+      'manualTimezone': manualTimezone,
+      'useAutomaticTimezone': useAutomaticTimezone.toString(),
+    };
   }
 }

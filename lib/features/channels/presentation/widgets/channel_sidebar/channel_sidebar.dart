@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_mattermost/core/di/injection.dart';
-import 'package:flutter_mattermost/core/storage/draft_storage_service.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_navigator.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/channel_sidebar_header.dart';
 import 'package:flutter_mattermost/features/channels/presentation/widgets/channel_sidebar/sidebar_category.dart';
@@ -387,9 +385,6 @@ class _ChannelSidebarBodyState extends State<_ChannelSidebarBody> {
             child: Stack(
               children: [
                 RawScrollbar(
-                  interactive: false,
-                  thumbVisibility: false,
-                  trackVisibility: false,
                   scrollbarOrientation: .left,
                   child: SingleChildScrollView(
                     child: Padding(

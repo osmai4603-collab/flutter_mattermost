@@ -1,3 +1,4 @@
+import 'package:flutter_mattermost/core/utils/printing.dart';
 import 'package:flutter_mattermost/features/channels/domain/entities/channel_member_entity.dart';
 
 final class ChannelMemberModel extends ChannelMemberEntity {
@@ -20,6 +21,9 @@ final class ChannelMemberModel extends ChannelMemberEntity {
   });
 
   factory ChannelMemberModel.fromMap(Map<String, dynamic> data) {
+    if (data['user_id'] == 'd8pcxbz1ejyhtm8bfg1jypycyo') {
+      printMap(title: 'Channel Member from Map: ', data: data);
+    }
     return ChannelMemberModel(
       channelId: data['channel_id'] ?? '',
       userId: data['user_id'] ?? '',

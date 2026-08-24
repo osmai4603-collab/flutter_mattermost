@@ -94,8 +94,8 @@ class PostActions extends StatelessWidget {
             _ActionIcon(
               icon: Icons.grid_view_outlined,
               iconSize: 17,
-              tooltip: isSavedMessage ? l10n.postMenuUnflag : l10n.postMenuFlag,
-              color: isSavedMessage ? theme.linkColor : null,
+              tooltip: 'More actions',
+              color: null,
               onTap: (_) {
                 // context.read<PostBloc>().add(ToggleFlagPostEvent(post.id));
               },
@@ -112,13 +112,14 @@ class PostActions extends StatelessWidget {
                 },
               ),
             MatterMenu(
-              offest: Offset(-100, 10),
+              controller: controller,
+              // offest: Offset.fromDirection(-20),
               items: [
                 MatterMenuItem(
                   id: 'reply',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -146,7 +147,7 @@ class PostActions extends StatelessWidget {
                   id: 'forward',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -183,7 +184,7 @@ class PostActions extends StatelessWidget {
                   id: 'follow_thread',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -217,7 +218,7 @@ class PostActions extends StatelessWidget {
                   id: 'mark_unread',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -251,7 +252,7 @@ class PostActions extends StatelessWidget {
                   id: 'save_message',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -285,7 +286,7 @@ class PostActions extends StatelessWidget {
                   id: 'pin_to_channel',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -320,7 +321,7 @@ class PostActions extends StatelessWidget {
                   id: 'copy',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -345,7 +346,7 @@ class PostActions extends StatelessWidget {
                   id: 'copy_link',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -374,7 +375,7 @@ class PostActions extends StatelessWidget {
                   id: 'edit',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [
@@ -398,7 +399,7 @@ class PostActions extends StatelessWidget {
                   id: 'delete',
                   label: '',
                   icon: SizedBox(
-                    width: 200,
+                    width: 220,
                     child: Row(
                       spacing: 10,
                       children: [

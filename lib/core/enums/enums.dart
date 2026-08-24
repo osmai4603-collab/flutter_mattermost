@@ -15,3 +15,5 @@ export 'job_status.dart';
 export 'job_type.dart';
 export 'post_type.dart';
 export 'team_type.dart';
+export '../permissions/enums/mattermost_permission.dart';
+export '../permissions/enums/mattermost_role.dart';

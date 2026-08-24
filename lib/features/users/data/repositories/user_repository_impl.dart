@@ -247,9 +247,11 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<UserEntity> updateMyNotifyProps(
-    Map<String, dynamic> notifyProps,
+    UserNotifyPropsEntity notifyProps,
   ) async {
-    final model = await _remoteDataSource.patchMe(notifyProps: notifyProps);
+    final model = await _remoteDataSource.patchMe(
+      notifyProps: UserNotifyPropsModel.fromEntity(notifyProps),
+    );
     final entity = model.toEntity();
     _profileCache[entity.id] = entity;
     return entity;

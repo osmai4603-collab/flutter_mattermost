@@ -81,19 +81,6 @@ class _TeamIcon extends StatelessWidget {
     required this.onTap,
   });
 
-  Color _teamColor() {
-    final seed = team.id.hashCode;
-    const palette = [
-      Color(0xFF1E88E5),
-      Color(0xFF43A047),
-      Color(0xFFE53935),
-      Color(0xFF8E24AA),
-      Color(0xFFFB8C00),
-      Color(0xFF00897B),
-    ];
-    return palette[seed.abs() % palette.length];
-  }
-
   String get _initials {
     return team.displayName.split('').take(2).join('').toUpperCase();
   }
@@ -111,8 +98,8 @@ class _TeamIcon extends StatelessWidget {
             width: 45,
             height: 45,
             decoration: BoxDecoration(
-              color: theme.buttonBg.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withValues(alpha: 0.20),
+              borderRadius: BorderRadius.circular(8),
               border: isActive
                   ? Border.all(
                       color: Color(0xFF1E88E5).withValues(alpha: 0.80),
@@ -158,10 +145,7 @@ class _AddTeamIcon extends StatelessWidget {
           child: Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(shape: BoxShape.rectangle),
             child: Icon(
               Icons.add,
               color: theme.sidebarText.withValues(alpha: 0.7),

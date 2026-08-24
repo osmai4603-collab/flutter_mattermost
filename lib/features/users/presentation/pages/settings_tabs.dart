@@ -337,16 +337,6 @@ class SettingsTextFieldRow extends StatelessWidget {
   }
 }
 
-String _notifyString(
-  Map<String, dynamic> notifyProps,
-  String key,
-  String fallback,
-) {
-  final v = notifyProps[key];
-  if (v == null || v.toString().isEmpty) return fallback;
-  return v.toString();
-}
-
 /// ===== تبويب الملف الشخصي (webapp user_settings_general) =====
 class ProfileSettingsTab extends StatefulWidget {
   const ProfileSettingsTab({super.key});
@@ -578,11 +568,8 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
     return authState is AuthenticatedState ? authState.user : null;
   }
 
-  void _saveNotifyProps(Map<String, dynamic> changes) {
-    final user = _currentUser();
-    final base = Map<String, dynamic>.from(user?.notifyProps ?? const {});
-    base.addAll(changes);
-    context.read<UserProfileBloc>().add(UpdateNotifyPropsEvent(base));
+  void _saveNotifyProps(UserNotifyPropsEntity changes) {
+    context.read<UserProfileBloc>().add(UpdateNotifyPropsEvent(changes));
   }
 
   void _saveEmailInterval(String value) {
@@ -606,23 +593,20 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
     final authState = context.watch<AuthBloc>().state;
     final prefs = context.watch<UserPreferencesBloc>().state;
     final user = authState is AuthenticatedState ? authState.user : null;
-    final notifyProps = user?.notifyProps ?? const <String, dynamic>{};
+    if (user == null) return Container();
 
-    final desktopEnabled =
-        _notifyString(notifyProps, 'desktop', 'all') != 'none';
-    final soundEnabled =
-        _notifyString(notifyProps, 'desktop_sound', 'true') == 'true';
-    final pushValue = _notifyString(notifyProps, 'push', 'mention');
-    final directEnabled = pushValue != 'none';
-    final emailOff = _notifyString(notifyProps, 'email', 'true') == 'false';
+    final desktopEnabled = user.notifyProps.desktop == 'all';
+    final soundEnabled = user.notifyProps.desktopSound == true;
+    final pushValue = user.notifyProps.push;
+    final directEnabled = pushValue;
+    final emailOff = user.notifyProps.email == false;
     final emailInterval = prefs is UserPreferencesLoadedState
         ? prefs.emailInterval
         : 'immediately';
     final emailValue = emailOff || emailInterval == 'never'
         ? 'never'
         : (emailInterval == 'every15' ? 'every15' : 'immediately');
-    final mentionKeys = _notifyString(notifyProps, 'mention_keys', '');
-    final triggerEnabled = mentionKeys.isNotEmpty;
+    final triggerEnabled = user.notifyProps.mentionKeys.isNotEmpty;
 
     return BlocListener<UserProfileBloc, UserProfileState>(
       listener: (context, state) {
@@ -647,14 +631,16 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
               SettingsToggleRow(
                 label: l10n.userSettingsNotificationsDesktopEnable,
                 value: desktopEnabled,
-                onChanged: (v) =>
-                    _saveNotifyProps({'desktop': v ? 'all' : 'none'}),
+                onChanged: (v) => _saveNotifyProps(
+                  user.notifyProps.copyWith(desktop: v ? 'all' : 'none'),
+                ),
               ),
               SettingsToggleRow(
                 label: l10n.userSettingsNotificationsDesktopSound,
                 value: soundEnabled,
-                onChanged: (v) =>
-                    _saveNotifyProps({'desktop_sound': v ? 'true' : 'false'}),
+                onChanged: (v) => _saveNotifyProps(
+                  user.notifyProps.copyWith(desktopSound: v),
+                ),
               ),
               SettingsDropdownRow<String>(
                 label: l10n.userSettingsNotificationsDesktopDuration,
@@ -684,7 +670,9 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
                   _ => l10n.userSettingsNotificationsNever,
                 },
                 onChanged: (v) {
-                  _saveNotifyProps({'email': v == 'never' ? 'false' : 'true'});
+                  _saveNotifyProps(
+                    user.notifyProps.copyWith(email: v == 'never'),
+                  );
                   _saveEmailInterval(v);
                 },
               ),
@@ -694,16 +682,17 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
           SettingsSectionGroup(
             title: l10n.userSettingsNotificationsPushTitle,
             children: [
-              SettingsDropdownRow<String>(
+              SettingsDropdownRow<PushType>(
                 label: l10n.userSettingsNotificationsPushSend,
                 value: pushValue,
-                values: const ['all', 'mention', 'none'],
+                values: PushType.values,
                 labelOf: (v) => switch (v) {
-                  'all' => l10n.userSettingsNotificationsPushAll,
-                  'mention' => l10n.userSettingsNotificationsPushMentions,
+                  .all => l10n.userSettingsNotificationsPushAll,
+                  .mention => l10n.userSettingsNotificationsPushMentions,
                   _ => l10n.userSettingsNotificationsNever,
                 },
-                onChanged: (v) => _saveNotifyProps({'push': v}),
+                onChanged: (v) =>
+                    _saveNotifyProps(user.notifyProps.copyWith(push: v)),
               ),
             ],
           ),
@@ -714,18 +703,24 @@ class _NotificationsSettingsTabState extends State<NotificationsSettingsTab> {
               SettingsToggleRow(
                 label: l10n.userSettingsNotificationsWhenContains,
                 value: triggerEnabled,
-                onChanged: (v) => _saveNotifyProps({
-                  'mention_keys': v ? (user?.username ?? '') : '',
-                }),
+                onChanged: (v) => _saveNotifyProps(
+                  user.notifyProps.copyWith(
+                    mentionKeys: v ? user.username : '',
+                  ),
+                ),
               ),
               SettingsToggleRow(
                 label: l10n.userSettingsNotificationsWhenDirect,
-                value: directEnabled,
-                onChanged: (v) => _saveNotifyProps({
-                  'push': v
-                      ? (pushValue == 'none' ? 'mention' : pushValue)
-                      : 'none',
-                }),
+                value: directEnabled == .mention,
+                onChanged: (v) => _saveNotifyProps(
+                  user.notifyProps.copyWith(
+                    push: v
+                        ? (pushValue == .none
+                              ? .mention
+                              : user.notifyProps.push)
+                        : .none,
+                  ),
+                ),
               ),
             ],
           ),

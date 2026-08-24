@@ -400,15 +400,15 @@ class _MentionsEmptyState extends StatelessWidget {
 List<String> mentionKeysFrom(UserEntity user) {
   final keys = <String>[];
   final notifyProps = user.notifyProps;
-  final rawKeys = notifyProps['mention_keys'] as String? ?? '';
+  final rawKeys = notifyProps.mentionKeys as String? ?? '';
   for (final key in rawKeys.split(',')) {
     final trimmed = key.trim();
     if (trimmed.isNotEmpty) keys.add(trimmed);
   }
-  if (notifyProps['first_name'] == 'true' && user.firstName.isNotEmpty) {
+  if (notifyProps.firstName && user.firstName.isNotEmpty) {
     keys.add(user.firstName);
   }
-  if (notifyProps['channel'] == 'true') {
+  if (notifyProps.channel) {
     keys.addAll(const ['@channel', '@all', '@here']);
   }
   final usernameKey = '@${user.username}';
@@ -424,7 +424,7 @@ List<String> mentionKeysFrom(UserEntity user) {
 /// التي تذكر المستخدم الحالي (Post Mention Highlight).
 List<String> allMentionKeysFrom(UserEntity user) {
   final keys = mentionKeysFrom(user);
-  if (user.notifyProps['channel'] == 'true') {
+  if (user.notifyProps.channel) {
     keys.addAll(const ['@channel', '@all', '@here']);
   }
   return keys;

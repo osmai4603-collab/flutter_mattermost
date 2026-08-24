@@ -151,6 +151,8 @@ class _PostItemState extends State<PostItem> {
           children: [
             Stack(
               alignment: AlignmentDirectional.topEnd,
+              fit: .passthrough,
+              clipBehavior: .none,
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,8 +350,10 @@ class _PostItemState extends State<PostItem> {
                 ),
                 if (post.deleteAt == 0)
                   PositionedDirectional(
+                    top: -10,
+                    // end: 20,
                     child: AnimatedOpacity(
-                      opacity: _hovered ? 1 : 0,
+                      opacity: _hovered || _menuActionController.isOpen ? 1 : 0,
                       duration: const Duration(milliseconds: 100),
                       child: PostActions(
                         controller: _menuActionController,

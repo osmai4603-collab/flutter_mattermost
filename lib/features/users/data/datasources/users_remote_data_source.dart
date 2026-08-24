@@ -4,6 +4,7 @@ import 'package:flutter_mattermost/features/admin/data/models/custom_attribute_v
 import 'package:flutter_mattermost/features/auth/data/models/upload_session_model.dart';
 import 'package:flutter_mattermost/features/auth/data/models/user_terms_of_service_model.dart';
 import 'package:flutter_mattermost/features/auth/data/models/users_stats_model.dart';
+import 'package:flutter_mattermost/features/auth/domain/entities/user_entity.dart';
 import 'package:injectable/injectable.dart';
 import 'package:flutter_mattermost/core/network/api_client.dart';
 import 'package:flutter_mattermost/core/network/api_result.dart';
@@ -56,7 +57,7 @@ abstract class UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
-    Map<String, dynamic>? notifyProps,
+    UserNotifyPropsModel? notifyProps,
   });
   Future<UserModel> getUser(String userId);
   Future<UserModel> getUserByAuthData(String value);
@@ -178,10 +179,7 @@ abstract class UsersRemoteDataSource {
     String userId,
     String teamId,
   );
-  Future<List<DraftModel>> getChannelDrafts(
-    String userId,
-    String channelId,
-  );
+  Future<List<DraftModel>> getChannelDrafts(String userId, String channelId);
   Future<Map<String, dynamic>> updateChannelDraft(
     String userId,
     String channelId,
@@ -203,8 +201,11 @@ abstract class UsersRemoteDataSource {
 
   // Missing operations from docs
   Future<String> getUserLoginType(String loginId);
-  Future<void> publishUserTyping(String userId, String channelId,
-      {String? parentId});
+  Future<void> publishUserTyping(
+    String userId,
+    String channelId, {
+    String? parentId,
+  });
   Future<void> attachDeviceExtraProps(Map<String, dynamic> props);
   Future<void> resetPasswordFailedAttempts(String userId);
   Future<void> revokeSessionsFromAllUsers();
@@ -380,7 +381,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     String? nickname,
     String? position,
     String? locale,
-    Map<String, dynamic>? notifyProps,
+    UserNotifyPropsModel? notifyProps,
   }) async {
     final result = await _apiClient.put<UserModel>(
       UsersEndPoint.patch('me'),
@@ -390,7 +391,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
         'nickname': ?nickname,
         'position': ?position,
         'locale': ?locale,
-        'notify_props': ?notifyProps,
+        'notify_props': notifyProps?.toMap(),
       },
       fromJson: (json) => UserModel.fromMap(json as Map<String, dynamic>),
     );
@@ -551,9 +552,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
 
   @override
   Future<void> deleteUser(String userId) async {
-    final result = await _apiClient.delete(
-      UsersEndPoint.byUserId(userId),
-    );
+    final result = await _apiClient.delete(UsersEndPoint.byUserId(userId));
     if (result is ApiFailure) {
       throw Exception('Failed to delete user $userId');
     }
@@ -561,9 +560,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
 
   @override
   Future<void> permanentDeleteAllUsers() async {
-    final result = await _apiClient.delete(
-      UsersEndPoint.base,
-    );
+    final result = await _apiClient.delete(UsersEndPoint.base);
     if (result is ApiFailure) {
       throw Exception('Failed to permanent delete all users');
     }
@@ -937,7 +934,9 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     final result = await _apiClient.get<List<CustomAttributeValueModel>>(
       UsersEndPoint.customProfileAttributes(userId),
       fromJson: (json) => (json as List<dynamic>)
-          .map((e) => CustomAttributeValueModel.fromMap(e as Map<String, dynamic>))
+          .map(
+            (e) => CustomAttributeValueModel.fromMap(e as Map<String, dynamic>),
+          )
           .toList(),
     );
     if (result is ApiSuccess<List<CustomAttributeValueModel>>) {
@@ -961,9 +960,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
   }
 
   @override
-  Future<List<UserStatusModel>> getUserStatusCustomRecent(
-    String userId,
-  ) async {
+  Future<List<UserStatusModel>> getUserStatusCustomRecent(String userId) async {
     final result = await _apiClient.get<List<UserStatusModel>>(
       UsersEndPoint.statusCustomRecent(userId),
       fromJson: (json) => (json as List<dynamic>)
@@ -999,9 +996,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
   }
 
   @override
-  Future<List<OAuthAppModel>> getOAuthAppsAuthorized(
-    String userId,
-  ) async {
+  Future<List<OAuthAppModel>> getOAuthAppsAuthorized(String userId) async {
     final result = await _apiClient.get<List<OAuthAppModel>>(
       UsersEndPoint.oauthAppsAuthorized(userId),
       fromJson: (json) => (json as List<dynamic>)
@@ -1107,9 +1102,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
     final result = await _apiClient.get<List<ThreadReadStateModel>>(
       UsersEndPoint.teamsThreadsRead(userId, teamId),
       fromJson: (json) => (json as List<dynamic>)
-          .map(
-            (e) => ThreadReadStateModel.fromMap(e as Map<String, dynamic>),
-          )
+          .map((e) => ThreadReadStateModel.fromMap(e as Map<String, dynamic>))
           .toList(),
     );
     if (result is ApiSuccess<List<ThreadReadStateModel>>) {
@@ -1174,10 +1167,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
   }) async {
     final result = await _apiClient.post<UserModel>(
       UsersEndPoint.authData(userId),
-      data: {
-        'auth_data': authData,
-        'auth_service': ?authService,
-      },
+      data: {'auth_data': authData, 'auth_service': ?authService},
       fromJson: (json) => UserModel.fromMap(json as Map<String, dynamic>),
     );
     if (result is ApiSuccess<UserModel>) {
@@ -1212,9 +1202,7 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
   }
 
   @override
-  Future<UserModel> loginSsoCodeExchange(
-    Map<String, dynamic> data,
-  ) async {
+  Future<UserModel> loginSsoCodeExchange(Map<String, dynamic> data) async {
     final result = await _apiClient.post<UserModel>(
       UsersEndPoint.loginSsoCodeExchange,
       data: data,
@@ -1282,14 +1270,14 @@ class UsersRemoteDataSourceImpl implements UsersRemoteDataSource {
   }
 
   @override
-  Future<void> publishUserTyping(String userId, String channelId,
-      {String? parentId}) async {
+  Future<void> publishUserTyping(
+    String userId,
+    String channelId, {
+    String? parentId,
+  }) async {
     await _apiClient.post<void>(
       UsersEndPoint.typing(userId),
-      data: {
-        'channel_id': channelId,
-        'parent_id': ?parentId,
-      },
+      data: {'channel_id': channelId, 'parent_id': ?parentId},
       fromJson: (_) {},
     );
   }
